@@ -20,8 +20,17 @@
 | [02-given-when-then.md](02-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 已確認 |
 | [03-open-questions.md](03-open-questions.md) | 確認點的問題與決定（設計 3 題、商業規則 4 題、其他 9 項、命名） | 已決定（全部照建議） |
 | [prompts/](prompts/) | 每一輪交給 AI 的 prompt | 持續更新 |
-| 04-behavior-report.md | 行為報告（測試結果表） | 實作完成後產出 |
+| [04-behavior-report.md](04-behavior-report.md) | 行為報告：結構摘要、各層測試數量、Given / When / Then 對照、沒有覆蓋的範圍、待決定的新問題 | 已產出（單元 101/101、遊戲內 16/16） |
 
 ## 之後的功能
 
 R4 自訂怪物 → R3 combo → R5 多人同步 → R6 網頁與伺服器 API，每一項各跑一次同樣的流程。
+
+## 怎麼跑測試
+
+```bash
+./gradlew clean build runGameTestServer
+```
+
+- `build` 會跑單元測試（`core/`、`content/`，不用開遊戲）。
+- `runGameTestServer` 會開一個無畫面的遊戲伺服器跑系統測試，結果寫在 `run/gametest-report.xml`，有測試失敗時指令會失敗。

@@ -34,6 +34,7 @@ public final class MobArmoryGameTests {
         test("vanilla_stats_map_to_attributes", MobArmoryGameTests::vanillaStatsMapToAttributes);
         EquipmentGameTests.registerAll();
         CombatGameTests.registerAll();
+        PlayerGameTests.registerAll();
     }
 
     private MobArmoryGameTests() {

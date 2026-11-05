@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:t1_real_player_and_stats_command",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}
