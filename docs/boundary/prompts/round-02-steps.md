@@ -64,3 +64,14 @@
 > - 語系檔加上自訂數值的名稱。
 > - **System 測試提早到這一步建好**（每一步都要能跑測試）：Forge 66 只提供 `@GameTest` 註解和 `ForgeGameTestHooks.gatherTests`，沒有任何地方自動收集（第 1 輪記下的技術風險，這一步查證後確認）。做法改成直接用原版 26.x 的機制：測試函式用 `DeferredRegister` 註冊到 `Registries.TEST_FUNCTION`，測試實例寫成 `data/mobarmory/test_instance/*.json`，結構用原版的 `minecraft:empty`，用 `gradlew runGameTestServer` 執行，失敗時行程以非 0 結束。
 > - 這一步的 System 測試：玩家、殭屍、骷髏都有每個自訂數值，值等於預設值（H3 的系統層）；每個原版數值都對應得到 Attribute。
+
+## 第 5 步：`forge/` 裝備物品，換裝時改變數值（T1）
+
+> 在 `forge/` 新增轉接類別。不改 `core/` 的規則；`content/` 只加資源檔（物品外觀、語系）。
+>
+> - `EquipmentItemFactory`（Factory）：依 `ModEquipment.CATALOG` 每一筆產生並註冊一個物品，不為每件裝備寫類別。護甲類加上原版的穿戴元件，外觀借用定義裡的原版素材（O8）。
+> - `EquipmentItem`：物品說明（tooltip）每次都從共用定義讀，改了定義就跟著變（Q6 A）；格式沿用原版的「主手時：+6 攻擊傷害」。
+> - `EquipmentStatApplier`：`LivingEquipmentChangeEvent`（只在伺服器端）→ 讀目前每個欄位的裝備 → `LoadoutCalculator` 算出目標值 → 每個數值只放**一個**固定 id 的修飾（`mobarmory:equipment`，值 = 目標值 − 基礎值）。沒有裝備改到的數值就移除修飾。因為 id 固定、計算不記狀態，重算幾次都不會疊加（B11、B12）。
+> - `StatsCommand`：`/mobarmory stats [對象]` 列出目前數值和基礎值（O6），驗收 T1 時用。
+> - 創造模式分頁放全部裝備（O9）；`assets/mobarmory/items/*.json` 指向原版模型；語系檔加物品名稱。
+> - 測試：Component 加「內容資源契約」（每件裝備都有物品外觀檔和名稱、每個自訂數值都有名稱，漏了就失敗）；System（GameTest）：H1、H2（T1）、H4、H7、B1、B2、B12、B13 用 mock 玩家；另外讓一隻**會 tick 的殭屍**拿重劍，驗證換裝事件真的有接上。

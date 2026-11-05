@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:t1_heavy_sword_slows_player",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

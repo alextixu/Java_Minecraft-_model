@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:evasion_chestplate_gives_dodge",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

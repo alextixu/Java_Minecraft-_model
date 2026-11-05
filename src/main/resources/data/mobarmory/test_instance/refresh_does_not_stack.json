@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:refresh_does_not_stack",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

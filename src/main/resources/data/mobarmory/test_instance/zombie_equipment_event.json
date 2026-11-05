@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:zombie_equipment_event",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}
