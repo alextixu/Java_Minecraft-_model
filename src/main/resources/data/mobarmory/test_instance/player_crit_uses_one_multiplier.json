@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:player_crit_uses_one_multiplier",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

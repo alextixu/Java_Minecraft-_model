@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:environment_damage_is_never_dodged",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

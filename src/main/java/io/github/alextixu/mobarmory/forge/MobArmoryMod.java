@@ -51,6 +51,7 @@ public final class MobArmoryMod {
         new EntityStatBinder(STATS).register();
         EQUIPMENT_STATS.register();
         new StatsCommand(STATS).register();
+        new CombatEffectListener(ModStats.COMBAT_EFFECTS, STATS).register();
 
         FMLCommonSetupEvent.getBus(modBusGroup).addListener(event -> {
             STATS.verifyAll();
