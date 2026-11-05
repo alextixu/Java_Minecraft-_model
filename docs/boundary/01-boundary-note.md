@@ -1,6 +1,6 @@
 # 邊界說明：R1 可擴充數值系統 ＋ R2 裝備改變玩家數值（週五雛型）
 
-> 狀態：**草案，等待使用者確認**。要決定的問題整理在 [03-open-questions.md](03-open-questions.md)，確認後依答案改寫本檔，再開始實作。
+> 狀態：**已確認**（2026-11-06）。第一輪 Q1～Q3 都選 A，第二輪 Q4～Q7 都選 A，O1～O9 同意，命名為 `mobarmory`／`io.github.alextixu.mobarmory`。決定紀錄在 [03-open-questions.md](03-open-questions.md)。
 > 流程：boundary-first 第 1、2 步。第 3 步的 Given / When / Then 在 [02-given-when-then.md](02-given-when-then.md)。
 
 ## 1. 需求翻譯
@@ -47,7 +47,7 @@
 - **限制 1**：Attribute 登記表在遊戲啟動後就會凍結，所以「新的數值種類」只能在啟動時加入。數值的「大小」則可以在遊戲中修改。
 - **限制 2**：Forge 66 的物品沒有動態計算屬性的掛勾。物品上的數值要嘛在註冊時寫死（原版做法），要嘛由我們在換裝事件裡自己套用。
 
-## 3. 變更邊界（提案，待確認）
+## 3. 變更邊界（已確認）
 
 ### 分層
 
@@ -61,11 +61,11 @@ forge/       轉接層，只有這一層會接觸 Minecraft 或 Forge
   StatAttributeBridge    把 StatDefinition 註冊成 Attribute；原版已有的數值直接對應原版 Attribute
   EntityStatBinder       把所有自訂數值加到每一種生物
   EquipmentItemFactory   依 EquipmentDefinition 產生並註冊物品（Factory）
-  EquipmentStatApplier   換裝時套用或移除修飾（Q6 選「共用」時才需要）
+  EquipmentStatApplier   換裝時套用或移除修飾（Q6 選「共用」）
   CombatEffectListener   受傷事件 → 呼叫 StatEffect → 把結果套回去
-  <Mod 主類別>           @Mod 進入點，只負責接線
+  MobArmoryMod           @Mod 進入點，只負責接線
 content/     雛型的內容：有哪些數值、有哪些裝備，全部都是資料
-  ModStats、ModEquipment（Q5 若選 JSON，就改成讀設定檔）
+  ModStats、ModEquipment（Q5 選 Java，重開遊戲生效）
 ```
 
 ### 四件事
@@ -78,7 +78,7 @@ content/     雛型的內容：有哪些數值、有哪些裝備，全部都是�
 | 新功能放哪、用什麼形狀 | 新數值：`content/ModStats` 加一筆（登記表）<br>有戰鬥效果的新數值：再新增一個 `StatEffect` 實作（Strategy）<br>新裝備：`content/ModEquipment` 加一筆，由 `EquipmentItemFactory` 建成物品（Factory） |
 | 改一處會牽動幾個檔案 | 新增沒有特殊效果的數值：**2**（定義 1 行、語系 1 行）<br>新增有效果的數值：**3**（再加 1 個 `StatEffect` 類別）<br>新增一件裝備：**3**（定義 1 行、物品模型 json、語系 1 行） |
 
-### SOLID 判斷（第一輪 Q1 要確認）
+### SOLID 判斷（Q1：同意）
 
 這是新專案，沒有既有的腐敗，以下是**照最直接的寫法，預期會出現的徵兆**：
 
@@ -90,7 +90,7 @@ content/     雛型的內容：有哪些數值、有哪些裝備，全部都是�
 
 L（里氏替換）由契約測試保證；I（介面隔離）目前的介面已經夠小，不需要拆。
 
-### Pattern 選擇（第一輪 Q2 要確認）
+### Pattern 選擇（Q2：選 A）
 
 | 選項 | 形狀 | 優點 | 缺點 |
 |---|---|---|---|
@@ -98,14 +98,14 @@ L（里氏替換）由契約測試保證；I（介面隔離）目前的介面已
 | B | 完全自製數值系統：自己把數值存在實體上、自己寫同步封包、自己套用移動速度 | 彈性最大，連數值種類都能在執行中新增 | 工作量最大，R5 同步全部要自己做，週五來不及 |
 | C | 直接寫、不抽象：每把武器一個類別、各自寫屬性修飾；暴擊和迴避寫在同一個事件處理器的 `if` 裡 | 今天最快 | 不符合 R1「隨時注入新數值」，做 R4 和 R6 時要大改 |
 
-## 4. 實作順序（確認後才開始）
+## 4. 實作順序
 
 每一步做完都跑一次測試，才進下一步。
 
-0. 改名（`examplemod` → 正式名稱），刪掉 MDK 範例內容，跑 `build` 確認沒有壞掉
+0. 改名（`examplemod` → `mobarmory`，package `io.github.alextixu.mobarmory`），刪掉 MDK 範例內容，跑 `build` 確認沒有壞掉
 1. `core/stat`：`StatDefinition`、`StatCatalog`、`StatModifier`、`StackingRules`，加單元測試
 2. `core/equipment`：`EquipmentDefinition`、`EquipmentCatalog`，加驗證測試
-3. `core/combat`：先寫 `StatEffect` 介面，再寫 `DodgeEffect`、`CritEffect`，加契約測試（Q7 決定要做才做）
+3. `core/combat`：先寫 `StatEffect` 介面，再寫 `DodgeEffect`、`CritEffect`，加契約測試（Q7：要做）
 4. `forge/`：`StatAttributeBridge`、`EntityStatBinder`，讓數值掛到所有生物身上
 5. `forge/`：`EquipmentItemFactory`、`EquipmentStatApplier`，讓裝備改變數值（T1）
 6. `forge/`：`CombatEffectListener`，讓暴擊和迴避生效
@@ -120,4 +120,4 @@ L（里氏替換）由契約測試保證；I（介面隔離）目前的介面已
 | 契約 | (1) 所有 `StatEffect` 實作跑同一組契約：數值為 0 時永不觸發、到達上限時必定觸發、超出範圍會被夾住、不會丟例外、同一個亂數種子結果一致<br>(2) 所有裝備定義跑同一組契約：只引用已註冊的數值、修飾值在範圍內、欄位合法、拿起再放下後數值回到原值<br>新增效果或新增裝備時，只要在清單多一行 |
 | System | 在 `gameTestServer` 裡用 GameTest 和 mock player 測試：拿重武器後移速等於預期（T1）；新增數值後玩家和殭屍都擁有它（T2 的前置） |
 
-**技術風險**：Forge 66 的 `@GameTest` 會由誰自動收集，在原始碼裡還沒找到呼叫端，實作第 7 步時要先驗證。如果跑不起來，System 層改成遊戲內指令（例如 `/<modid> stats`）手動驗證並截圖，報告裡會註明。
+**技術風險**：Forge 66 的 `@GameTest` 會由誰自動收集，在原始碼裡還沒找到呼叫端，實作第 7 步時要先驗證。如果跑不起來，System 層改成遊戲內指令（例如 `/mobarmory stats`）手動驗證並截圖，報告裡會註明。

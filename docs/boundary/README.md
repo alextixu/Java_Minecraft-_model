@@ -16,9 +16,9 @@
 
 | 檔案 | 內容 | 狀態 |
 |---|---|---|
-| [01-boundary-note.md](01-boundary-note.md) | 需求翻譯、平台限制、變更邊界、實作順序、測試計畫 | 草案 |
-| [02-given-when-then.md](02-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 草案 |
-| [03-open-questions.md](03-open-questions.md) | 待使用者決定的問題（設計 3 題、商業規則 4 題、其他 9 項、命名） | 等待回覆 |
+| [01-boundary-note.md](01-boundary-note.md) | 需求翻譯、平台限制、變更邊界、實作順序、測試計畫 | 已確認 |
+| [02-given-when-then.md](02-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 已確認 |
+| [03-open-questions.md](03-open-questions.md) | 確認點的問題與決定（設計 3 題、商業規則 4 題、其他 9 項、命名） | 已決定（全部照建議） |
 | [prompts/](prompts/) | 每一輪交給 AI 的 prompt | 持續更新 |
 | 04-behavior-report.md | 行為報告（測試結果表） | 實作完成後產出 |
 
