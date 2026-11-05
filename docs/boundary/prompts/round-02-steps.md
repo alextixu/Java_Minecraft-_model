@@ -52,3 +52,15 @@
 > - `content/ModStats` 加上效果清單：新增一個有效果的數值 = 一行定義、一個效果類別、清單多一行。
 > - 測試：Component（H5、H6、B8、B9、機率邊界）、契約（所有效果跑同一組：數值 0 永不觸發、數值在上限且亂數最小時必定觸發、超出範圍會被夾住、NaN 或負數不丟例外、同一個種子結果一致、環境傷害永不改變、傷害不會變成負數或 NaN）。
 > - 不准動：`forge/`、`core/stat`、`core/equipment` 的公開介面。
+
+## 第 4 步：`forge/` 數值掛到所有生物身上
+
+> 在 `forge/` 新增轉接類別，只有這一層 import Minecraft／Forge。不改 `core/` 和 `content/` 的程式。
+>
+> - `StatAttributeBridge`：把 `ModStats.CATALOG` 的自訂數值註冊成原版 `RangedAttribute`（同步到客戶端）；原版數值對應到原版 Attribute。啟動時檢查每個原版 Attribute 都存在，不存在就啟動失敗（O2）。
+> - `EntityStatBinder`：在 `EntityAttributeModificationEvent` 把每個自訂數值加到**每一種**生物（O5、H3）。
+> - `EntityStatReader`：把一隻生物包成 `core.StatReader`，給戰鬥效果和之後的 combo 讀數值。
+> - `MobArmoryMod`：只負責接線。
+> - 語系檔加上自訂數值的名稱。
+> - **System 測試提早到這一步建好**（每一步都要能跑測試）：Forge 66 只提供 `@GameTest` 註解和 `ForgeGameTestHooks.gatherTests`，沒有任何地方自動收集（第 1 輪記下的技術風險，這一步查證後確認）。做法改成直接用原版 26.x 的機制：測試函式用 `DeferredRegister` 註冊到 `Registries.TEST_FUNCTION`，測試實例寫成 `data/mobarmory/test_instance/*.json`，結構用原版的 `minecraft:empty`，用 `gradlew runGameTestServer` 執行，失敗時行程以非 0 結束。
+> - 這一步的 System 測試：玩家、殭屍、骷髏都有每個自訂數值，值等於預設值（H3 的系統層）；每個原版數值都對應得到 Attribute。

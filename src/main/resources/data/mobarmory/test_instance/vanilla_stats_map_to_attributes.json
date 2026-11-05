@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:vanilla_stats_map_to_attributes",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

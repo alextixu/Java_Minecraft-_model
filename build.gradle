@@ -33,7 +33,10 @@ minecraft {
             args '--nogui'
         }
 
-        register('gameTestServer')
+        register('gameTestServer') {
+            // JUnit-style XML with every system test's result (see docs/boundary/04-behavior-report.md)
+            args '--report', 'gametest-report.xml'
+        }
 
         register('data') {
             workingDir = layout.projectDirectory.dir('run-data')

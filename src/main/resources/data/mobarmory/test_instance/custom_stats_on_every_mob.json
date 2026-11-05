@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:custom_stats_on_every_mob",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}
