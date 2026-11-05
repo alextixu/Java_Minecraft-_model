@@ -37,3 +37,18 @@
 > - `content/ModEquipment`：O7 的四件裝備。
 > - 測試：Component（`EquipmentCatalog` 的驗證）、Module（02 的 H1、H2、H4、H7、B1、B2、B3、B4、B10～B13）、契約（所有裝備跑同一組：只引用已註冊的數值、修飾在範圍內、放在生效欄位才有效、拿起再放下回到原值、重算不會疊加）。
 > - 不准動：`forge/`、`core/stat` 的公開介面。
+
+## 第 3 步：`core/combat`（暴擊、迴避效果）＋ 契約測試
+
+> 在 `core/combat/` 新增純 Java 類別（Q7 A：雛型就要有效果）。先寫介面，再寫實作。
+>
+> - `StatEffect`（Strategy）：`StatId stat()`、`CombatOutcome apply(CombatContext ctx, RandomSource rng)`。
+> - `CombatContext`：攻擊者和防禦者的 `StatReader`、傷害、傷害種類（近戰、投射物、環境）、這一下是否已經是暴擊（原版跳劈）。
+> - `CombatOutcome`：最後的傷害、是否取消、是否暴擊。
+> - `RandomSource`：`double nextDouble()`，可以用種子重現。
+> - `CombatEffects`：兩組效果。「防禦」在受到傷害前執行（迴避）；「攻擊」在打中時執行（暴擊）。`CombatResolver` 依序執行一組效果，被取消就停。
+> - `DodgeEffect`：只有生物造成的傷害能迴避（O3、B8）；機率夾在數值上限內。
+> - `CritEffect`：原版跳劈或機率判定成功，任一成立就乘一次 1.5，不疊加（O4、B9）。
+> - `content/ModStats` 加上效果清單：新增一個有效果的數值 = 一行定義、一個效果類別、清單多一行。
+> - 測試：Component（H5、H6、B8、B9、機率邊界）、契約（所有效果跑同一組：數值 0 永不觸發、數值在上限且亂數最小時必定觸發、超出範圍會被夾住、NaN 或負數不丟例外、同一個種子結果一致、環境傷害永不改變、傷害不會變成負數或 NaN）。
+> - 不准動：`forge/`、`core/stat`、`core/equipment` 的公開介面。

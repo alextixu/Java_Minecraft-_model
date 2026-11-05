@@ -1,7 +1,11 @@
 package io.github.alextixu.mobarmory.content;
 
+import io.github.alextixu.mobarmory.core.combat.CombatEffects;
+import io.github.alextixu.mobarmory.core.combat.CritEffect;
+import io.github.alextixu.mobarmory.core.combat.DodgeEffect;
 import io.github.alextixu.mobarmory.core.stat.StatCatalog;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
+import java.util.List;
 
 /**
  * Every stat in the game (decision Q5 A: add a line here and restart the game).
@@ -29,6 +33,11 @@ public final class ModStats {
         .add(CRIT_CHANCE)
         .add(DODGE_CHANCE)
         .build();
+
+    /** What stats do in combat. A stat with no entry here is still tracked and shown, it just has no combat effect. */
+    public static final CombatEffects COMBAT_EFFECTS = new CombatEffects(
+        List.of(new DodgeEffect(DODGE_CHANCE)),   // defensive: before the defender takes damage
+        List.of(new CritEffect(CRIT_CHANCE)));    // offensive: when an attack lands
 
     private ModStats() {
     }
