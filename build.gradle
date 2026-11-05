@@ -53,6 +53,18 @@ repositories {
 dependencies {
     implementation minecraft.dependency('net.minecraftforge:forge:26.3-66.1.0')
     annotationProcessor 'net.minecraftforge:eventbus-validator:7.0.6'
+
+    // Unit tests for the Minecraft-independent core (see docs/boundary/)
+    testImplementation platform('org.junit:junit-bom:6.1.3')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {

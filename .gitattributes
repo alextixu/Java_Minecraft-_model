@@ -3,3 +3,7 @@
 # are changed when only line endings change.
 src/generated/**/.cache/cache text eol=lf
 src/generated/**/*.json text eol=lf
+
+# Keep the Unix wrapper script runnable on Linux/macOS, and the Windows one on Windows
+gradlew text eol=lf
+*.bat text eol=crlf
