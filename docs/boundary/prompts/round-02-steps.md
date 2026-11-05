@@ -11,3 +11,16 @@
 > - 不准動：Forge 版本、Java 25 toolchain、JUnit 設定、`pack.mcmeta`。
 > - 授權（`license`）維持 MDK 原值，要不要改是使用者的決定，最後列在待決定事項。
 > - 完成條件：`gradlew build` 成功，產出 `mobarmory-1.0.0.jar`；`git grep examplemod` 只剩文件裡的歷史描述。
+
+## 第 1 步：`core/stat`（數值登記表與疊加規則）
+
+> 在 `core/stat/` 新增純 Java 類別，不 import 任何 Minecraft 或 Forge 類別。
+>
+> - `StatId`：數值代號，只允許小寫英文、數字、底線。
+> - `StatDefinition`：代號、預設值、上下限、下限比例（移動速度不低於基礎值的 30%）、對應的原版 Attribute（自訂數值則沒有）。預設值不在上下限內就丟例外（B7），訊息要寫出是哪個數值。
+> - `StatCatalog`：登記表，用 builder 一筆一筆加，建好後不可變。id 重複（B6）、同一個原版 Attribute 被兩個數值對應，都丟例外。
+> - `ModifierOperation`（`ADD` 固定值相加、`MULTIPLY` 百分比相乘）、`StatModifier`（數值、運算、大小；不接受 NaN、無限大，`MULTIPLY` 不能 ≤ −100%）。
+> - `StackingRules`：值 =（基礎值 ＋ Σ固定值）× Π(1 ＋ 百分比)，再夾在 [max(下限, 下限比例 × 基礎值), 上限]（Q4 A）。
+> - `core/StatReader`：唯讀查詢介面 `double get(StatId)`。
+> - 測試（Component）：登記與查詢、B6、B7、H7、B2、B3、B4，測試名稱照抄 02 的 Given / When / Then。
+> - 不准動：`forge/`、`build.gradle`。
