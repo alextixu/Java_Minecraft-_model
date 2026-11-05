@@ -24,3 +24,16 @@
 > - `core/StatReader`：唯讀查詢介面 `double get(StatId)`。
 > - 測試（Component）：登記與查詢、B6、B7、H7、B2、B3、B4，測試名稱照抄 02 的 Given / When / Then。
 > - 不准動：`forge/`、`build.gradle`。
+
+## 第 2 步：`core/equipment`（裝備定義與換裝計算）＋ `content/`（雛型內容）
+
+> 在 `core/equipment/` 新增純 Java 類別；在 `content/` 放雛型的數值和裝備清單（純資料，也不 import Minecraft）。
+>
+> - `EquipmentId`、`EquipmentSlotKind`（主手、副手、頭、胸、腿、腳）。
+> - `EquipmentDefinition`：id、生效欄位、修飾清單、借用的原版外觀（O8）。同一件裝備對同一個數值有兩個修飾就丟例外（B14）。
+> - `EquipmentCatalog`：依 `StatCatalog` 驗證。引用不存在的數值（B5）、id 重複，都丟例外，訊息寫出是哪件裝備、哪個數值。
+> - `LoadoutCalculator`：輸入「每個欄位放了哪件我們的裝備」和「每個數值的基礎值」，輸出「有被裝備改到的數值的最終值」。只有放在自己生效欄位的裝備才算（O1、B1）；不記狀態，同樣的輸入永遠得到同樣的輸出（B11、B12 不會重複疊加）。
+> - `content/ModStats`：攻擊力、移動速度（下限 30%）、護甲（對應原版）、暴擊率（上限 100%）、迴避率（上限 75%）。
+> - `content/ModEquipment`：O7 的四件裝備。
+> - 測試：Component（`EquipmentCatalog` 的驗證）、Module（02 的 H1、H2、H4、H7、B1、B2、B3、B4、B10～B13）、契約（所有裝備跑同一組：只引用已註冊的數值、修飾在範圍內、放在生效欄位才有效、拿起再放下回到原值、重算不會疊加）。
+> - 不准動：`forge/`、`core/stat` 的公開介面。
