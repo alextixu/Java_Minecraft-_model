@@ -1,5 +1,4 @@
 # See https://docs.minecraftforge.net/en/1.21.x/gettingstarted/modfiles/#modstoml
-# There are lots of things you can do with the mods.toml, and not all fields are included with this MDK
 # References: https://github.com/MinecraftForge/MDKExamples
 
 modLoader="javafml"
@@ -9,27 +8,26 @@ license="All Rights Reserved"
 #clientSideOnly=true #optional, default=false
 
 [[mods]]
-modId="examplemod"
+modId="mobarmory"
 version="1.0.0"
-displayName="Example Mod"
+displayName="Mob Armory"
 #updateJSONURL="https://example.com/updates.json" #optional
 #displayURL="https://example.com/" #optional
-#logoFile="examplemod.png" #optional
 #credits="" #optional
-authors="YourNameHere, OtherNameHere" #optional
+authors="alextixu" #optional
 #displayTest="MATCH_VERSION" #optional, default=MATCH_VERSION when not clientSideOnly, else IGNORE_ALL_VERSION
 
-description='''Example mod description.
-Newline characters can be used like this, and rendered on the mods screen properly.'''
+description='''An extensible stat system: register new stats (crit chance, dodge chance, ...) that every mob gets,
+and weapons and armor that change the wearer's stats (a heavy sword slows you down).'''
 
-[[dependencies.examplemod]] #recommended
+[[dependencies.mobarmory]] #recommended
     modId="forge"
     mandatory=true
     versionRange="[66,)"
     ordering="NONE"
     side="BOTH"
 
-[[dependencies.examplemod]] #recommended
+[[dependencies.mobarmory]] #recommended
     modId="minecraft"
     mandatory=true
     versionRange="[26.3,26.4,)"
