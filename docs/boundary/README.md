@@ -137,7 +137,7 @@ R4b 由怪物小弟在 `feature/r4b-mob-admin` 分支做。2026-11-07 夜間，�
 
 R5 多人同步：還沒用兩台客戶端實測，之後跑同樣的流程。
 
-目前 main（`ce7beaa` 之後）：`gradlew clean build runGameTestServer` 單元 **505/505**、遊戲內 **77/77**（76 個我們的加原版 1 個）。
+目前 main，2026-11-07 夜間段落 F 收尾之後（[prompts/round-10-final-touches.md](prompts/round-10-final-touches.md)）：`gradlew clean build runGameTestServer` 單元 **505/505**、遊戲內 **78/78**（77 個我們的加原版 1 個）。
 
 ## 怎麼跑測試
 

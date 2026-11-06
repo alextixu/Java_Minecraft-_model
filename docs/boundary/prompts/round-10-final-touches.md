@@ -59,3 +59,25 @@
 - 21 號：開頭的「這一輪只寫文件」「從 `061e7a9` 開」改成實際的做法；四件事表格裡的 `AtomicFiles` 改成實際用的類別。
 - 20 號第 5 節 D 列：補上 `ComboListener` 也依賴具體類別 `StatAttributeBridge`，和 R1 的 `CombatEffectListener` 一樣。
 - **SOLID／Pattern**：只改文件，不適用。
+
+## 結果
+
+| 項目 | commit | 驗證 |
+|---|---|---|
+| S1 死連結 | `3d0f20c` | 再掃一次：repo 的 markdown 沒有連到 repo 外面、也沒有連到不存在的檔案的相對連結 |
+| S2 怪物用玩家加的數值 | `27765a1` | `t2_goblin_from_json_only` 檢查 goblin 的 `gametest_luck` 是 0.5，不是預設值 0.25；遊戲內 77/77 |
+| S3 網頁經過 HTTP 改怪物 | `ba6c83f` | 新測試 `web_admin_saves_a_mob_through_the_game`：回 200 之後，狂戰士的基礎攻擊是 8、最大生命 50，`brute.json` 也寫進去了；連跑兩次都過，遊戲內 78/78 |
+| S6 文件（21、20 號） | `2cbc833` | 21 號剩下的 `AtomicFiles` 都寫成「原本計畫…，實際沿用 `JsonFolder`」 |
+
+最後在 `2cbc833` 跑 `gradlew clean build runGameTestServer`：**單元 505/505**，**遊戲內 78/78**（77 個我們的加原版 `always_pass`），0 失敗。
+
+### SOLID／Pattern 檢查（這一輪）
+
+- `src/main` 一行都沒改，所以 SOLID 的五條和既有的 pattern 都和上一輪（round-09）一樣，沒有新的判斷。
+- 新的測試沿用既有的結構：
+  - S3 透過 `AdminHttpServer` → `MobApi` → `MobAdmin`（port）→ `ServerMobAdmin`（Adapter），這條路和網頁實際走的一樣，測試本身不另外繞路。
+  - S2 只改測試資料，證明了 `MobLoader` 依賴注入進來的 `STATS.catalog()`（D）。在這之前，這點只能看程式知道。
+- **沒有做的**（照指令，等使用者決定）：
+  - review-05 的 S4（統一讀檔錯誤的類別）、S7（`MobLibrary` 和 `EquipmentLibrary` 共用程式）。
+  - review-04 的 S3（數值檔的 `format` 改成可以省略）、S4、S5（刪掉 `StatAttributeBridge` 的舊建構子）。
+  - 這些會改程式結構或行為。
