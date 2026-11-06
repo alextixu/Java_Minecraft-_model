@@ -1,9 +1,8 @@
 # 行為報告：R1 可擴充數值系統 ＋ R2 裝備改變玩家數值（週五雛型）
 
-> boundary-first 第 6 步。日期：2026-11-06。
-> 結果：**單元測試 101/101、遊戲內系統測試 16/16 通過**；驗收測試 **T1 的自動化系統測試通過**。
-> 遊戲內手動走查（`runClient`）也已完成並錄影，T1 和 B1、B2、B10、B12、H3 在畫面上都符合預期（見第 6 節）。
-> 走查時發現一個問題：建立和載入世界時會跳出「實驗性設定」警告（見第 7 節 N5）。
+> boundary-first 第 6 步。日期：2026-11-06（第 3 輪審核後更新）。
+> 結果：**單元測試 106/106、遊戲內系統測試 18/18 通過**；驗收測試 **T1 通過**（自動系統測試，加上 `runClient` 手動走查並錄影，見第 6 節）。
+> 第 3 輪：N5「實驗性設定」警告已找出原因並修正，`runClient` 確認新世界和重新載入都不再跳警告；N2（暴擊要蓄滿）、N3（攻擊速度數值）已實作；N1 暫不處理、N4 維持原版規則（見第 7 節）。
 
 ## 1. 邊界說明（已確認的版本）
 
@@ -15,17 +14,27 @@
 | 形狀 | 原版 Attribute 當底層，加上純 Java 核心（`core/`）、資料（`content/`）和 Forge 轉接層（`forge/`） |
 | 不准動的相依 | Minecraft、Forge 本身（沒有 Mixin、沒有 Access Transformer）；原版移動速度的計算；Forge 版本和 Java 25 toolchain |
 | 抽象介面 | `StatEffect`：`CombatOutcome apply(CombatContext, RandomSource)`（Strategy）<br>`StatReader`：`double get(StatId)` |
-| 邊界由測試守住 | `CoreBoundaryTest`：`core/`、`content/` 只要出現 `import net.minecraft` 或 `import com.mojang` 就失敗<br>`ContentResourcesTest`：新增裝備或數值時漏了外觀檔或名稱就失敗 |
+| 邊界由測試守住 | `CoreBoundaryTest`：`core/`、`content/` 只要出現 `import net.minecraft` 或 `import com.mojang` 就失敗<br>`ContentResourcesTest`：新增裝備或數值時漏了外觀檔或名稱就失敗<br>`ShippedDataTest`：正式資源裡出現 GameTest 的註冊表內容就失敗（N5） |
 
 ### 改一處會牽動幾個檔案（實際結果）
 
 | 要做的事 | 要動的檔案 | 數量 |
 |---|---|---|
-| 新增沒有戰鬥效果的數值（例如「格擋率」） | `content/ModStats.java`、`lang/en_us.json` | 2 |
-| 新增有戰鬥效果的數值 | 上面兩個，再加一個 `StatEffect` 實作類別（並在 `ModStats` 的效果清單多一行） | 3 |
+| 新增沒有戰鬥效果的自訂數值（例如「格擋率」） | `content/ModStats.java`、`lang/en_us.json` | 2 |
+| 新增對應原版 Attribute 的數值 | `content/ModStats.java`（原版已有名稱翻譯，語系檔不用改） | 1 |
+| 新增有戰鬥效果的數值 | 自訂數值的兩個檔案，再加一個 `StatEffect` 實作類別（並在 `ModStats` 的效果清單多一行） | 3 |
 | 新增一件裝備 | `content/ModEquipment.java`、`assets/mobarmory/items/<id>.json`、`lang/en_us.json` | 3 |
 
 事件處理器（`CombatEffectListener`、`EquipmentStatApplier`）不需要因為新增數值或裝備而修改。
+
+**實測（N3，第 3 輪）**：新增「攻擊速度」數值、讓重劍攻速 −40%，功能程式只改了 **2 個檔案、6 行**：
+
+| 檔案 | 改動 |
+|---|---|
+| `content/ModStats.java` | 加一筆 `StatDefinition.vanilla("attack_speed", "minecraft:attack_speed", 4.0, 0, 1024)`，並加進登記表（＋4 行） |
+| `content/ModEquipment.java` | 重劍多一個 `percent(ATTACK_SPEED, −0.40)`（＋1／−1 行） |
+
+`core/`、`forge/`、語系檔都沒動。tooltip、`/mobarmory stats`、每種生物的數值、契約測試都自動涵蓋新數值。另外補了測試（`LoadoutCalculatorTest` 一個、遊戲內 `heavy_sword_swings_slower` 一個）。
 
 ## 2. 商業決策（已確認）
 
@@ -46,6 +55,9 @@
 | O7 | 重劍（攻擊 +6、移速 −30%）、短刀（攻擊 +2、暴擊 +25%、移速 +10%）、迴避胸甲（迴避 +15%）、重甲（護甲 +8、移速 −15%） |
 | O8 | 借用原版外觀：下界合金劍、鐵劍、鎖鍊胸甲、鐵胸甲（護甲穿在身上也用原版樣子） |
 | O9 | 一個創造模式分頁放全部裝備，不做合成表 |
+| N2 | 玩家近戰的暴擊機率要蓄滿才判定（和原版跳劈的條件一致）（第 3 輪） |
+| N3 | 新增「攻擊速度」數值，重劍攻速 −40%（4.0 → 2.4）（第 3 輪） |
+| N4 | 30% 移速下限只限制裝備，緩速藥水等原版效果維持原版規則（第 3 輪） |
 
 ### 實作時採用的假設（沒有另外問，請過目）
 
@@ -53,12 +65,12 @@
 
 | # | 假設 | 影響 |
 |---|---|---|
-| A1 | 「移動速度不低於 30%」只限制**裝備**造成的減速。疾跑加速、緩速藥水等原版效果照原版規則疊在上面 | 喝緩速藥水仍可能低於 30% |
-| A2 | 武器是一般物品，沒有原版劍的攻擊冷卻（−2.4 攻速）和橫掃 | 重劍可以連點；要「重武器揮得慢」需要新增攻速數值（見第 7 節 N3） |
-| A3 | 玩家近戰的暴擊機率判定不要求蓄力滿格（原版跳劈要求） | 連點也可能暴擊（見第 7 節 N2） |
+| A1 | 「移動速度不低於 30%」只限制**裝備**造成的減速。疾跑加速、緩速藥水等原版效果照原版規則疊在上面 | 喝緩速藥水仍可能低於 30%（N4 確認維持） |
+| A2 | 武器是一般物品，沒有原版劍的橫掃。攻擊冷卻改由「攻擊速度」數值控制（N3） | 空手和短刀攻速 4.0；重劍 2.4 |
+| A3 | ~~玩家近戰的暴擊機率判定不要求蓄力滿格~~ | 已由 N2 改掉：要蓄滿才判定 |
 | A4 | 苦力怕爆炸、荊棘反傷的來源都是生物，所以算「生物造成的傷害」，可以迴避 | — |
 | A5 | 裝備數值用**一個**固定 id 的修飾（`mobarmory:equipment`）套在原版 Attribute 上，值 = 目標值 − 基礎值；這個修飾不存檔 | 重算幾次、重新登入都不會疊加 |
-| A6 | 系統測試（GameTest）的程式和 JSON 放在主程式裡一起打包，正式遊戲中只登記、不會執行（除非有人用 `/test` 指令） | jar 多 4 個測試類別和 16 個小 JSON |
+| A6 | ~~系統測試和正式程式一起打包~~ | 已由 N5 改掉：系統測試是獨立的測試用模組，不進正式 jar |
 
 ## 3. 結構摘要
 
@@ -72,7 +84,7 @@ io.github.alextixu.mobarmory
 │                              ├─ DodgeEffect implements StatEffect
 │                              └─ CritEffect  implements StatEffect
 │                              CombatContext、CombatOutcome、CombatEffects、CombatResolver、DamageKind、RandomSource
-├─ content/                    資料：ModStats（5 個數值 ＋ 效果清單）、ModEquipment（4 件裝備）
+├─ content/                    資料：ModStats（6 個數值 ＋ 效果清單）、ModEquipment（4 件裝備）
 └─ forge/                      唯一接觸 Minecraft / Forge 的地方
    ├─ MobArmoryMod             @Mod 進入點，只接線
    ├─ StatAttributeBridge      自訂數值 → RangedAttribute（同步到客戶端）；原版數值 → 原版 Attribute
@@ -81,13 +93,18 @@ io.github.alextixu.mobarmory
    ├─ EquipmentItemFactory     每筆裝備定義 → 一個 EquipmentItem（Factory）
    ├─ EquipmentItem extends Item   tooltip 從共用定義讀
    ├─ EquipmentStatApplier     LivingEquipmentChangeEvent → LoadoutCalculator → 套修飾
-   ├─ CombatEffectListener     LivingAttackEvent（迴避）、CriticalHitEvent（玩家暴擊）、LivingHurtEvent（其他暴擊）
+   ├─ CombatEffectListener     LivingAttackEvent（迴避）、AttackEntityEvent（記下蓄力）＋CriticalHitEvent（玩家暴擊）、LivingHurtEvent（其他暴擊）
    ├─ StatsCommand             /mobarmory stats [對象]
-   ├─ Slots                    欄位對照
-   └─ gametest/                系統測試：MobArmoryGameTests、EquipmentGameTests、CombatGameTests、PlayerGameTests
+   └─ Slots                    欄位對照
+
+src/gametest/（獨立 source set，只在測試伺服器載入，不進正式 jar）
+└─ io.github.alextixu.mobarmory.gametest
+   ├─ MobArmoryGameTestMod     測試用模組 mobarmory_gametest 的 @Mod 類別
+   ├─ MobArmoryGameTests       在 RegisterEvent 把測試註冊到 Registries.TEST_FUNCTION
+   └─ EquipmentGameTests、CombatGameTests、PlayerGameTests
 ```
 
-資源：`assets/mobarmory/items/*.json`（4 個，指向原版模型）、`assets/mobarmory/lang/en_us.json`、`data/mobarmory/test_instance/*.json`（16 個系統測試）。
+資源：`assets/mobarmory/items/*.json`（4 個，指向原版模型）、`assets/mobarmory/lang/en_us.json`。測試用的 `META-INF/mods.toml` 和 `data/mobarmory/test_instance/*.json`（18 個）在 `src/gametest/resources/`。
 
 ## 4. 測試報告
 
@@ -95,14 +112,16 @@ io.github.alextixu.mobarmory
 
 | 層級 | 測試類別 | 數量 | 結果 |
 |---|---|---|---|
-| Component | `StatCatalogTest` 8、`StackingRulesTest` 11、`EquipmentCatalogTest` 5、`CritEffectTest` 5、`DodgeEffectTest` 5 | 34 | 全過 |
-| Module | `LoadoutCalculatorTest` 13（02 的成功條件逐一破壞）、`CombatResolverTest` 4 | 17 | 全過 |
+| Component | `StatCatalogTest` 8、`StackingRulesTest` 11、`EquipmentCatalogTest` 5、`CritEffectTest` 7、`DodgeEffectTest` 5 | 36 | 全過 |
+| Module | `LoadoutCalculatorTest` 14（02 的成功條件逐一破壞，加 N3）、`CombatResolverTest` 4 | 18 | 全過 |
 | 契約 | `EquipmentContractTest`：4 件裝備 × 6 條 = 24<br>`StatEffectContractTest`：2 個效果 × 7 條 = 14<br>`ContentResourcesTest`：4 件裝備 × 2 ＋ 2 個自訂數值 = 10 | 48 | 全過 |
-| 邊界守衛 | `CoreBoundaryTest`（`core/`、`content/` 不 import Minecraft） | 2 | 全過 |
-| System（遊戲內） | `gradlew runGameTestServer`，真的伺服器、真的物品和 Attribute | 16 | 全過 |
-| **合計** | 單元 101 ＋ 遊戲內 16 | **117** | **全過** |
+| 邊界守衛 | `CoreBoundaryTest`（`core/`、`content/` 不 import Minecraft）2、`ShippedDataTest`（N5）2 | 4 | 全過 |
+| System（遊戲內） | `gradlew runGameTestServer`，真的伺服器、真的物品和 Attribute | 18 | 全過 |
+| **合計** | 單元 106 ＋ 遊戲內 18 | **124** | **全過** |
 
 指令：`gradlew clean build runGameTestServer`。遊戲內測試的結果另存為 `run/gametest-report.xml`（JUnit 格式）。系統測試的機制驗證過：故意把一個期望值改錯時，伺服器回報「1 required tests failed」，Gradle 也跟著失敗。
+
+第 3 輪起，`runGameTestServer` 會轉去跑 `runGametestGameTestServer`（gametest source set 的 run，同時載入 Mob Armory 和測試用模組），所以指令不變；正式 jar 只有 main 的 38 個類別，沒有任何測試內容。
 
 ### 契約內容
 
@@ -137,6 +156,9 @@ io.github.alextixu.mobarmory
 | B12 | 拿重劍時登出 | 再登入 | 0.07，不是 0.049 | M `b11b12RecomputeDoesNotStack`、S `refresh_does_not_stack`、S `fresh_player_entity_does_not_stack`、S `t1_real_player_and_stats_command`（確認修飾不存檔） | 通過* |
 | B13 | 主手拿原版鑽石劍 | 查暴擊、迴避 | 都是 0 | M `b13VanillaItemAddsNothing`、S `vanilla_sword_adds_no_stats` | 通過 |
 | B14 | 同一件裝備重複修飾同一個數值 | 啟動 | 失敗 | C `sameStatTwiceFails` | 通過 |
+| N2 | 玩家暴擊率 100%，這一下沒蓄滿 | 打中牛 | 不暴擊：0.208（暴擊會是 0.312） | C `n2WeakSwingNeverCrits`、C `n2FullStrengthRolls`、S `player_crit_needs_full_charge` | 通過 |
+| N3 | 玩家空手，攻擊速度 4.0 | 主手拿重劍 | 2.4；放下回 4.0 | M `n3HeavySwordSwingsSlower`、S `heavy_sword_swings_slower` | 通過 |
+| N5 | 正式 jar | 建立或載入世界 | 不跳實驗性設定警告 | 守衛 `mainResourcesHaveNoGameTestEntries`、`gameTestInstancesLiveInTheGametestSourceSet`；`runClient` 手動確認（第 6 節） | 通過 |
 
 \* B10～B12 在遊戲內是用「把物品從欄位拿掉」和「新的玩家實體帶著同一把劍 tick」模擬；真正按 Q 丟出、死亡重生、存檔離開再進入，留在第 6 節的手動走查。
 
@@ -144,6 +166,7 @@ io.github.alextixu.mobarmory
 
 - `zombie_equipment_event`：一隻會 tick 的殭屍拿到重劍，Minecraft 自己偵測到換裝並發出事件，殭屍的速度變成基礎值的 70%。
 - `t1_real_player_and_stats_command`：用 `makeMockServerPlayerInLevel()` 建立一個經由 PlayerList 加入世界的伺服器端玩家。拿重劍、tick 一次後速度是 0.07；以這個玩家的身分執行 `/mobarmory stats`，輸出的移動速度是 `0.0700`、基礎值 `0.1000`。
+- `player_crit_uses_one_multiplier`、`player_crit_needs_full_charge`（第 3 輪改寫）：同樣的伺服器端玩家用真正的 `Player.attack` 打牛，先 tick 讓攻擊條蓄滿。跳劈、100% 暴擊、兩者同時都是 1.5 傷害；剛揮完立刻再揮（沒蓄滿）就不暴擊。
 
 ## 5. 沒有覆蓋的範圍
 
@@ -151,11 +174,12 @@ io.github.alextixu.mobarmory
 
 - **客戶端畫面**：tooltip、物品圖示、護甲穿在身上的外觀沒有自動測試，改由第 6 節的手動走查截圖確認；暴擊粒子沒有確認。
 - **玩家實際移動**：測試證明的是 Attribute 數值；玩家在客戶端走得多快由原版依這個數值計算，沒有量測實際位移。
-- **玩家真的揮劍**：玩家暴擊是直接呼叫 Forge 的暴擊 hook 測的，沒有跑完整的 `Player.attack` 流程。
+- **玩家揮劍的客戶端部分**：第 3 輪起玩家暴擊改用伺服器端的 `Player.attack` 測；客戶端的攻擊條、揮劍動畫、暴擊粒子沒有確認。
+- **N2、N3 的遊戲畫面**：重劍 tooltip 多了「−40% Attack Speed」、攻擊條變慢，這兩項只有自動測試，沒有重新在 `runClient` 截圖。
 - **真正的死亡重生**：用等效情境模擬（見上表 \*）。存檔重登和按 Q 丟出物品已在第 6 節手動確認。
 - **啟動失敗的畫面**：B5～B7、B14 在單元測試證明會丟出寫明原因的例外；沒有實際開一個寫錯定義的遊戲看錯誤畫面。
 - **多人同步（R5）**：自訂數值設定為同步，但沒有測兩個客戶端。
-- **效能**：每次換裝重算 5 個數值，沒有量測。
+- **效能**：每次換裝重算 6 個數值，沒有量測。
 
 ## 6. 遊戲內手動驗證（runClient）
 
@@ -178,12 +202,48 @@ io.github.alextixu.mobarmory
 
 **發現的問題**：建立世界時跳出「These settings are using experimental features」，載入既有世界時跳出「Worlds using Experimental Settings are not supported」（[15](screenshots/15-experimental-warning.png)）。這是給玩家看的畫面，演示前要處理，見第 7 節 N5。
 
-## 7. 待使用者決定的新問題（不影響目前功能）
+### 第 3 輪：N5 修正後再確認
 
-| # | 問題 | 建議 |
-|---|---|---|
-| N1 | 要推到公開 GitHub repo，授權要用什麼？目前是 MDK 預設的「All Rights Reserved」 | **MIT**（學長和其他人可以自由看、改；或維持 All Rights Reserved） |
-| N2 | 暴擊機率判定要不要像原版跳劈一樣，要求蓄力滿格（A3）？ | **要**，避免連點刷暴擊；改動只在 `CombatEffectListener` |
-| N3 | 「重武器」要不要也揮得比較慢？需要新增一個對應原版的「攻擊速度」數值 | **要**，重劍 −40% 攻速；剛好示範 R1「加一個數值只改 2 個檔案」 |
-| N4 | 移動速度 30% 下限要不要也擋住緩速藥水等原版效果（A1）？ | **不要**，維持原版規則，只限制裝備 |
-| N5 | 建立／載入世界時出現「實驗性設定」警告。**原因還沒確認**；推測是模組資料包裡的 16 個 `test_instance` JSON（GameTest 用）被當成實驗性的註冊表內容，也可能是 Forge 開發環境本身就會跳 | **先查證原因**；如果是 GameTest JSON 造成的，就把它們移到只在 `runGameTestServer` 才載入的資料包，正式遊戲不帶 |
+修正 N5 後，同樣用 `runClient`（視窗模式，事先確認前景是 Claude、沒有其他全螢幕程式）建立創造模式、超平坦的新世界「N5 Check」：
+
+| # | 操作 | 結果 | 截圖 |
+|---|---|---|---|
+| 1 | 主選單 | 「3 mods loaded」：minecraft、forge、mobarmory，測試用模組沒有載入 | — |
+| 2 | Create New World | 沒有警告，直接進入世界 | [16](screenshots/16-n5-new-world-no-warning.png) |
+| 3 | 拿重劍、`/mobarmory stats`，Save and Quit，再載入同一個世界 | 載入時沒有警告；速度仍是 `0.0700` | [17](screenshots/17-n5-reload-no-warning.png) |
+
+## 7. 第 3 輪：N1～N5 的決定與結果
+
+使用者原話：「2.github目前當作儲存倉庫 先不用寫任何授權其他同意」。
+
+| # | 問題 | 決定 | 結果 |
+|---|---|---|---|
+| N1 | 推到 GitHub 的授權 | **暫不處理，GitHub 目前只當儲存庫** | `LICENSE.txt` 和 `mods.toml` 的 license 維持 MDK 原狀，沒有新增或修改 |
+| N2 | 暴擊機率要不要像原版跳劈一樣要求蓄滿 | **要**（照建議） | 已實作，見下方 |
+| N3 | 重武器要不要揮得比較慢 | **要，重劍 −40% 攻速**（照建議） | 已實作，見第 1 節「實測」 |
+| N4 | 30% 移速下限要不要擋住緩速藥水等原版效果 | **不要，維持原版規則**（照建議） | 不改程式 |
+| N5 | 建立／載入世界時的「實驗性設定」警告 | **查證並修正**（照建議） | 已修正，見下方 |
+
+### N5：原因與處理
+
+**原因（已查證）**：
+
+1. Forge 26.3 的 `ResourceManagerRegistryLoadTask`：從資料包載入的「資料驅動註冊表」內容，只要資料包不是原版，一律標成 `Lifecycle.experimental()`。
+2. `test_instance`（GameTest 的測試實例）就在原版 `RegistryDataLoader` 的世界註冊表清單裡。
+3. 我們把 16 個 `data/mobarmory/test_instance/*.json` 放在主程式資源裡，跟著模組資料包一起載入，世界就被判定為實驗性。
+4. demo 世界的 `level.dat` 有 `confirmedExperimentalSettings`（按過確認），但 Forge 自己的 `forgeLifecycle` 是 `stable`，可見警告不是 Forge 本身造成的。
+5. 修正後只拿掉了這些測試檔，新世界和重新載入就都不再跳警告，原因得到確認。
+
+**處理**：
+
+- GameTest 搬到獨立的 `src/gametest` source set，當成一個測試用模組 `mobarmory_gametest`（自己的 `mods.toml`，依賴 `mobarmory`），用 `RegisterEvent` 自己註冊測試，Mob Armory 不再引用任何測試程式。
+- Forge 66 是用「classpath 上有 `META-INF/mods.toml` 的位置」來認模組，不支援把兩個資料夾合成一個模組，所以測試必須是獨立模組。ForgeGradle 會替每個 source set 各建一組 run，`runGametestGameTestServer` 的 classpath 同時有兩個模組；`runGameTestServer` 改成轉去跑它。
+- 正式 jar 只打包 main：38 個類別、0 個測試檔。`ShippedDataTest` 守住主程式資源不能再出現 `test_instance`、`test_environment`。
+
+**順便修掉的 build 問題**：MDK 預設開啟 build cache，而且 `merge-source-sets` 讓 class 和資源共用同一個輸出資料夾。在一次 clean build 裡，`compileJava` 從 cache 還原後，資料夾裡的 class 全部不見，連帶正式 jar 也會是空殼。現在 `compileJava`、`processResources` 不走 build cache（這兩個 task 很快），clean build 已驗證正常。
+
+### N2：暴擊要蓄滿
+
+- 規則放在核心：`CombatContext` 多一個 `fullStrength`（生物、投射物沒有蓄力，一律算蓄滿），`CritEffect` 只在蓄滿時擲暴擊。原版跳劈本來就要求蓄滿，所以兩種暴擊的條件一致。
+- Minecraft 在觸發 `CriticalHitEvent` 之前就把蓄力歸零（`Player.attack` 先呼叫 `onAttack()`）。所以 `CombatEffectListener` 改在更早的 `AttackEntityEvent` 記下這一擊的蓄力，暴擊事件再讀出來；門檻和原版一樣是 0.9。
+- 測試：`CritEffectTest` 多 2 個；遊戲內 `player_crit_needs_full_charge` 用真正的揮劍確認沒蓄滿不暴擊。

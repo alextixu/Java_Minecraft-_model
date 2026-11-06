@@ -21,7 +21,7 @@
 | [03-open-questions.md](03-open-questions.md) | 確認點的問題與決定（設計 3 題、商業規則 4 題、其他 9 項、命名） | 已決定（全部照建議） |
 | [prompts/](prompts/) | 每一輪交給 AI 的 prompt | 持續更新 |
 | [screenshots/](screenshots/) | 遊戲內手動走查的截圖（行為報告第 6 節） | 2026-11-06 |
-| [04-behavior-report.md](04-behavior-report.md) | 行為報告：結構摘要、各層測試數量、Given / When / Then 對照、沒有覆蓋的範圍、待決定的新問題 | 已產出（單元 101/101、遊戲內 16/16） |
+| [04-behavior-report.md](04-behavior-report.md) | 行為報告：結構摘要、各層測試數量、Given / When / Then 對照、沒有覆蓋的範圍、待決定的新問題 | 已產出（第 3 輪更新：單元 106/106、遊戲內 18/18） |
 
 ## 之後的功能
 
@@ -34,4 +34,4 @@ R4 自訂怪物 → R3 combo → R5 多人同步 → R6 網頁與伺服器 API�
 ```
 
 - `build` 會跑單元測試（`core/`、`content/`，不用開遊戲）。
-- `runGameTestServer` 會開一個無畫面的遊戲伺服器跑系統測試，結果寫在 `run/gametest-report.xml`，有測試失敗時指令會失敗。
+- `runGameTestServer` 會開一個無畫面的遊戲伺服器跑系統測試（實際執行的是 `runGametestGameTestServer`，載入 `src/gametest` 的測試用模組），結果寫在 `run/gametest-report.xml`，有測試失敗時指令會失敗。測試不會打包進正式 jar。
