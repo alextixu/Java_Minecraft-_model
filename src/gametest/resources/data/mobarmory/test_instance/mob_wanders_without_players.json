@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:alone_wander",
+  "function": "mobarmory:mob_wanders_without_players",
+  "max_ticks": 800,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

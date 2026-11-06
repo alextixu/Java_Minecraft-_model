@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:mob_retaliates_against_attacker",
+  "max_ticks": 200,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

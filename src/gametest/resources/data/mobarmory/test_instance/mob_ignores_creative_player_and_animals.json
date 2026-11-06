@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:alone_creative",
+  "function": "mobarmory:mob_ignores_creative_player_and_animals",
+  "max_ticks": 200,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

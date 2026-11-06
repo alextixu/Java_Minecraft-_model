@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:alone_chase",
+  "function": "mobarmory:mob_gives_up_beyond_16_blocks",
+  "max_ticks": 400,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

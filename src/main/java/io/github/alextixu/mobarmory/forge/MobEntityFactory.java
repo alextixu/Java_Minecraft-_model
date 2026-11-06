@@ -1,0 +1,115 @@
+package io.github.alextixu.mobarmory.forge;
+
+import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
+import io.github.alextixu.mobarmory.core.mob.MobCatalog;
+import io.github.alextixu.mobarmory.core.mob.MobDefinition;
+import io.github.alextixu.mobarmory.core.mob.MobId;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.function.Function;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.item.Item;
+import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
+import net.minecraftforge.eventbus.api.bus.BusGroup;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
+
+/**
+ * Builds everything a mob kind needs from its definition (Factory, Q2 A): an entity type
+ * ({@code /summon mobarmory:<id>}), its base attributes and a spawn egg. Adding a mob never needs a new class.
+ * Entity types can only be registered at startup, so a new kind of mob needs a restart (platform limit).
+ */
+public final class MobEntityFactory {
+    private final MobCatalog catalog;
+    private final StatAttributeBridge stats;
+    private final DeferredRegister<EntityType<?>> types;
+    private final DeferredRegister<Item> eggs;
+    private final Map<MobId, RegistryObject<EntityType<ArmoryMob>>> typeById = new LinkedHashMap<>();
+    private final Map<MobId, RegistryObject<Item>> eggById = new LinkedHashMap<>();
+
+    /**
+     * @param equipmentItems the item of a piece of equipment, looked up by id when a mob spawns
+     * @throws IllegalStateException if a mob uses a behavior without a binder (B4)
+     */
+    public MobEntityFactory(MobCatalog catalog, StatAttributeBridge stats, BehaviorGoals behaviors,
+                            Function<EquipmentId, Item> equipmentItems, String modId) {
+        behaviors.verify(catalog);
+        this.catalog = catalog;
+        this.stats = stats;
+        this.types = DeferredRegister.create(Registries.ENTITY_TYPE, modId);
+        this.eggs = DeferredRegister.create(ForgeRegistries.ITEMS, modId);
+        for (MobDefinition definition : catalog.all()) {
+            String name = definition.id().value();
+            RegistryObject<EntityType<ArmoryMob>> type = types.register(name, () -> EntityType.Builder
+                .<ArmoryMob>of((entityType, level) -> new ArmoryMob(entityType, level, definition, behaviors, equipmentItems),
+                    MobCategory.MONSTER)
+                .sized(0.6F, 1.95F)          // a vanilla zombie's size; the look's scale attribute resizes it
+                .eyeHeight(1.74F)
+                .clientTrackingRange(8)
+                .notInPeaceful()             // O6, B11
+                .noLootTable()               // O7, B12: experience only
+                .build(types.key(name)));
+            typeById.put(definition.id(), type);
+            String egg = name + "_spawn_egg";
+            // Entity types are registered before items, so the type exists when the egg is made.
+            eggById.put(definition.id(), eggs.register(egg,
+                () -> new ArmorySpawnEggItem(new Item.Properties().setId(eggs.key(egg)), type.get())));
+        }
+    }
+
+    public void register(BusGroup modBusGroup) {
+        types.register(modBusGroup);
+        eggs.register(modBusGroup);
+        EntityAttributeCreationEvent.BUS.addListener(this::onCreateAttributes);
+    }
+
+    public MobCatalog catalog() {
+        return catalog;
+    }
+
+    public EntityType<ArmoryMob> type(MobId id) {
+        return lookUp(typeById, id).get();
+    }
+
+    public Item spawnEgg(MobId id) {
+        return lookUp(eggById, id).get();
+    }
+
+    public List<RegistryObject<Item>> spawnEggs() {
+        return List.copyOf(eggById.values());
+    }
+
+    private void onCreateAttributes(EntityAttributeCreationEvent event) {
+        for (MobDefinition definition : catalog.all()) {
+            event.put(type(definition.id()), attributes(definition));
+        }
+    }
+
+    /**
+     * A monster's attributes with every stat at the definition's value or the catalog default (O4, B7), so our
+     * custom stats are already there and R1's binder leaves them alone. Equipment comes on top through R2.
+     */
+    private AttributeSupplier attributes(MobDefinition definition) {
+        AttributeSupplier.Builder builder = Monster.createMonsterAttributes();
+        definition.spawnStats(stats.catalog()).forEach((id, value) -> builder.add(stats.holder(id), value));
+        builder.add(Attributes.FOLLOW_RANGE, ArmoryMob.FOLLOW_RANGE);
+        builder.add(Attributes.SCALE, definition.look().scale());
+        return builder.build();
+    }
+
+    private static <T> T lookUp(Map<MobId, T> map, MobId id) {
+        T value = map.get(id);
+        if (value == null) {
+            throw new NoSuchElementException("No mob '" + id + "'");
+        }
+        return value;
+    }
+}
