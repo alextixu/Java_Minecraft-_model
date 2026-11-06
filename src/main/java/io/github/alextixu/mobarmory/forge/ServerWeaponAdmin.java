@@ -12,6 +12,7 @@ import io.github.alextixu.mobarmory.data.WeaponLoadException;
 import io.github.alextixu.mobarmory.data.BuiltInTextures;
 import io.github.alextixu.mobarmory.web.WeaponAdmin;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +32,8 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  *   <li>runs every change on the server thread (the web server calls from its own threads); the queue keeps
  *       running while a single-player game is paused, so saving from the browser works then too (B15);</li>
  *   <li>then recomputes every entity holding a changed piece (R2 decision Q6), updates the look they show, and sends
- *       the new definitions to every player (decision Q3 B), so remote clients show the same names and tooltips.</li>
+ *       the new definitions and any uploaded PNG to every player (decision Q3 B), so remote clients show the same names,
+ *       tooltips and textures.</li>
  * </ol>
  */
 public final class ServerWeaponAdmin implements WeaponAdmin {
@@ -71,23 +73,39 @@ public final class ServerWeaponAdmin implements WeaponAdmin {
             .toList();
     }
 
+    /** The built-in textures, then the uploaded ones. */
     @Override
-    public List<String> textures() {
-        return BuiltInTextures.NAMES;
+    public List<String> textures() throws IOException {
+        List<String> names = new ArrayList<>(BuiltInTextures.NAMES);
+        editor.store().textureNames().stream().filter(name -> !names.contains(name)).forEach(names::add);
+        return names;
     }
 
     @Override
-    public Optional<byte[]> texture(String name) {
-        return BuiltInTextures.png(name);
+    public Optional<byte[]> texture(String name) throws IOException {
+        return BuiltInTextures.contains(name) ? BuiltInTextures.png(name) : editor.store().texture(name);
     }
 
     @Override
-    public long update(EquipmentDefinition changed, long expectedVersion) throws IOException, WeaponFormatException {
-        return change(() -> {
-            EquipmentLook before = editor.library().current().get(changed.id()).look();
-            long version = editor.update(changed, expectedVersion);
-            afterChange(true, !before.equals(changed.look()));
-            return version;
+    public void update(EquipmentDefinition changed) throws IOException, WeaponFormatException {
+        change(() -> {
+            EquipmentLook before = editor.library().current().find(changed.id()).map(EquipmentDefinition::look).orElse(null);
+            editor.update(changed);
+            afterChange(true, !changed.look().equals(before));
+            return null;
+        });
+    }
+
+    @Override
+    public void saveTexture(String name, byte[] png) throws IOException, WeaponFormatException {
+        change(() -> {
+            editor.saveTexture(name, png);
+            boolean inUse = editor.library().current().all().stream()
+                .anyMatch(definition -> definition.look().equals(EquipmentLook.texture(name)));
+            if (inUse) {
+                afterChange(false, true); // a replaced PNG: players get the new one, clients reload it
+            }
+            return null;
         });
     }
 

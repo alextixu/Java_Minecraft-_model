@@ -51,12 +51,16 @@ final class WeaponStartup {
     }
 
     /** B4: every borrowed look must be a real item; runs in common setup, when all items are registered. */
-    static void verifyLooks(EquipmentLibrary library) {
+    static void verifyLooks(EquipmentLibrary library, WeaponStore store) {
         WeaponLoader loader = loader(library.stats());
         List<String> problems = new ArrayList<>();
         for (EquipmentDefinition definition : library.current().all()) {
-            Optional<String> problem = loader.lookProblem(definition.look());
-            problem.ifPresent(text -> problems.add(definition.id() + ".json: " + text));
+            try {
+                Optional<String> problem = loader.lookProblem(definition.look(), store);
+                problem.ifPresent(text -> problems.add(definition.id() + ".json: " + text));
+            } catch (IOException e) {
+                problems.add(definition.id() + ".json: " + e.getMessage());
+            }
         }
         if (!problems.isEmpty()) {
             throw new IllegalStateException(new WeaponLoadException(problems).getMessage());

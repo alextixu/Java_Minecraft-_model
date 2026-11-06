@@ -57,6 +57,7 @@ const $ = (selector, root = document) => root.querySelector(selector);
 const statLabel = (id) => STAT_LABELS[id] || id;
 const statById = (id) => state.stats.find((stat) => stat.id === id);
 const round = (value) => Math.round(value * 1e6) / 1e6;
+const textureLabel = (name) => ((state.looks.builtInTextures || []).includes(name) ? `${name}（內建）` : `${name}（上傳）`);
 
 function notice(kind, message, items = []) {
   const box = $('#notice');
@@ -67,7 +68,6 @@ function notice(kind, message, items = []) {
 }
 
 function describeError(error) {
-  if (error.status === 409) return '這把武器剛剛被改過（可能是另一個分頁或手動改檔）。請按「重新整理」載入最新的數值再改。';
   if (error.status === 403) return '伺服器拒絕了這個請求（只接受從這個網頁送出的修改）。';
   if (error.status === 401) return '需要 token：請用遊戲聊天欄裡的連結開啟這個網頁。';
   if (error.status === undefined) return '連不到遊戲。請確認世界還開著（離開世界時網頁後台會關閉）。';
@@ -125,7 +125,7 @@ function buildForm(form, entry, mode) {
       '只能用小寫英文、數字、底線，開頭要是英文字母。'));
   } else {
     parts.push(el('div', { class: 'field' }, el('span', { class: 'legend', text: weapon.name }),
-      el('p', { class: 'note', text: `id：${entry.id}　版本：${entry.version ?? '—'}　狀態：${STATUS_LABELS[entry.status]}` })));
+      el('p', { class: 'note', text: `id：${entry.id}　狀態：${STATUS_LABELS[entry.status]}` })));
   }
   parts.push(field('name', '名稱（遊戲裡顯示的名字）', el('input', { name: 'name', value: weapon.name, maxlength: 64, required: true })));
 
@@ -160,8 +160,8 @@ function lookField(look) {
   const items = el('select', { class: 'look-item', 'data-field': 'look.item', 'aria-label': '原版物品' },
     state.looks.items.map((id) => el('option', { value: id, selected: id === look.item, text: id.replace('minecraft:', '') })));
   if (look.item && !state.looks.items.includes(look.item)) items.prepend(el('option', { value: look.item, selected: true, text: look.item }));
-  const textures = el('select', { class: 'look-texture', 'data-field': 'look.texture', 'aria-label': '內建貼圖' },
-    state.looks.textures.map((name) => el('option', { value: name, selected: name === look.texture, text: name })));
+  const textures = el('select', { class: 'look-texture', 'data-field': 'look.texture', 'aria-label': '貼圖' },
+    state.looks.textures.map((name) => el('option', { value: name, selected: name === look.texture, text: textureLabel(name) })));
   const preview = el('img', { class: 'preview', alt: '貼圖預覽' });
   const showPreview = async () => {
     preview.removeAttribute('src');
@@ -173,7 +173,7 @@ function lookField(look) {
   };
   textures.addEventListener('change', showPreview);
   const radioItem = el('input', { type: 'radio', name: group, value: 'item', checked: kind === 'item', 'aria-label': '借用原版物品' });
-  const radioTexture = el('input', { type: 'radio', name: group, value: 'texture', checked: kind === 'texture', 'aria-label': '內建貼圖' });
+  const radioTexture = el('input', { type: 'radio', name: group, value: 'texture', checked: kind === 'texture', 'aria-label': '貼圖' });
   const sync = () => {
     items.disabled = !radioItem.checked;
     textures.disabled = !radioTexture.checked;
@@ -182,13 +182,38 @@ function lookField(look) {
   radioItem.addEventListener('change', sync);
   radioTexture.addEventListener('change', sync);
 
+  const file = el('input', { type: 'file', accept: 'image/png', 'aria-label': '選擇 PNG 檔' });
+  const name = el('input', { placeholder: '貼圖名稱，例如 halberd_netherite', pattern: '[a-z0-9_]+', 'aria-label': '貼圖名稱' });
+  file.addEventListener('change', () => {
+    if (file.files[0] && !name.value) name.value = file.files[0].name.replace(/\.png$/i, '').toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  });
+  const upload = el('button', {
+    type: 'button', class: 'ghost', text: '上傳貼圖',
+    onclick: async () => {
+      if (!file.files[0] || !name.value) { notice('warn', '請先選 PNG 檔並填貼圖名稱。'); return; }
+      try {
+        await api('PUT', '/api/v1/textures/' + encodeURIComponent(name.value), await file.files[0].arrayBuffer(), 'image/png');
+        const looks = await api('GET', '/api/v1/looks');
+        state.looks = looks;
+        textures.replaceChildren(...looks.textures.map((n) => el('option', { value: n, selected: n === name.value, text: textureLabel(n) })));
+        radioTexture.checked = true;
+        sync();
+        showPreview();
+        notice('ok', `貼圖 ${name.value}.png 已上傳。選好以後按「儲存」才會套用到武器。`);
+      } catch (error) {
+        notice('error', '上傳失敗：' + describeError(error));
+      }
+    },
+  });
+
   sync();
   if (kind === 'texture') showPreview();
   return el('div', { class: 'field look' },
     el('span', { class: 'legend', text: '外觀' }),
     el('div', { class: 'look-row' }, el('label', {}, radioItem, '借用原版物品'), items),
-    el('div', { class: 'look-row' }, el('label', {}, radioTexture, '內建貼圖'), textures, preview),
-    el('p', { class: 'note', text: '外觀只能從原版物品或模組內建的 7 張貼圖選。存檔後，玩家手上的武器馬上換成新外觀。' }),
+    el('div', { class: 'look-row' }, el('label', {}, radioTexture, '貼圖（內建或上傳）'), textures, preview),
+    el('div', { class: 'upload' }, file, name, upload),
+    el('p', { class: 'note', text: '上傳的 PNG：正方形，16、32、64、128 或 256 像素，最大 256 KB，名稱不能和內建貼圖相同。換成原版物品或內建貼圖時，手上的武器馬上換；換成剛上傳的貼圖時，遊戲會自動重新載入資源（幾秒）。' }),
     el('div', { class: 'field-error', 'data-error-for': 'look' }));
 }
 
@@ -276,10 +301,10 @@ function openEditor(entry) {
   form.onsubmit = async (event) => {
     event.preventDefault();
     clearErrors(form);
-    const body = Object.assign(readForm(form), { version: entry.version });
+    const body = readForm(form);
     try {
       const saved = await api('PUT', '/api/v1/weapons/' + encodeURIComponent(entry.id), body);
-      notice('ok', `「${saved.weapon.name}」已套用（版本 ${saved.version}）：遊戲裡拿著它的玩家和生物已經是新數值，也已寫回 ${entry.id}.json。`);
+      notice('ok', `「${saved.weapon.name}」已套用：遊戲裡拿著它的玩家和生物已經是新數值，也已寫回 ${entry.id}.json。`);
       await loadAll();
     } catch (error) {
       showFieldErrors(form, error);

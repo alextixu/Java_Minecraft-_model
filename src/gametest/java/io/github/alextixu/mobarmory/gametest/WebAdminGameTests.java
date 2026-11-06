@@ -42,11 +42,10 @@ final class WebAdminGameTests {
         }
         ServerPlayer player = LiveEditGameTests.playerHoldingSword(helper);
         checkNear(helper, 7.0, player.getAttributeValue(stats().holder(ModStats.ATTACK_DAMAGE.id())), "given: attack with the shipped sword");
-        long version = MobArmoryMod.EQUIPMENT_LIBRARY.version(Weapons.HEAVY_SWORD);
         String body = """
-            {"version": %d, "format": 1, "name": "Heavy Sword", "slot": "mainhand", "look": {"item": "minecraft:netherite_sword"},
+            {"format": 1, "name": "Heavy Sword", "slot": "mainhand", "look": {"item": "minecraft:netherite_sword"},
              "modifiers": [{"stat": "attack_damage", "add": 16}, {"stat": "movement_speed", "percent": -30},
-                           {"stat": "attack_speed", "percent": -40}]}""".formatted(version);
+                           {"stat": "attack_speed", "percent": -40}]}""";
         // Sent from another thread while this one keeps ticking: the request waits for the server thread to apply it.
         CompletableFuture<HttpResponse<String>> response = HttpClient.newHttpClient().sendAsync(
             HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + server.port() + "/api/v1/weapons/heavy_sword"))

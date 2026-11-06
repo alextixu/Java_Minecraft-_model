@@ -5,12 +5,14 @@ import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.test;
 
 import io.github.alextixu.mobarmory.content.ModStats;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
+import io.github.alextixu.mobarmory.data.BuiltInTextures;
 import io.github.alextixu.mobarmory.data.DefaultWeapons;
 import io.github.alextixu.mobarmory.data.WeaponSync;
 import io.github.alextixu.mobarmory.forge.MobArmoryMod;
 import io.github.alextixu.mobarmory.forge.WeaponLooks;
 import io.github.alextixu.mobarmory.forge.WeaponSyncChannel;
 import io.netty.buffer.Unpooled;
+import java.util.Arrays;
 import java.util.HashSet;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -40,7 +42,13 @@ final class SyncGameTests {
         WeaponSyncChannel.Definitions received = WeaponSyncChannel.Definitions.STREAM_CODEC.decode(buffer);
 
         check(helper, received.weapons().equals(sent.weapons()), "the packet changed on the way: " + received.weapons().keySet());
+        check(helper, received.textureDigests().equals(sent.textureDigests()), "texture digests changed on the way");
         check(helper, buffer.readableBytes() == 0, "bytes left over after decoding: " + buffer.readableBytes());
+
+        byte[] png = BuiltInTextures.png("dagger_ruby").orElseThrow();
+        WeaponSyncChannel.Texture.STREAM_CODEC.encode(buffer, new WeaponSyncChannel.Texture("an_upload", png));
+        WeaponSyncChannel.Texture texture = WeaponSyncChannel.Texture.STREAM_CODEC.decode(buffer);
+        check(helper, texture.name().equals("an_upload") && Arrays.equals(texture.png(), png), "the texture packet changed on the way");
         EquipmentLibrary client = new EquipmentLibrary(DefaultWeapons.catalog(ModStats.CATALOG));
         try {
             WeaponSync.apply(client, received.weapons());

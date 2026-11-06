@@ -21,44 +21,40 @@ import java.util.Set;
  *       thread see either the old snapshot or the new one, never half of each.</li>
  * </ul>
  * Every change is validated by {@link EquipmentCatalog} first; a change that fails leaves everything as it was.
+ * Two saves of the same piece: the later one wins (decision O10).
  */
 public final class EquipmentLibrary {
     private final StatCatalog stats;
     private final List<EquipmentId> registered;
+    private final Set<EquipmentId> registeredSet;
     private volatile State state;
 
-    private record State(EquipmentCatalog catalog, Map<EquipmentId, Long> versions,
-                         Map<EquipmentId, EquipmentDefinition> pending, Set<EquipmentId> fileMissing) {
+    private record State(EquipmentCatalog catalog, Map<EquipmentId, EquipmentDefinition> pending, Set<EquipmentId> fileMissing) {
+    }
+
+    /** Everything at one moment: definitions, waiting and file-missing pieces, all from the same snapshot. */
+    public record View(EquipmentCatalog catalog, Map<EquipmentId, EquipmentDefinition> pending, Set<EquipmentId> fileMissing) {
     }
 
     /** Starts with the pieces loaded at startup; exactly these become items. */
     public EquipmentLibrary(EquipmentCatalog initial) {
         this.stats = initial.stats();
         List<EquipmentId> ids = new ArrayList<>();
-        Map<EquipmentId, Long> versions = new LinkedHashMap<>();
         for (EquipmentDefinition definition : initial.all()) {
             ids.add(definition.id());
-            versions.put(definition.id(), 1L);
         }
         this.registered = List.copyOf(ids);
-        this.state = new State(initial, Map.copyOf(versions), Map.of(), Set.of());
+        this.registeredSet = Set.copyOf(ids);
+        this.state = new State(initial, Map.of(), Set.of());
     }
 
     public StatCatalog stats() {
         return stats;
     }
 
-    /**
-     * Everything at one moment: definitions, versions, waiting and file-missing pieces, all from the same
-     * snapshot (the web page lists them together).
-     */
-    public record View(EquipmentCatalog catalog, Map<EquipmentId, Long> versions,
-                       Map<EquipmentId, EquipmentDefinition> pending, Set<EquipmentId> fileMissing) {
-    }
-
     public View view() {
         State now = state;
-        return new View(now.catalog(), now.versions(), now.pending(), now.fileMissing());
+        return new View(now.catalog(), now.pending(), now.fileMissing());
     }
 
     /** The definitions in effect now. Take one snapshot per calculation. */
@@ -72,21 +68,7 @@ public final class EquipmentLibrary {
     }
 
     public boolean isRegistered(EquipmentId id) {
-        return state.versions().containsKey(id);
-    }
-
-    /**
-     * Version of a registered piece: 1 at startup, +1 on every change. A change must name the version it was
-     * based on, so two editors cannot silently overwrite each other (decision O10).
-     *
-     * @throws NoSuchElementException if the piece is not registered
-     */
-    public long version(EquipmentId id) {
-        Long version = state.versions().get(id);
-        if (version == null) {
-            throw new NoSuchElementException("Unknown equipment '" + id + "'");
-        }
-        return version;
+        return registeredSet.contains(id);
     }
 
     /** Pieces found in the config folder after startup; they become items after a restart (B7, H9). */
@@ -100,21 +82,17 @@ public final class EquipmentLibrary {
     }
 
     /**
-     * Replaces one registered piece (the web page's "save").
+     * Replaces one registered piece (the web page's "save"). The later of two saves wins (decision O10).
      *
-     * @param changed         the new definition; its slot must stay the same (B9)
-     * @param expectedVersion the version the change was based on
-     * @return the version after the change
+     * @param changed the new definition; its slot must stay the same (B9)
      * @throws NoSuchElementException   if the piece is not registered
-     * @throws StaleVersionException    if someone changed it after {@code expectedVersion} (B11)
      * @throws IllegalArgumentException if the definition is not valid (B10), or the slot changed (B9)
      */
-    public synchronized long update(EquipmentDefinition changed, long expectedVersion) {
+    public synchronized void update(EquipmentDefinition changed) {
         State now = state;
         EquipmentId id = changed.id();
-        long version = version(id);
-        if (version != expectedVersion) {
-            throw new StaleVersionException(id, expectedVersion, version);
+        if (!isRegistered(id)) {
+            throw new NoSuchElementException("Unknown equipment '" + id + "'");
         }
         EquipmentDefinition old = now.catalog().get(id);
         if (old.slot() != changed.slot()) {
@@ -125,15 +103,11 @@ public final class EquipmentLibrary {
         for (EquipmentDefinition definition : now.catalog().all()) {
             next.put(definition.id(), definition.id().equals(id) ? changed : definition);
         }
-        EquipmentCatalog catalog = build(next.values());
-        Map<EquipmentId, Long> versions = new LinkedHashMap<>(now.versions());
-        versions.put(id, version + 1);
-        state = new State(catalog, Collections.unmodifiableMap(versions), now.pending(), now.fileMissing());
-        return version + 1;
+        state = new State(build(next.values()), now.pending(), now.fileMissing());
     }
 
     /**
-     * Records a new piece that becomes an item after a restart (the web page's "upload").
+     * Records a new piece that becomes an item after a restart (the web page's "new weapon").
      *
      * @throws IllegalArgumentException if the id is already an item or already waiting, or the definition is
      *                                  not valid
@@ -146,7 +120,7 @@ public final class EquipmentLibrary {
         build(List.of(definition)); // validates the stats it refers to
         Map<EquipmentId, EquipmentDefinition> pending = new LinkedHashMap<>(now.pending());
         pending.put(definition.id(), definition);
-        state = new State(now.catalog(), now.versions(), Collections.unmodifiableMap(pending), now.fileMissing());
+        state = new State(now.catalog(), Collections.unmodifiableMap(pending), now.fileMissing());
     }
 
     /**
@@ -161,7 +135,6 @@ public final class EquipmentLibrary {
         State now = state;
         EquipmentCatalog all = build(loaded); // duplicate ids and unknown stats fail here, before anything changes
         Map<EquipmentId, EquipmentDefinition> next = new LinkedHashMap<>();
-        Map<EquipmentId, Long> versions = new LinkedHashMap<>(now.versions());
         List<EquipmentId> changed = new ArrayList<>();
         List<EquipmentId> slotWaits = new ArrayList<>();
         Set<EquipmentId> fileMissing = new LinkedHashSet<>();
@@ -179,7 +152,6 @@ public final class EquipmentLibrary {
             }
             if (!fresh.equals(old)) {
                 changed.add(id);
-                versions.put(id, versions.get(id) + 1);
             }
             next.put(id, fresh);
         }
@@ -189,8 +161,7 @@ public final class EquipmentLibrary {
                 pending.put(definition.id(), definition);
             }
         }
-        state = new State(build(next.values()), Collections.unmodifiableMap(versions),
-            Collections.unmodifiableMap(pending), Collections.unmodifiableSet(fileMissing));
+        state = new State(build(next.values()), Collections.unmodifiableMap(pending), Collections.unmodifiableSet(fileMissing));
         return new ReloadReport(changed, List.copyOf(pending.keySet()), List.copyOf(fileMissing), slotWaits);
     }
 

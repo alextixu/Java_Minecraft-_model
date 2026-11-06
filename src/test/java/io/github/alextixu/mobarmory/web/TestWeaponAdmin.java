@@ -53,22 +53,29 @@ final class TestWeaponAdmin implements WeaponAdmin {
 
     @Override
     public List<String> textures() {
-        return BuiltInTextures.NAMES;
+        List<String> names = new java.util.ArrayList<>(BuiltInTextures.NAMES);
+        names.addAll(store.textureNames());
+        return names;
     }
 
     @Override
     public Optional<byte[]> texture(String name) {
-        return BuiltInTextures.png(name);
+        return BuiltInTextures.contains(name) ? BuiltInTextures.png(name) : store.texture(name);
     }
 
     @Override
-    public long update(EquipmentDefinition changed, long expectedVersion) throws IOException, WeaponFormatException {
-        return editor.update(changed, expectedVersion);
+    public void update(EquipmentDefinition changed) throws IOException, WeaponFormatException {
+        editor.update(changed);
     }
 
     @Override
     public void create(EquipmentDefinition definition) throws IOException, WeaponFormatException {
         editor.create(definition);
+    }
+
+    @Override
+    public void saveTexture(String name, byte[] png) throws IOException, WeaponFormatException {
+        editor.saveTexture(name, png);
     }
 
     @Override

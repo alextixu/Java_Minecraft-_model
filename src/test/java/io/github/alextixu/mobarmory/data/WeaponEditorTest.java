@@ -15,9 +15,9 @@ import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentLook;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentSlotKind;
 import io.github.alextixu.mobarmory.core.equipment.ReloadReport;
-import io.github.alextixu.mobarmory.core.equipment.StaleVersionException;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -54,9 +54,8 @@ class WeaponEditorTest {
     @Test
     @DisplayName("H5 Given 重劍 +6 When 網頁存成 +16 Then 檔案寫成 16、遊戲裡的定義也是 16、版本 2")
     void saveWritesTheFileThenApplies() throws Exception {
-        long version = editor.update(sword(16), 1);
+        editor.update(sword(16));
 
-        assertEquals(2, version);
         assertEquals(sword(16), library.current().get(SWORD));
         assertTrue(swordFile().contains("\"add\": 16"), swordFile());
     }
@@ -64,7 +63,7 @@ class WeaponEditorTest {
     @Test
     @DisplayName("H7 Given 網頁存過 +16 When 重開遊戲（重新讀檔） Then 仍是 +16")
     void savedValueSurvivesARestart() throws Exception {
-        editor.update(sword(16), 1);
+        editor.update(sword(16));
 
         List<EquipmentDefinition> afterRestart = new WeaponLoader(ModStats.CATALOG, item -> true).load(store);
 
@@ -72,15 +71,14 @@ class WeaponEditorTest {
     }
 
     @Test
-    @DisplayName("B11 Given 別的分頁已經存過 When 用舊版本號再存 Then 409，檔案和遊戲都維持第一次存的")
-    void staleSaveChangesNothing() throws Exception {
-        editor.update(sword(16), 1);
-        String file = swordFile();
+    @DisplayName("B11、O10 Given 別的分頁先存了 +16 When 再存 +99 Then 後存的蓋掉先存的，檔案也是 99")
+    void lastSaveWins() throws Exception {
+        editor.update(sword(16));
 
-        assertThrows(StaleVersionException.class, () -> editor.update(sword(99), 1));
+        editor.update(sword(99));
 
-        assertEquals(file, swordFile());
-        assertEquals(sword(16), library.current().get(SWORD));
+        assertEquals(sword(99), library.current().get(SWORD));
+        assertTrue(swordFile().contains("\"add\": 99"), swordFile());
     }
 
     @Test
@@ -88,7 +86,7 @@ class WeaponEditorTest {
     void slotCannotChange() {
         String file = swordFile();
         var error = assertThrows(WeaponFormatException.class,
-            () -> editor.update(sword(6, EquipmentLook.item("minecraft:netherite_sword"), EquipmentSlotKind.CHEST), 1));
+            () -> editor.update(sword(6, EquipmentLook.item("minecraft:netherite_sword"), EquipmentSlotKind.CHEST)));
 
         assertEquals("slot", error.field());
         assertEquals(file, swordFile());
@@ -98,13 +96,13 @@ class WeaponEditorTest {
     @DisplayName("B4 Given 外觀選了不存在的物品或沒上傳的貼圖 When 存檔 Then 400，指出 look.item／look.texture")
     void lookMustExist() {
         var item = assertThrows(WeaponFormatException.class,
-            () -> editor.update(sword(6, EquipmentLook.item("minecraft:laser_sword"), EquipmentSlotKind.MAINHAND), 1));
+            () -> editor.update(sword(6, EquipmentLook.item("minecraft:laser_sword"), EquipmentSlotKind.MAINHAND)));
         var texture = assertThrows(WeaponFormatException.class,
-            () -> editor.update(sword(6, EquipmentLook.texture("nothing_here"), EquipmentSlotKind.MAINHAND), 1));
+            () -> editor.update(sword(6, EquipmentLook.texture("nothing_here"), EquipmentSlotKind.MAINHAND)));
 
         assertEquals("look.item", item.field());
         assertEquals("look.texture", texture.field());
-        assertEquals(1, library.version(SWORD));
+        assertEquals(6.0, library.current().get(SWORD).modifiers().get(0).amount());
     }
 
     @Test
@@ -118,8 +116,8 @@ class WeaponEditorTest {
         };
         WeaponEditor broken = new WeaponEditor(library, readOnly, new WeaponLoader(ModStats.CATALOG, item -> true));
 
-        assertThrows(java.io.UncheckedIOException.class, () -> broken.update(sword(16), 1));
-        assertEquals(1, library.version(SWORD));
+        assertThrows(java.io.UncheckedIOException.class, () -> broken.update(sword(16)));
+        assertEquals(6.0, library.current().get(SWORD).modifiers().get(0).amount());
         assertEquals(6.0, library.current().get(SWORD).modifiers().get(0).amount());
     }
 
@@ -148,10 +146,11 @@ class WeaponEditorTest {
     }
 
     @Test
-    @DisplayName("H9 Given 網頁的新增武器表單（數值＋內建貼圖） When 存檔 Then 寫出檔案，狀態是待重開；同一個 id 不能再新增")
+    @DisplayName("H9 Given 上傳新武器（貼圖＋數值） When 存檔 Then 寫出檔案和貼圖，狀態是待重開；同一個 id 不能再上傳")
     void uploadWaitsForRestart() throws Exception {
+        editor.saveTexture("spear_custom", TestPng.of(32, 32));
         EquipmentDefinition spear = new EquipmentDefinition(EquipmentId.of("spear"), "長矛", EquipmentSlotKind.MAINHAND,
-            List.of(add(ModStats.ATTACK_DAMAGE.id(), 5)), EquipmentLook.texture("spear_iron"));
+            List.of(add(ModStats.ATTACK_DAMAGE.id(), 5)), EquipmentLook.texture("spear_custom"));
 
         editor.create(spear);
 
@@ -159,5 +158,16 @@ class WeaponEditorTest {
         assertEquals(spear, library.pending().get(spear.id()));
         assertEquals("id", assertThrows(WeaponFormatException.class, () -> editor.create(spear)).field());
         assertEquals("id", assertThrows(WeaponFormatException.class, () -> editor.create(sword(1))).field());
+    }
+
+    @Test
+    @DisplayName("B4 上傳的貼圖不是 PNG、不是正方形、名稱有路徑、或和內建貼圖同名時拒絕，什麼都不寫")
+    void badTextureUploads() throws Exception {
+        assertEquals("file", assertThrows(WeaponFormatException.class, () -> editor.saveTexture("a", "GIF89a".getBytes())).field());
+        assertEquals("file", assertThrows(WeaponFormatException.class, () -> editor.saveTexture("a", TestPng.of(32, 16))).field());
+        assertEquals("name", assertThrows(WeaponFormatException.class, () -> editor.saveTexture("../a", TestPng.of(16, 16))).field());
+        assertEquals("name", assertThrows(WeaponFormatException.class, () -> editor.saveTexture("dagger_iron", TestPng.of(16, 16))).field(),
+            "a built-in texture's name cannot be taken by an upload");
+        assertEquals(Optional.empty(), store.texture("a"));
     }
 }

@@ -87,7 +87,7 @@ public final class WeaponJson {
     /**
      * Reads a weapon from an already parsed object.
      *
-     * @param ignored top-level keys that belong to the caller (the web API's {@code version}) and are skipped
+     * @param ignored top-level keys that belong to the caller (the web API's {@code id}) and are skipped
      */
     public static EquipmentDefinition fromJson(EquipmentId id, JsonObject json, StatCatalog stats, String... ignored)
         throws WeaponFormatException {

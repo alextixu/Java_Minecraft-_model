@@ -12,9 +12,11 @@ import io.github.alextixu.mobarmory.core.equipment.EquipmentLook;
 import io.github.alextixu.mobarmory.core.equipment.ReloadReport;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
 import io.github.alextixu.mobarmory.core.stat.StatModifier;
+import io.github.alextixu.mobarmory.data.BuiltInTextures;
 import io.github.alextixu.mobarmory.data.DefaultWeapons;
 import io.github.alextixu.mobarmory.data.WeaponJson;
 import io.github.alextixu.mobarmory.data.WeaponLoadException;
+import io.github.alextixu.mobarmory.data.WeaponSync;
 import io.github.alextixu.mobarmory.forge.MobArmoryMod;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -51,6 +53,7 @@ final class LiveEditGameTests {
         test("reload_with_broken_file_changes_nothing", LiveEditGameTests::brokenReloadChangesNothing);
         test("reload_new_and_deleted_files_wait_for_restart", LiveEditGameTests::newAndDeletedFilesWait);
         test("look_change_updates_held_sword", LiveEditGameTests::lookChangeUpdatesHeldSword);
+        test("uploaded_texture_reaches_players", LiveEditGameTests::uploadedTextureReachesPlayers);
     }
 
     private static EquipmentDefinition shipped() {
@@ -120,9 +123,7 @@ final class LiveEditGameTests {
         inBatch(helper, () -> {
             ServerPlayer player = playerHoldingSword(helper);
             checkNear(helper, 7.0, value(player, ModStats.ATTACK_DAMAGE), "H5 given: attack with the shipped sword");
-            long version = MobArmoryMod.EQUIPMENT_LIBRARY.version(SWORD);
-
-            MobArmoryMod.WEAPON_ADMIN.update(swordWith(StatModifier.add(ModStats.ATTACK_DAMAGE.id(), 16)), version);
+            MobArmoryMod.WEAPON_ADMIN.update(swordWith(StatModifier.add(ModStats.ATTACK_DAMAGE.id(), 16)));
 
             checkNear(helper, 17.0, value(player, ModStats.ATTACK_DAMAGE), "H5 then: attack right after the save");
             String file = Files.readString(MobArmoryMod.WEAPON_FILES.weaponsFolder().resolve("heavy_sword.json"));
@@ -140,8 +141,7 @@ final class LiveEditGameTests {
             double base = zombie.getAttributeBaseValue(stats().holder(ModStats.MOVEMENT_SPEED.id()));
             checkNear(helper, base * 0.7, value(zombie, ModStats.MOVEMENT_SPEED), "H6 given: zombie with the shipped sword");
 
-            MobArmoryMod.WEAPON_ADMIN.update(swordWith(StatModifier.percent(ModStats.MOVEMENT_SPEED.id(), -0.5)),
-                MobArmoryMod.EQUIPMENT_LIBRARY.version(SWORD));
+            MobArmoryMod.WEAPON_ADMIN.update(swordWith(StatModifier.percent(ModStats.MOVEMENT_SPEED.id(), -0.5)));
 
             checkNear(helper, base * 0.5, value(zombie, ModStats.MOVEMENT_SPEED), "H6 then: zombie speed after the save");
         });
@@ -190,11 +190,33 @@ final class LiveEditGameTests {
             EquipmentDefinition halberdLook = new EquipmentDefinition(SWORD, sword.name(), sword.slot(), sword.modifiers(),
                 EquipmentLook.texture("halberd_netherite"));
 
-            MobArmoryMod.WEAPON_ADMIN.update(halberdLook, MobArmoryMod.EQUIPMENT_LIBRARY.version(SWORD));
+            MobArmoryMod.WEAPON_ADMIN.update(halberdLook);
 
             Identifier model = player.getMainHandItem().get(DataComponents.ITEM_MODEL);
             check(helper, Identifier.parse("mobarmory:look/halberd_netherite").equals(model), "H8: sword in hand should look like the halberd, got " + model);
             checkNear(helper, 7.0, value(player, ModStats.ATTACK_DAMAGE), "H8: a new look keeps the stats");
+        });
+    }
+
+    /**
+     * Q7 ("要能上傳 PNG") + review-01 risk 4: an uploaded PNG becomes the sword's look, the sword in hand points at it,
+     * and what the server sends players carries that PNG with its digest.
+     */
+    static void uploadedTextureReachesPlayers(GameTestHelper helper) {
+        inBatch(helper, () -> {
+            ServerPlayer player = playerHoldingSword(helper);
+            byte[] png = BuiltInTextures.png("scythe_blood").orElseThrow();
+            MobArmoryMod.WEAPON_ADMIN.saveTexture("gametest_blade", png);
+            EquipmentDefinition sword = shipped();
+
+            MobArmoryMod.WEAPON_ADMIN.update(new EquipmentDefinition(SWORD, sword.name(), sword.slot(), sword.modifiers(),
+                EquipmentLook.texture("gametest_blade")));
+
+            Identifier model = player.getMainHandItem().get(DataComponents.ITEM_MODEL);
+            check(helper, Identifier.parse("mobarmory:look/gametest_blade").equals(model), "the sword in hand should use the upload, got " + model);
+            check(helper, MobArmoryMod.WEAPON_SYNC.uploadedTextures().containsKey("gametest_blade"), "players should be sent the uploaded PNG");
+            check(helper, WeaponSync.digest(png).equals(MobArmoryMod.WEAPON_SYNC.current().textureDigests().get("gametest_blade")),
+                "the definitions packet should carry the PNG's digest");
         });
     }
 

@@ -40,7 +40,7 @@ R4 由另一個 session 在 `feature/r4-mobs` 分支做；行為報告是 14。
 | [08-weapon-data-web-boundary-note.md](08-weapon-data-web-boundary-note.md) | 需求翻譯、平台限制、變更邊界、給其他模組的穩定介面、網頁 API、實作順序、測試計畫 | 已確認（最終版） |
 | [09-weapon-data-web-given-when-then.md](09-weapon-data-web-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 已確認（最終版） |
 | [10-weapon-data-web-open-questions.md](10-weapon-data-web-open-questions.md) | 確認點的問題與決定，含決定的經過（先「全部照建議」，後改「照審查建議版」） | 已決定 |
-| [15-weapon-data-web-behavior-report.md](15-weapon-data-web-behavior-report.md) | 行為報告：第一版和最終版的差別、結構、給 R4／D1 的穩定介面、各層測試數量、Given / When / Then 對照、實測紀錄、沒有覆蓋的範圍、示範影片劇本 | R2b 完成（單元 227/227、遊戲內 28/28）；R6 最小版進行中 |
+| [15-weapon-data-web-behavior-report.md](15-weapon-data-web-behavior-report.md) | 行為報告：第一版和最終版的差別、結構、給 R4／D1 的穩定介面、各層測試數量、Given / When / Then 對照、實測紀錄、沒有覆蓋的範圍、示範影片劇本 | 已產出（單元 237/237、遊戲內 29/29） |
 
 ## 文件編號
 

@@ -45,29 +45,27 @@ class EquipmentLibraryTest {
     }
 
     @Test
-    @DisplayName("H3/H5 Given 計算器讀的是 library When 把重劍攻擊力改成 +10 Then 下一次計算就是 11，版本 +1（R2 Q6：同種裝備共用一份定義）")
+    @DisplayName("H3/H5 Given 計算器讀的是 library When 把重劍攻擊力改成 +10 Then 下一次計算就是 11（R2 Q6：同種裝備共用一份定義）")
     void updateAppliesToNextCalculation() {
         EquipmentLibrary library = library();
         LoadoutCalculator calculator = new LoadoutCalculator(library::current);
         assertEquals(7.0, attackWithSword(calculator), 1e-9);
 
-        long version = library.update(swordWithAttack(10), 1);
+        library.update(swordWithAttack(10));
 
-        assertEquals(2, version);
         assertEquals(11.0, attackWithSword(calculator), 1e-9);
-        assertEquals(1, library.version(DAGGER_ID), "other pieces keep their version");
+        assertSame(DAGGER, library.current().get(DAGGER_ID), "other pieces stay as they were");
     }
 
     @Test
-    @DisplayName("B11 Given 有人已經改過重劍（版本 2） When 用版本 1 再改 Then 拒絕，數值維持第一個人改的")
-    void staleVersionIsRejected() {
+    @DisplayName("B11、O10 Given 兩個分頁先後存重劍（+10、+99） When 都存完 Then 後存的蓋掉先存的：+99")
+    void lastSaveWins() {
         EquipmentLibrary library = library();
-        library.update(swordWithAttack(10), 1);
+        library.update(swordWithAttack(10));
 
-        var error = assertThrows(StaleVersionException.class, () -> library.update(swordWithAttack(99), 1));
+        library.update(swordWithAttack(99));
 
-        assertEquals(2, error.currentVersion());
-        assertEquals(swordWithAttack(10), library.current().get(SWORD_ID));
+        assertEquals(swordWithAttack(99), library.current().get(SWORD_ID));
     }
 
     @Test
@@ -76,7 +74,7 @@ class EquipmentLibraryTest {
         EquipmentLibrary library = library();
         EquipmentDefinition moved = SWORD.withSlot(EquipmentSlotKind.CHEST);
 
-        var error = assertThrows(IllegalArgumentException.class, () -> library.update(moved, 1));
+        var error = assertThrows(IllegalArgumentException.class, () -> library.update(moved));
 
         assertTrue(error.getMessage().contains("restart"), error.getMessage());
         assertSame(SWORD, library.current().get(SWORD_ID));
@@ -89,16 +87,15 @@ class EquipmentLibraryTest {
         EquipmentDefinition broken = new EquipmentDefinition(SWORD_ID, "Heavy Sword", EquipmentSlotKind.MAINHAND,
             List.of(add(StatId.of("block_chance"), 1)), EquipmentLook.item("minecraft:netherite_sword"));
 
-        assertThrows(IllegalArgumentException.class, () -> library.update(broken, 1));
+        assertThrows(IllegalArgumentException.class, () -> library.update(broken));
         assertSame(SWORD, library.current().get(SWORD_ID));
-        assertEquals(1, library.version(SWORD_ID));
     }
 
     @Test
     @DisplayName("更新不存在的裝備時丟出寫有 id 的例外")
     void unknownPieceIsNotFound() {
         EquipmentDefinition spear = EquipmentDefinition.of("spear", EquipmentSlotKind.MAINHAND, "minecraft:trident");
-        var error = assertThrows(NoSuchElementException.class, () -> library().update(spear, 1));
+        var error = assertThrows(NoSuchElementException.class, () -> library().update(spear));
         assertTrue(error.getMessage().contains("spear"));
     }
 
@@ -117,8 +114,6 @@ class EquipmentLibraryTest {
         assertSame(DAGGER, library.current().get(DAGGER_ID), "B8: the dagger keeps its last definition until a restart");
         assertTrue(library.current().find(EquipmentId.of("spear")).isEmpty(), "B7: a new piece is not an item yet");
         assertEquals(spear, library.pending().get(EquipmentId.of("spear")));
-        assertEquals(2, library.version(SWORD_ID));
-        assertEquals(1, library.version(DAGGER_ID));
     }
 
     @Test
@@ -144,16 +139,15 @@ class EquipmentLibraryTest {
 
         assertSame(SWORD, library.current().get(SWORD_ID));
         assertSame(DAGGER, library.current().get(DAGGER_ID));
-        assertEquals(1, library.version(SWORD_ID));
     }
 
     @Test
-    @DisplayName("重新載入沒有變動的檔案時，版本不變")
-    void unchangedReloadKeepsVersions() {
+    @DisplayName("重新載入沒有變動的檔案時，報告裡沒有已套用的")
+    void unchangedReloadChangesNothing() {
         EquipmentLibrary library = library();
         ReloadReport report = library.replaceAll(List.of(SWORD, DAGGER));
         assertEquals(List.of(), report.changed());
-        assertEquals(1, library.version(SWORD_ID));
+        assertSame(SWORD, library.current().get(SWORD_ID));
     }
 
     @Test

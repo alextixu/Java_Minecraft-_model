@@ -3,7 +3,6 @@ package io.github.alextixu.mobarmory.web;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentDefinition;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
 import io.github.alextixu.mobarmory.core.equipment.ReloadReport;
-import io.github.alextixu.mobarmory.core.equipment.StaleVersionException;
 import io.github.alextixu.mobarmory.core.stat.StatCatalog;
 import io.github.alextixu.mobarmory.data.WeaponFormatException;
 import io.github.alextixu.mobarmory.data.WeaponLoadException;
@@ -22,27 +21,31 @@ public interface WeaponAdmin {
 
     StatCatalog stats();
 
-    /** Definitions, versions, waiting and file-missing weapons at one moment. */
+    /** Definitions, waiting and file-missing weapons at one moment. */
     EquipmentLibrary.View view();
 
     /** Vanilla items that make sensible weapon or armor looks, for the look picker. */
     List<String> vanillaLooks();
 
-    /** Names of the textures shipped in the mod (decision Q5 B); there is no upload. */
-    List<String> textures();
+    /** The textures a weapon can use: the seven built into the mod, then the uploaded ones. */
+    List<String> textures() throws IOException;
 
-    /** A built-in texture's PNG, for the page's preview. */
-    Optional<byte[]> texture(String name);
+    /** A texture's PNG, for the page's preview. */
+    Optional<byte[]> texture(String name) throws IOException;
 
     /**
+     * Saves a weapon; the later of two saves wins (decision O10).
+     *
      * @throws NoSuchElementException if there is no such weapon (404)
-     * @throws StaleVersionException  if it changed since {@code expectedVersion} (409)
      * @throws WeaponFormatException  if the change is not valid (400)
      */
-    long update(EquipmentDefinition changed, long expectedVersion) throws IOException, WeaponFormatException;
+    void update(EquipmentDefinition changed) throws IOException, WeaponFormatException;
 
     /** A new weapon; an item after the next restart. */
     void create(EquipmentDefinition definition) throws IOException, WeaponFormatException;
+
+    /** Saves an uploaded PNG as {@code textures/<name>.png} (decision Q7, "要能上傳 PNG"). */
+    void saveTexture(String name, byte[] png) throws IOException, WeaponFormatException;
 
     /** Reads the files again; all or nothing. */
     ReloadReport reload() throws IOException, WeaponLoadException;

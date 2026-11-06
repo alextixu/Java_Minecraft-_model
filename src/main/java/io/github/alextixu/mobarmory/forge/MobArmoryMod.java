@@ -6,6 +6,7 @@ import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
 import io.github.alextixu.mobarmory.data.WeaponEditor;
 import io.github.alextixu.mobarmory.data.WeaponFolder;
+import io.github.alextixu.mobarmory.forge.client.GeneratedWeaponPack;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -39,7 +40,7 @@ public final class MobArmoryMod {
     public static final EquipmentItemFactory EQUIPMENT = new EquipmentItemFactory(EQUIPMENT_LIBRARY, STATS, MODID);
     public static final EquipmentStatApplier EQUIPMENT_STATS = new EquipmentStatApplier(EQUIPMENT_LIBRARY, STATS);
     /** Sends the definitions to players so remote clients show the same names and tooltips (decision Q3 B). */
-    public static final WeaponSyncChannel WEAPON_SYNC = new WeaponSyncChannel(EQUIPMENT_LIBRARY);
+    public static final WeaponSyncChannel WEAPON_SYNC = new WeaponSyncChannel(EQUIPMENT_LIBRARY, WEAPON_FILES);
     /** The one way to change weapons while the game runs: reload command and web page (R2b, R6). */
     public static final ServerWeaponAdmin WEAPON_ADMIN = new ServerWeaponAdmin(
         new WeaponEditor(EQUIPMENT_LIBRARY, WEAPON_FILES, WeaponStartup.loader(ModStats.CATALOG)), EQUIPMENT_STATS, WEAPON_SYNC);
@@ -62,6 +63,8 @@ public final class MobArmoryMod {
         STATS.register(modBusGroup);
         EQUIPMENT.register(modBusGroup);
         TABS.register(modBusGroup);
+        // Item models and uploaded textures are generated at runtime (decision Q7, "要能上傳 PNG"); client side only.
+        GeneratedWeaponPack.register(EQUIPMENT_LIBRARY, WEAPON_FILES);
         // Game tests live in the separate src/gametest source set and register themselves (see build.gradle).
 
         new EntityStatBinder(STATS).register();
@@ -74,7 +77,7 @@ public final class MobArmoryMod {
 
         FMLCommonSetupEvent.getBus(modBusGroup).addListener(event -> {
             STATS.verifyAll();
-            WeaponStartup.verifyLooks(EQUIPMENT_LIBRARY);
+            WeaponStartup.verifyLooks(EQUIPMENT_LIBRARY, WEAPON_FILES);
             LOGGER.info("Mob Armory: {} stats, {} pieces of equipment from {}", ModStats.CATALOG.size(),
                 EQUIPMENT_LIBRARY.registered().size(), WEAPON_FILES.weaponsFolder());
         });

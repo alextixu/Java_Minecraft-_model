@@ -5,13 +5,12 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentDefinition;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
 import io.github.alextixu.mobarmory.core.equipment.ReloadReport;
-import io.github.alextixu.mobarmory.core.equipment.StaleVersionException;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
+import io.github.alextixu.mobarmory.data.BuiltInTextures;
 import io.github.alextixu.mobarmory.data.WeaponFormatException;
 import io.github.alextixu.mobarmory.data.WeaponJson;
 import io.github.alextixu.mobarmory.data.WeaponLoadException;
@@ -73,10 +72,6 @@ public final class WeaponApi {
             return route(method, path, body);
         } catch (WeaponFormatException e) {
             return Response.error(400, "invalid", e.getMessage(), Map.of(e.field().isEmpty() ? "body" : e.field(), e.reason()));
-        } catch (StaleVersionException e) {
-            JsonObject json = errorJson("stale", e.getMessage());
-            json.addProperty("currentVersion", e.currentVersion());
-            return Response.json(409, json);
         } catch (NoSuchElementException e) {
             return Response.error(404, "not_found", e.getMessage());
         } catch (WeaponLoadException e) {
@@ -127,6 +122,12 @@ public final class WeaponApi {
                 case "GET" -> admin.texture(name)
                     .map(png -> new Response(200, "image/png", png))
                     .orElseGet(() -> Response.error(404, "not_found", "No texture '" + name + "'"));
+                case "PUT" -> {
+                    admin.saveTexture(name, body);
+                    JsonObject json = new JsonObject();
+                    json.addProperty("name", name);
+                    yield Response.json(201, json);
+                }
                 default -> notAllowed();
             };
         }
@@ -174,8 +175,11 @@ public final class WeaponApi {
         admin.vanillaLooks().forEach(items::add);
         JsonArray textures = new JsonArray();
         admin.textures().forEach(textures::add);
+        JsonArray builtIn = new JsonArray();
+        BuiltInTextures.NAMES.forEach(builtIn::add);
         json.add("items", items);
         json.add("textures", textures);
+        json.add("builtInTextures", builtIn);
         return json;
     }
 
@@ -199,13 +203,12 @@ public final class WeaponApi {
         return entry(definition.orElseThrow(() -> new NoSuchElementException("Unknown weapon '" + id + "'")), view);
     }
 
-    /** {@code {"id", "version", "status", "weapon": {file format}}}; status is active, pending_restart or file_missing. */
+    /** {@code {"id", "status", "weapon": {file format}}}; status is active, pending_restart or file_missing. */
     private static JsonObject entry(EquipmentDefinition definition, EquipmentLibrary.View view) {
         JsonObject json = new JsonObject();
         json.addProperty("id", definition.id().value());
-        Long version = view.versions().get(definition.id());
-        json.add("version", version == null ? null : new JsonPrimitive(version));
-        String status = version == null ? "pending_restart" : view.fileMissing().contains(definition.id()) ? "file_missing" : "active";
+        boolean registered = view.catalog().find(definition.id()).isPresent();
+        String status = !registered ? "pending_restart" : view.fileMissing().contains(definition.id()) ? "file_missing" : "active";
         json.addProperty("status", status);
         json.add("weapon", WeaponJson.toJson(definition));
         return json;
@@ -216,16 +219,9 @@ public final class WeaponApi {
     }
 
     private Response update(EquipmentId id, byte[] bytes) throws IOException, WeaponFormatException {
-        JsonObject json = body(bytes);
-        if (!json.has("version") || !json.get("version").isJsonPrimitive() || !json.get("version").getAsJsonPrimitive().isNumber()) {
-            throw new WeaponFormatException("version", "missing; send the version you loaded");
-        }
-        long version = json.get("version").getAsLong();
-        EquipmentDefinition changed = WeaponJson.fromJson(id, json, admin.stats(), "version", "id");
-        long newVersion = admin.update(changed, version);
-        JsonObject result = entry(changed, admin.view());
-        result.addProperty("version", newVersion);
-        return Response.json(200, result);
+        EquipmentDefinition changed = WeaponJson.fromJson(id, body(bytes), admin.stats(), "id", "version");
+        admin.update(changed);
+        return Response.json(200, entry(changed, admin.view()));
     }
 
     private Response create(byte[] bytes) throws IOException, WeaponFormatException {

@@ -1,7 +1,9 @@
 package io.github.alextixu.mobarmory.data;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
@@ -35,6 +37,8 @@ class WeaponStoreContractTest {
         WeaponStore store = factory.apply(temp);
         assertFalse(store.exists());
         assertEquals(List.of(), store.weaponFiles());
+        assertEquals(List.of(), store.textureNames());
+        assertTrue(store.texture("nothing").isEmpty());
     }
 
     @ParameterizedTest(name = "{0}")
@@ -48,6 +52,26 @@ class WeaponStoreContractTest {
         assertTrue(store.exists());
         assertEquals(List.of(new WeaponStore.WeaponFile("axe.json", "{}"),
             new WeaponStore.WeaponFile("spear.json", "{\"name\": \"Spear\"}")), store.weaponFiles());
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("stores")
+    void texturesRoundTrip(Function<Path, WeaponStore> factory) throws IOException {
+        WeaponStore store = factory.apply(temp);
+        byte[] png = TestPng.of(32, 32);
+        store.writeTexture("halberd_netherite", png);
+        store.writeTexture("dagger_iron", TestPng.of(16, 16));
+
+        assertArrayEquals(png, store.texture("halberd_netherite").orElseThrow());
+        assertEquals(List.of("dagger_iron", "halberd_netherite"), store.textureNames());
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("stores")
+    void textureNamesCannotLeaveTheFolder(Function<Path, WeaponStore> factory) {
+        WeaponStore store = factory.apply(temp);
+        assertThrows(IllegalArgumentException.class, () -> store.writeTexture("../evil", TestPng.of(16, 16)));
+        assertThrows(IllegalArgumentException.class, () -> store.texture("../../secret"));
     }
 
     @Test

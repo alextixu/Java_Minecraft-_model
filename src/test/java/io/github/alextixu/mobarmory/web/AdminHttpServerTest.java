@@ -23,7 +23,7 @@ import org.junit.jupiter.api.io.TempDir;
 /** HTTP-level tests: a real server on a free local port, the page, and who may change things (Q6, B13, B14). */
 class AdminHttpServerTest {
     private static final String SWORD = """
-        {"version": 1, "format": 1, "name": "Heavy Sword", "slot": "mainhand", "look": {"item": "minecraft:netherite_sword"},
+        {"format": 1, "name": "Heavy Sword", "slot": "mainhand", "look": {"item": "minecraft:netherite_sword"},
          "modifiers": [{"stat": "attack_damage", "add": 16}, {"stat": "movement_speed", "percent": -30},
                        {"stat": "attack_speed", "percent": -40}]}""";
 
@@ -102,7 +102,8 @@ class AdminHttpServerTest {
             .header("Origin", "http://evil.example"));
 
         assertEquals(403, response.statusCode());
-        assertEquals(1, admin.library.version(io.github.alextixu.mobarmory.core.equipment.EquipmentId.of("heavy_sword")));
+        assertEquals(6.0, admin.library.current().get(io.github.alextixu.mobarmory.core.equipment.EquipmentId.of("heavy_sword"))
+            .modifiers().get(0).amount());
     }
 
     @Test
@@ -110,6 +111,7 @@ class AdminHttpServerTest {
     void onlyJsonChanges() throws Exception {
         start("");
         assertEquals(415, send(put("/api/v1/weapons/heavy_sword", "text/plain", SWORD)).statusCode());
+        assertEquals(415, send(put("/api/v1/textures/x", "application/json", "{}")).statusCode());
     }
 
     @Test

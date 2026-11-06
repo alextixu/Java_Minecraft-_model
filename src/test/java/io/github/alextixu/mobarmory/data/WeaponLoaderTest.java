@@ -31,9 +31,9 @@ class WeaponLoaderTest {
     }
 
     @Test
-    @DisplayName("H2 Given 資料夾多了 halberd.json（外觀用內建貼圖 halberd_netherite） When 載入 Then 有 5 件，戟的數值照檔案（Java 一行都沒改）")
+    @DisplayName("H2 Given 資料夾多了 halberd.json 和它的貼圖 When 載入 Then 有 5 件，戟的數值照檔案（Java 一行都沒改）")
     void loadsDefaultsAndACustomWeapon() throws Exception {
-        InMemoryWeaponStore store = defaults().putFile("halberd.json", HALBERD);
+        InMemoryWeaponStore store = defaults().putFile("halberd.json", HALBERD).putTexture("halberd_netherite", TestPng.of(32, 32));
 
         List<EquipmentDefinition> loaded = LOADER.load(store);
 
@@ -66,17 +66,19 @@ class WeaponLoaderTest {
     }
 
     @Test
-    @DisplayName("B4 Given 外觀是不存在的原版物品、或不是 7 張內建貼圖之一 When 載入 Then 失敗，每個都列出來，並列出可以用的貼圖")
+    @DisplayName("B4 Given 外觀是不存在的原版物品、或貼圖既不是內建的也沒上傳、或上傳的不是 2 的次方的正方形 When 載入 Then 失敗，每個都列出來")
     void badLooks() {
         InMemoryWeaponStore store = defaults()
             .putFile("heavy_sword.json", DefaultWeapons.text("heavy_sword").replace("minecraft:netherite_sword", "minecraft:laser_sword"))
-            .putFile("halberd.json", HALBERD.replace("halberd_netherite", "my_own_texture"));
+            .putFile("halberd.json", HALBERD.replace("halberd_netherite", "my_halberd"))
+            .putFile("spear.json", HALBERD.replace("halberd_netherite", "my_spear"))
+            .putTexture("my_spear", TestPng.of(32, 16));
 
         String text = problems(store);
 
         assertTrue(text.contains("heavy_sword.json: look.item") && text.contains("laser_sword"), text);
-        assertTrue(text.contains("halberd.json: look.texture") && text.contains("my_own_texture"), text);
-        assertTrue(text.contains("dagger_iron") && text.contains("scythe_blood"), "lists the textures that can be used: " + text);
+        assertTrue(text.contains("halberd.json: look.texture") && text.contains("my_halberd.png"), text);
+        assertTrue(text.contains("spear.json: look.texture") && text.contains("square"), text);
     }
 
     @Test
@@ -84,6 +86,12 @@ class WeaponLoaderTest {
     void badFileName() {
         String text = problems(defaults().putFile("Heavy Sword.json", DefaultWeapons.text("heavy_sword")));
         assertTrue(text.contains("Heavy Sword.json") && text.contains("lowercase"), text);
+    }
+
+    @Test
+    @DisplayName("內建貼圖（jar 裡的 7 張）不用上傳就能用")
+    void builtInTexturesNeedNoUpload() throws Exception {
+        assertEquals(5, LOADER.load(defaults().putFile("scythe.json", HALBERD.replace("halberd_netherite", "scythe_blood"))).size());
     }
 
     @Test

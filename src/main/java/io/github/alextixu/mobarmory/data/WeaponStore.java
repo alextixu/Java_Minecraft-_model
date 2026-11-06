@@ -3,11 +3,11 @@ package io.github.alextixu.mobarmory.data;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 /**
- * Where weapon files live. The game uses {@link WeaponFolder} ({@code config/mobarmory/weapons/}); tests use an
- * in-memory store. Both pass the same contract tests. Textures are not here: they ship in the mod jar
- * ({@link BuiltInTextures}, decision Q5 B).
+ * Where weapon files and textures live. The game uses {@link WeaponFolder} ({@code config/mobarmory/});
+ * tests use an in-memory store. Both pass the same contract tests.
  */
 public interface WeaponStore {
 
@@ -26,4 +26,13 @@ public interface WeaponStore {
      * Creates the folder if needed.
      */
     void writeWeapon(EquipmentId id, String json) throws IOException;
+
+    /** The PNG named {@code <name>.png}, if there is one. */
+    Optional<byte[]> texture(String name) throws IOException;
+
+    /** Writes {@code <name>.png} the same all-or-nothing way. The name must be a valid texture name. */
+    void writeTexture(String name, byte[] png) throws IOException;
+
+    /** Names of all textures (file names without {@code .png}), sorted. */
+    List<String> textureNames() throws IOException;
 }
