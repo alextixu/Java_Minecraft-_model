@@ -1,6 +1,6 @@
 # 邊界說明：R2b 武器改成資料驅動＋R6 網頁後台
 
-> 狀態：**草案，等待使用者確認**。要決定的問題在 [10-weapon-data-web-open-questions.md](10-weapon-data-web-open-questions.md)，確認後依答案改寫本檔，再開始實作。
+> 狀態：**已確認**（2026-11-06，使用者「全部照建議」）。決定紀錄在 [10-weapon-data-web-open-questions.md](10-weapon-data-web-open-questions.md)。
 > 流程：boundary-first 第 1、2 步。第 3 步的 Given / When / Then 在 [09-weapon-data-web-given-when-then.md](09-weapon-data-web-given-when-then.md)。
 > 前提：沿用 R1／R2 已確認的架構（`core/`、`content/`、`forge/` 分層，數值登記表、`LoadoutCalculator`、R2 Q6「同種裝備共用一份定義」）。R4 暫停，這裡不動怪物。
 
@@ -62,7 +62,7 @@
 - **盔甲穿在身上的外觀**是註冊物品時決定的（`Equippable` 元件），執行中不能換；物品圖示可以換。
 - **多人連線時，客戶端和伺服器的物品清單必須相同**，否則連不上。所以客戶端也要有同一份武器清單（R5 再處理同步）。
 
-## 3. 變更邊界（提案，待確認）
+## 3. 變更邊界（已確認）
 
 ### 分層（新增和修改的部分）
 
@@ -148,7 +148,7 @@ L（里氏替換）由契約測試保證：所有武器定義跑同一組契約�
 | B | 只註冊**一個**通用武器物品，每個物品身上記「是哪一把武器」（資料元件）；外觀也用元件指定 | 網頁可以在遊戲執行中直接建立新武器，不用重開；多人連線時物品清單不會對不上 | `/give` 要帶元件，例如 `/give @p mobarmory:weapon[mobarmory:weapon="halberd"]`；R2 的物品和測試要改寫；約多 1 天 |
 | C | 直接寫：網頁的 handler 直接改 `ModEquipment` 的靜態欄位、直接改玩家屬性 | 今天最快 | 有執行緒問題；網頁沒辦法不開遊戲測；數值沒寫回檔案，重開就不見 |
 
-## 4. 實作順序（確認後才開始）
+## 4. 實作順序
 
 先做 A 再做 B。每一步做完都跑 `gradlew clean build runGameTestServer`，全過才進下一步。示範影片需要的路徑（改數值 → 砍怪）排在前面，外觀和上傳排在後面。
 

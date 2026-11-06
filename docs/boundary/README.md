@@ -37,9 +37,9 @@ R4 暫停期間先做（使用者 2026-11-06 指示）。11～13 號留給 D1 �
 
 | 檔案 | 內容 | 狀態 |
 |---|---|---|
-| [08-weapon-data-web-boundary-note.md](08-weapon-data-web-boundary-note.md) | 需求翻譯、平台限制、變更邊界、網頁 API、實作順序、測試計畫、示範影片劇本草稿 | 草案 |
-| [09-weapon-data-web-given-when-then.md](09-weapon-data-web-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 草案 |
-| [10-weapon-data-web-open-questions.md](10-weapon-data-web-open-questions.md) | 待使用者決定的問題（設計 3 題、商業規則 4 題、其他 16 項） | 等待回覆 |
+| [08-weapon-data-web-boundary-note.md](08-weapon-data-web-boundary-note.md) | 需求翻譯、平台限制、變更邊界、網頁 API、實作順序、測試計畫、示範影片劇本草稿 | 已確認 |
+| [09-weapon-data-web-given-when-then.md](09-weapon-data-web-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 已確認 |
+| [10-weapon-data-web-open-questions.md](10-weapon-data-web-open-questions.md) | 確認點的問題與決定（設計 3 題、商業規則 4 題、其他 16 項） | 已決定（全部照建議） |
 
 ## 之後的功能
 
