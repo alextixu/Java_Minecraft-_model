@@ -6,9 +6,13 @@ import io.github.alextixu.mobarmory.core.equipment.EquipmentDefinition;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentLook;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
 import io.github.alextixu.mobarmory.data.DefaultWeapons;
+import io.github.alextixu.mobarmory.data.WeaponAssets;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -32,15 +36,21 @@ class ContentResourcesTest {
         return Files.readString(ASSETS.resolve("lang/en_us.json"));
     }
 
+    /** R2b: item models are generated from the weapon files (WeaponAssets), no longer written by hand. */
     @ParameterizedTest(name = "{0}")
     @MethodSource("allEquipment")
-    void equipmentHasItemModelPointingAtItsLook(EquipmentDefinition equipment) throws IOException {
-        Path model = ASSETS.resolve("items/" + equipment.id().value() + ".json");
-        assertTrue(Files.exists(model), "missing " + model);
+    void equipmentHasItemModelPointingAtItsLook(EquipmentDefinition equipment) {
+        String model = new String(WeaponAssets.generate(List.of(equipment), name -> Optional.empty())
+            .get("items/" + equipment.id().value() + ".json"), StandardCharsets.UTF_8);
 
         String[] look = ((EquipmentLook.VanillaItem) equipment.look()).item().split(":", 2);
         String expected = "\"" + look[0] + ":item/" + look[1] + "\"";
-        assertTrue(Files.readString(model).contains(expected), model + " should use model " + expected);
+        assertTrue(model.contains(expected), equipment.id() + " should use model " + expected + ", got " + model);
+    }
+
+    @org.junit.jupiter.api.Test
+    void noHandWrittenItemModelsAreLeft() {
+        assertTrue(!Files.exists(ASSETS.resolve("items")), "item models are generated now; remove " + ASSETS.resolve("items"));
     }
 
     /** R2b: the name comes from the weapon file (shown as-is), so it is never a raw translation key. */

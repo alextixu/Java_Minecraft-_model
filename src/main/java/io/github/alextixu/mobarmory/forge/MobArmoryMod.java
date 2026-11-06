@@ -5,6 +5,7 @@ import io.github.alextixu.mobarmory.content.ModStats;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
 import io.github.alextixu.mobarmory.data.WeaponFolder;
+import io.github.alextixu.mobarmory.forge.client.GeneratedWeaponPack;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -56,6 +57,8 @@ public final class MobArmoryMod {
         STATS.register(modBusGroup);
         EQUIPMENT.register(modBusGroup);
         TABS.register(modBusGroup);
+        // Item models and custom textures are generated from the weapon files (decision Q5 A); client only in effect.
+        GeneratedWeaponPack.register(EQUIPMENT_LIBRARY, WEAPON_FILES);
         // Game tests live in the separate src/gametest source set and register themselves (see build.gradle).
 
         new EntityStatBinder(STATS).register();
