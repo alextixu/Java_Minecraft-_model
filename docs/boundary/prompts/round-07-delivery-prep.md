@@ -56,3 +56,38 @@
   - 新增 `README.md`。
   - 內容整理自既有的文件：`docs/boundary/README.md`、15 號第 3 節、14 號第 1 節、`cbb38b5`、`content/ModMobs`、預設武器 JSON、`PngCheck`、`WebSettings`。
   - 不改程式。
+- 結果：commit `d50f14f`。
+
+## 第 2 步：網頁的怪物（唯讀）
+
+09 號文末已經寫好之後的做法：「照 `WeaponAdmin` 的形狀加 `MobAdmin`，路徑 `/api/v1/mobs` 已預留」。這一步照這個做。
+
+- **SOLID**：
+  - S：
+    - `MobAdmin` 只回答「有哪些怪物」。
+    - JSON 的樣子由新的 `MobJson` 負責。
+    - `WeaponApi` 只多一條路由。`WeaponApi` 這個名字現在也管怪物，名字不完全貼切；但改名要動 `AdminHttpServer`、測試和文件，這次不改，記在報告。
+  - O：之後要讓網頁改怪物（review-03 的 A6、A7）時，在 `MobAdmin` 加方法、由 `forge/` 實作，`web/` 的其他部分不用動。
+  - L：`MobAdmin` 有兩個實作，正式的是 `MobArmoryMod.MOBS::catalog`，測試用的是 `ModMobs::catalog`，回傳同一種不可變的 `MobCatalog`。
+  - I：`MobAdmin` 只有一個方法，`WeaponAdmin` 不加任何怪物的方法。
+  - D：
+    - `web/` 依賴自己的 `MobAdmin` 介面和 `core/mob` 的資料型別，不 import Minecraft，`CoreBoundaryTest` 會檢查。
+    - `forge/` 在組裝根把 `MOBS::catalog` 接上。
+  - 結論：不違反。
+- **Pattern**：
+  - Adapter／port：沿用 `WeaponAdmin` 的形狀，web 只認得自己的介面，由組裝根接上實作。
+  - 不可變快照：`MobCatalog` 在啟動時建好、之後不變，所以網頁執行緒可以直接讀，不用切到伺服器執行緒。這點和 `WeaponAdmin` 不同。
+- **變更邊界**：
+  - 新增：`web/MobAdmin`、`web/MobJson`。
+  - 修改：
+    - `web/WeaponApi`：路由，刪掉「要等 R4」的文字。
+    - `web/AdminHttpServer`、`forge/WebAdminLifecycle`：建構時多傳 `MobAdmin`。
+    - `forge/MobArmoryMod`：接線一行。
+    - 網頁的 `index.html`、`app.js`、`style.css`：「怪物」分頁改成清單，`STAT_LABELS` 加 `max_health`，因為怪物清單會顯示它。這原本是第 4 步的小項，提前到這一步做。
+  - 測試：`WeaponApiTest`、`AdminHttpServerTest`、`WebAdminGameTests`，只改建構方式，再加新的測試。
+  - 文件：08 號的 API 表、09 號的 B17 和文末、15 號的 B17 列、README。
+  - 不動：`core/`、`content/`（`ModMobs` 只是被讀）、R4 的 `forge/` 怪物類別。
+  - 沒有超出 08 號第 3 節允許的範圍：`web/`、`forge/` 的 R6 類別、網頁資源。
+- **結果**：
+  - 單元測試 325/325：原本 322，刪 1 個 501 的測試，加 4 個。遊戲內 58/58。
+  - 用一次性的本機預覽（記憶體裡的武器，不寫檔）在瀏覽器打開「怪物」分頁：狂戰士、遊擊兵的外觀、數值（含「最大生命」、百分比）、裝備名稱、行為都正確顯示，console 沒有錯誤。

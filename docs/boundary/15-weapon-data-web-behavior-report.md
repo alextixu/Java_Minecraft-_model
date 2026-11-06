@@ -111,7 +111,8 @@ forge/client/     GeneratedWeaponPack、ClientTextures、ClientResourceReload
 | B12 | 寫檔失敗 → 遊戲不變 | `WeaponEditorTest` | 通過 |
 | B13、B14 | 別的網站的請求 403／415；埠被佔用 | `AdminHttpServerTest` | 通過 |
 | B15 | 遊戲暫停時存檔照樣套用 | 讀原始碼確認 | 依原始碼 |
-| B17 | 怪物 API → 501 | `WeaponApiTest` | 通過 |
+| B17 | 怪物只能看：送修改 → 405（2026-11-07 前是 501） | `WeaponApiTest.mobsAreReadOnly`、`AdminHttpServerTest.mobsAreReadOnlyOverHttp` | 通過 |
+| H10 | 怪物分頁列出 `content/ModMobs` 的怪物（2026-11-07 新增） | `WeaponApiTest.listsMobsAsDefined`、`mobWithNothingListsEmpty` | 通過 |
 | B18 | 遠端玩家和伺服器一樣 | `WeaponSyncTest`、`sync_packet_round_trip`、`uploaded_texture_reaches_players` | 通過（兩台真的客戶端還沒測） |
 | B19 | 物品清單不同連不上 | 平台限制 | 未實作 |
 | B20 | 上傳的不是可用的 PNG、名稱有路徑或和內建同名 → 400 | `WeaponEditorTest`、`WeaponApiTest`、`PngCheckTest` | 通過 |

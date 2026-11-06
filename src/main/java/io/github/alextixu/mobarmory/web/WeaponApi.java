@@ -25,10 +25,11 @@ import java.util.regex.Pattern;
 
 /**
  * The web API, version 1 (08-weapon-data-web-boundary-note.md, section 3). Turns a request into a response using
- * only {@link WeaponAdmin}; no HTTP server and no Minecraft, so every route is tested directly.
+ * only {@link WeaponAdmin} and {@link MobAdmin}; no HTTP server and no Minecraft, so every route is tested directly.
  * <p>
  * Weapons travel in the same JSON format as the files ({@link WeaponJson}), so the page and the files follow one
- * set of rules. Errors are always {@code {"error": ..., "message": ..., "fields": {...}}}.
+ * set of rules. Mobs are read only ({@link MobJson}). Errors are always
+ * {@code {"error": ..., "message": ..., "fields": {...}}}.
  */
 public final class WeaponApi {
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
@@ -57,9 +58,11 @@ public final class WeaponApi {
     }
 
     private final WeaponAdmin admin;
+    private final MobAdmin mobs;
 
-    public WeaponApi(WeaponAdmin admin) {
+    public WeaponApi(WeaponAdmin admin, MobAdmin mobs) {
         this.admin = admin;
+        this.mobs = mobs;
     }
 
     /**
@@ -88,7 +91,8 @@ public final class WeaponApi {
     private Response route(String method, String path, byte[] body)
         throws IOException, WeaponFormatException, WeaponLoadException {
         if (path.equals("/api/v1/mobs")) {
-            return Response.error(501, "not_implemented", "怪物的設定要等 R4（自訂怪物）完成；這個位置先保留。");
+            // Read only: mobs are defined in content/ModMobs and change only with a new build (R4).
+            return method.equals("GET") ? Response.json(200, MobJson.list(mobs.mobs())) : notAllowed();
         }
         if (path.equals("/api/v1/stats")) {
             return method.equals("GET") ? Response.json(200, stats()) : notAllowed();

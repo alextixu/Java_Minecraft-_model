@@ -115,4 +115,9 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 .notice.warn { background: var(--warn-bg); }
 .notice.error { background: var(--err-bg); color: var(--danger); }
 .notice ul { margin: 6px 0 0; padding-left: 20px; }
-.result { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; overflow-x: auto; }
+.mob-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.mob-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 4px; }
+.mob-card .name { font-weight: 600; }
+.mob-list .empty { color: var(--muted); }
+.mob-row { display: grid; grid-template-columns: 3em 1fr; gap: 8px; font-size: 0.92rem; }
+.mob-label { color: var(--muted); }

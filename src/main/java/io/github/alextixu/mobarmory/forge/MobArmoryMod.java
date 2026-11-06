@@ -93,7 +93,7 @@ public final class MobArmoryMod {
         new StatsCommand(STATS).register();
         new ReloadCommand(WEAPON_ADMIN).register();
         WEAPON_SYNC.register();
-        new WebAdminLifecycle(WEAPON_ADMIN, FMLPaths.CONFIGDIR.get().resolve(MODID).resolve("web.json")).register();
+        new WebAdminLifecycle(WEAPON_ADMIN, MOBS::catalog, FMLPaths.CONFIGDIR.get().resolve(MODID).resolve("web.json")).register();
         new CombatEffectListener(ModStats.COMBAT_EFFECTS, STATS, HIT_FEEDBACK).register();
         HIT_FEEDBACK.register();
         if (FMLEnvironment.dist == Dist.CLIENT) {
