@@ -5,12 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.alextixu.mobarmory.core.equipment.LoadoutCalculator;
+import io.github.alextixu.mobarmory.core.mob.MobCatalog;
 import io.github.alextixu.mobarmory.core.mob.MobDefinition;
 import io.github.alextixu.mobarmory.core.mob.MobEquipmentCheck;
 import io.github.alextixu.mobarmory.core.stat.StackingRules;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
 import io.github.alextixu.mobarmory.core.stat.StatId;
 import io.github.alextixu.mobarmory.core.stat.StatModifier;
+import io.github.alextixu.mobarmory.data.MobFileJson;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -18,20 +20,28 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Contract tests: every mob definition runs the same checks (06, success condition 1). A new mob is covered as
- * soon as it is in {@link ModMobs#ALL}; nothing in this file needs to change. That every behavior has a binder is
+ * Contract tests: every mob file runs the same checks (06 success condition 1, 22 success condition 1): the shipped
+ * ones and the test-only goblin (R4b T2). A new mob file is covered by adding it to {@link MobTestCatalog#everyMobFile};
+ * nothing else in this file needs to change. That every behavior has a binder is
  * part of the same contract, checked in game ({@code mob_behaviors_all_have_binders}) because binders are Forge code.
  */
 class MobContractTest {
 
     static Stream<MobDefinition> allMobs() {
-        return ModMobs.ALL.stream();
+        return MobTestCatalog.everyMobFile();
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("allMobs")
-    void isInTheCatalog(MobDefinition mob) {
-        assertEquals(mob, MobTestCatalog.MOBS.get(mob.id()), mob.id() + " was not accepted by the catalog");
+    void isAcceptedByTheCatalog(MobDefinition mob) {
+        assertEquals(mob, MobCatalog.builder(ModStats.CATALOG).add(mob).build().get(mob.id()), mob.id() + " was not accepted by the catalog");
+    }
+
+    /** R4b: the file format reads back exactly what it writes, so the web page's save never changes a mob by itself. */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("allMobs")
+    void fileFormatRoundTrips(MobDefinition mob) throws Exception {
+        assertEquals(mob, MobFileJson.read(mob.id(), MobFileJson.write(mob), ModStats.CATALOG));
     }
 
     @ParameterizedTest(name = "{0}")

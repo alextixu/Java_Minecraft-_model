@@ -1,10 +1,14 @@
 package io.github.alextixu.mobarmory.forge;
 
 import com.mojang.logging.LogUtils;
-import io.github.alextixu.mobarmory.content.ModMobs;
 import io.github.alextixu.mobarmory.content.ModStats;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
+import io.github.alextixu.mobarmory.core.mob.MobLibrary;
+import io.github.alextixu.mobarmory.data.MobAssets;
+import io.github.alextixu.mobarmory.data.MobEditor;
+import io.github.alextixu.mobarmory.data.MobFolder;
+import io.github.alextixu.mobarmory.data.MobLoader;
 import io.github.alextixu.mobarmory.data.StatFolder;
 import io.github.alextixu.mobarmory.data.StatSetup;
 import io.github.alextixu.mobarmory.data.WeaponEditor;
@@ -14,7 +18,9 @@ import io.github.alextixu.mobarmory.forge.client.MobArmoryClient;
 import io.github.alextixu.mobarmory.forge.client.WeaponClientEvents;
 import io.github.alextixu.mobarmory.forge.feedback.ActionBarDisplay;
 import io.github.alextixu.mobarmory.forge.feedback.HitFeedbackListener;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -32,8 +38,8 @@ import org.slf4j.Logger;
 
 /**
  * Mod entry point. Only wires the layers together; no game logic lives here.
- * Stats (section E) and weapons (R2b) come from the files in {@code config/mobarmory/}, with {@code content/} as the
- * built-in defaults; rules come from {@code core/}, and the classes in this package adapt them to Forge.
+ * Stats (section E), weapons (R2b) and mobs (R4b) come from the files in {@code config/mobarmory/}, with
+ * {@code content/} and the files shipped in the jar as the built-in defaults; rules come from {@code core/}, and the classes in this package adapt them to Forge.
  */
 @Mod(MobArmoryMod.MODID)
 public final class MobArmoryMod {
@@ -65,9 +71,18 @@ public final class MobArmoryMod {
      * is missing or works in another slot is left out with a warning (R4 decision O2, changed to B on 11/07).
      */
     public static final MobEquipmentSource MOB_EQUIPMENT = new MobEquipmentSource(EQUIPMENT_LIBRARY, EQUIPMENT::item);
-    /** R4 mobs: one entity type and spawn egg per definition in content/ModMobs. */
+    /** {@code config/mobarmory/mobs/}: one file per kind of mob (R4b, decision Q4 A). */
+    public static final MobFolder MOB_FILES = new MobFolder(FMLPaths.CONFIGDIR.get().resolve(MODID));
+    /** Read before entity types are registered; a wrong file stops the game here with the file name (R4b O2). */
+    public static final MobLibrary MOB_LIBRARY = MobStartup.load(MOB_FILES, STATS.catalog(), EQUIPMENT_LIBRARY);
+    /** One entity type and spawn egg per mob file present at startup (R4, T2; since R4b no Java per mob). */
     public static final MobEntityFactory MOBS = new MobEntityFactory(
-        ModMobs.catalog(), STATS, BehaviorGoals.standard(), MOB_EQUIPMENT::stacksFor, MODID);
+        MOB_LIBRARY, STATS, BehaviorGoals.standard(), MOB_EQUIPMENT::stacksFor, EQUIPMENT_STATS::refresh, MODID);
+    /** Sends the mob names to players so remote clients show the same names (R4b Q7 A). */
+    public static final MobSyncChannel MOB_SYNC = new MobSyncChannel(MOB_LIBRARY);
+    /** The one way to change mobs while the game runs: reload command and web page (R4b, A6, A7). */
+    public static final ServerMobAdmin MOB_ADMIN = new ServerMobAdmin(
+        new MobEditor(MOB_LIBRARY, MOB_FILES, new MobLoader(STATS.catalog())), MOB_SYNC);
     // D1: each hit's result on the action bar of the players taking part.
     public static final HitFeedbackListener HIT_FEEDBACK = new HitFeedbackListener(List.of(new ActionBarDisplay()));
 
@@ -94,19 +109,20 @@ public final class MobArmoryMod {
         MOBS.register(modBusGroup);
         TABS.register(modBusGroup);
         // Item models and uploaded textures are generated at runtime (decision Q7, "要能上傳 PNG"); client side only.
-        GeneratedWeaponPack.register(EQUIPMENT_LIBRARY, WEAPON_FILES, STAT_SETUP.languageFile(MODID));
+        GeneratedWeaponPack.register(EQUIPMENT_LIBRARY, WEAPON_FILES, fixedClientFiles());
         // Game tests live in the separate src/gametest source set and register themselves (see build.gradle).
 
         new EntityStatBinder(STATS).register();
         EQUIPMENT_STATS.register();
         new StatsCommand(STATS).register();
-        new ReloadCommand(WEAPON_ADMIN).register();
+        new ReloadCommand(List.of(ReloadCommand.weapons(WEAPON_ADMIN), ReloadCommand.mobs(MOB_ADMIN))).register();
         WEAPON_SYNC.register();
-        new WebAdminLifecycle(WEAPON_ADMIN, MOBS::catalog, FMLPaths.CONFIGDIR.get().resolve(MODID).resolve("web.json")).register();
+        MOB_SYNC.register();
+        new WebAdminLifecycle(WEAPON_ADMIN, MOB_ADMIN, FMLPaths.CONFIGDIR.get().resolve(MODID).resolve("web.json")).register();
         new CombatEffectListener(ModStats.COMBAT_EFFECTS, STATS, HIT_FEEDBACK).register();
         HIT_FEEDBACK.register();
         if (FMLEnvironment.dist == Dist.CLIENT) {
-            MobArmoryClient.register(MOBS);
+            MobArmoryClient.register(MOBS, MOB_SYNC);
             WeaponClientEvents.register(WEAPON_SYNC);
         }
 
@@ -114,9 +130,18 @@ public final class MobArmoryMod {
             STATS.verifyAll();
             WeaponStartup.verifyLooks(EQUIPMENT_LIBRARY, WEAPON_FILES);
             MOB_EQUIPMENT.warnAll(MOBS.catalog().all());
-            LOGGER.info("Mob Armory: {} stats from {}, {} pieces of equipment from {}, {} mobs", STATS.catalog().size(),
-                STAT_FILES.statsFolder(), EQUIPMENT_LIBRARY.registered().size(), WEAPON_FILES.weaponsFolder(), MOBS.catalog().size());
+            LOGGER.info("Mob Armory: {} stats from {}, {} pieces of equipment from {}, {} mobs from {}", STATS.catalog().size(),
+                STAT_FILES.statsFolder(), EQUIPMENT_LIBRARY.registered().size(), WEAPON_FILES.weaponsFolder(),
+                MOB_LIBRARY.registered().size(), MOB_FILES.mobsFolder());
         });
+    }
+
+    /** Client files that stay the same until a restart: names of added stats (section E) and spawn egg models (R4b O14). */
+    private static Map<String, String> fixedClientFiles() {
+        Map<String, String> files = new LinkedHashMap<>();
+        files.put("lang/en_us.json", STAT_SETUP.languageFile(MODID));
+        files.putAll(MobAssets.spawnEggModels(MOB_LIBRARY.current().all()));
+        return files;
     }
 
     /** The heavy sword if it still exists, else the first piece, else a vanilla sword. */

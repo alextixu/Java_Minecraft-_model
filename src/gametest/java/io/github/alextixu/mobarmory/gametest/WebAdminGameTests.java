@@ -44,7 +44,7 @@ final class WebAdminGameTests {
     static void savesThroughTheGame(GameTestHelper helper) {
         AdminHttpServer server;
         try {
-            server = AdminHttpServer.start(MobArmoryMod.WEAPON_ADMIN, MobArmoryMod.MOBS::catalog, new WebSettings(true, "127.0.0.1", 0, ""));
+            server = AdminHttpServer.start(MobArmoryMod.WEAPON_ADMIN, MobArmoryMod.MOB_ADMIN, new WebSettings(true, "127.0.0.1", 0, ""));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

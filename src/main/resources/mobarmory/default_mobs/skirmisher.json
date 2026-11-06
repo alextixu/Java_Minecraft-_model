@@ -1,0 +1,28 @@
+{
+  "format": 1,
+  "name": "Skirmisher",
+  "look": {
+    "body": "husk",
+    "scale": 1
+  },
+  "stats": {
+    "max_health": 16,
+    "attack_damage": 2,
+    "movement_speed": 0.32,
+    "crit_chance": 0.25,
+    "dodge_chance": 0.3
+  },
+  "equipment": {
+    "mainhand": "dagger"
+  },
+  "behaviors": [
+    {
+      "type": "wander",
+      "speed": 1
+    },
+    {
+      "type": "attack_players",
+      "speed": 1
+    }
+  ]
+}

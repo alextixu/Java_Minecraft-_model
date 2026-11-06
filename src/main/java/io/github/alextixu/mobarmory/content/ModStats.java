@@ -8,7 +8,7 @@ import io.github.alextixu.mobarmory.core.stat.StatDefinition;
 import java.util.List;
 
 /**
- * The built-in stats: the ones Java code relies on (the combat effects below, the mobs in {@link ModMobs}), and what
+ * The built-in stats: the ones Java code relies on (the combat effects below, the default mob files in {@code mobarmory/default_mobs/}), and what
  * the first start writes to {@code config/mobarmory/stats/}.
  * <p>
  * Since section E (24-stat-files-boundary-note.md) this is no longer every stat in the game: players add stats with a

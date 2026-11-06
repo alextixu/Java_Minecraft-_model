@@ -5,7 +5,6 @@ import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.checkNear
 import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.stats;
 import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.test;
 
-import io.github.alextixu.mobarmory.content.ModMobs;
 import io.github.alextixu.mobarmory.content.ModStats;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentCatalog;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentDefinition;
@@ -72,14 +71,14 @@ final class MobWeaponGameTests {
             ReloadReport report = MobArmoryMod.WEAPON_ADMIN.reload();
             check(helper, report.fileMissing().contains(Weapons.HEAVY_SWORD), "heavy_sword.json should be missing: " + report);
 
-            ArmoryMob brute = spawn(helper, ModMobs.BRUTE);
-            ArmoryMob skirmisher = spawn(helper, ModMobs.SKIRMISHER);
+            ArmoryMob brute = spawn(helper, Mobs.brute());
+            ArmoryMob skirmisher = spawn(helper, Mobs.skirmisher());
             try {
                 check(helper, brute.getMainHandItem().isEmpty(), "6-3 a: the brute should spawn without the deleted heavy sword, holds " + brute.getMainHandItem());
                 checkNear(helper, 40.0, brute.getMaxHealth(), "6-3 a: the rest of the brute is unchanged (max health)");
                 checkNear(helper, 4.0, value(brute, ModStats.ATTACK_DAMAGE), "6-3 a: brute attack without the sword");
                 checkNear(helper, 0.25, value(brute, ModStats.MOVEMENT_SPEED), "6-3 a: brute speed without the sword");
-                check(helper, MobArmoryMod.MOB_EQUIPMENT.check(ModMobs.BRUTE).problems().size() == 1, "6-3 a: one problem for the brute");
+                check(helper, MobArmoryMod.MOB_EQUIPMENT.check(Mobs.brute()).problems().size() == 1, "6-3 a: one problem for the brute");
                 check(helper, skirmisher.getMainHandItem().is(MobArmoryMod.EQUIPMENT.item(Weapons.DAGGER)), "the skirmisher keeps its dagger");
             } finally {
                 brute.discard();
@@ -87,7 +86,7 @@ final class MobWeaponGameTests {
             }
 
             LiveEditGameTests.restore();
-            ArmoryMob after = spawn(helper, ModMobs.BRUTE);
+            ArmoryMob after = spawn(helper, Mobs.brute());
             try {
                 check(helper, after.getMainHandItem().is(MobArmoryMod.EQUIPMENT.item(Weapons.HEAVY_SWORD)), "with the file back, a new brute holds the heavy sword");
                 checkNear(helper, 0.175, value(after, ModStats.MOVEMENT_SPEED), "and is slowed by it again");
@@ -114,11 +113,11 @@ final class MobWeaponGameTests {
         }
         MobEquipmentSource afterRestart = new MobEquipmentSource(new EquipmentLibrary(edited.build()), MobArmoryMod.EQUIPMENT::item);
         afterRestart.warnAll(MobArmoryMod.MOBS.catalog().all());
-        check(helper, afterRestart.stacksFor(ModMobs.BRUTE).isEmpty(), "6-3 a: heavy sword now in the off hand, the brute (main hand) gets nothing");
-        check(helper, afterRestart.stacksFor(ModMobs.SKIRMISHER).isEmpty(), "6-3 a: dagger.json deleted, the skirmisher gets nothing");
+        check(helper, afterRestart.stacksFor(Mobs.brute()).isEmpty(), "6-3 a: heavy sword now in the off hand, the brute (main hand) gets nothing");
+        check(helper, afterRestart.stacksFor(Mobs.skirmisher()).isEmpty(), "6-3 a: dagger.json deleted, the skirmisher gets nothing");
 
         MobEquipmentSource fresh = new MobEquipmentSource(new EquipmentLibrary(shipped), MobArmoryMod.EQUIPMENT::item);
-        Map<EquipmentSlotKind, ItemStack> brute = fresh.stacksFor(ModMobs.BRUTE);
+        Map<EquipmentSlotKind, ItemStack> brute = fresh.stacksFor(Mobs.brute());
         ItemStack sword = brute.get(EquipmentSlotKind.MAINHAND);
         check(helper, brute.size() == 1 && sword != null && sword.is(MobArmoryMod.EQUIPMENT.item(Weapons.HEAVY_SWORD)), "the brute gets its heavy sword: " + brute);
         check(helper, WeaponLooks.modelId(shipped.get(Weapons.HEAVY_SWORD).look()).equals(sword.get(DataComponents.ITEM_MODEL)),
@@ -132,14 +131,14 @@ final class MobWeaponGameTests {
      */
     static void bruteFollowsHeavySwordEdit(GameTestHelper helper) {
         LiveEditGameTests.inBatch(helper, () -> {
-            ArmoryMob brute = spawn(helper, ModMobs.BRUTE);
+            ArmoryMob brute = spawn(helper, Mobs.brute());
             try {
                 checkNear(helper, 0.175, value(brute, ModStats.MOVEMENT_SPEED), "given: brute with the shipped heavy sword (-30%)");
 
                 MobArmoryMod.WEAPON_ADMIN.update(LiveEditGameTests.swordWith(StatModifier.percent(ModStats.MOVEMENT_SPEED.id(), -0.5)));
 
                 checkNear(helper, 0.125, value(brute, ModStats.MOVEMENT_SPEED), "6-3 b: the brute holding the sword slows to -50% at once");
-                ArmoryMob later = spawn(helper, ModMobs.BRUTE);
+                ArmoryMob later = spawn(helper, Mobs.brute());
                 try {
                     checkNear(helper, 0.125, value(later, ModStats.MOVEMENT_SPEED), "6-3 b: a brute spawned after the save too");
                 } finally {

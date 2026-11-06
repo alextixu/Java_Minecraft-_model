@@ -2,8 +2,10 @@ package io.github.alextixu.mobarmory.forge;
 
 import io.github.alextixu.mobarmory.core.mob.AttackPlayersBehavior;
 import io.github.alextixu.mobarmory.core.mob.Behavior;
+import io.github.alextixu.mobarmory.core.mob.LeapBehavior;
 import io.github.alextixu.mobarmory.core.mob.MobCatalog;
 import io.github.alextixu.mobarmory.core.mob.MobDefinition;
+import io.github.alextixu.mobarmory.core.mob.NeutralBehavior;
 import io.github.alextixu.mobarmory.core.mob.WanderBehavior;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,7 +23,9 @@ public final class BehaviorGoals {
     public static BehaviorGoals standard() {
         return new BehaviorGoals()
             .register(WanderBehavior.class, new WanderGoalBinder())
-            .register(AttackPlayersBehavior.class, new AttackPlayersGoalBinder());
+            .register(AttackPlayersBehavior.class, new AttackPlayersGoalBinder())
+            .register(NeutralBehavior.class, new NeutralGoalBinder())   // R4b
+            .register(LeapBehavior.class, new LeapGoalBinder());        // R4b
     }
 
     public <B extends Behavior> BehaviorGoals register(Class<B> kind, GoalBinder<B> binder) {

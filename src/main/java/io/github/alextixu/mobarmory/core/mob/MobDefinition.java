@@ -20,9 +20,11 @@ import java.util.Set;
  * same kind shares this one definition.
  * <p>
  * Equipment is referenced by id ({@code "heavy_sword"}), never by a Java constant, so the equipment list can
- * come from anywhere (R2b reads it from JSON). Whether the ids exist is checked by {@link MobCatalog}.
+ * come from anywhere (R2b reads it from JSON). A missing piece only leaves the mob without it ({@link MobEquipmentCheck}).
+ * Since R4b the definitions themselves are files in {@code config/mobarmory/mobs/} ({@code data/MobFileJson}).
  *
  * @param id        mob id, also the entity type name
+ * @param name      display name, shown as-is in any language (R4b decision O13)
  * @param look      the borrowed vanilla body and size
  * @param stats     base value of each stat this mob sets; stats left out use the catalog default (O4, B7)
  * @param equipment which piece the mob holds or wears in each slot when it spawns
@@ -30,16 +32,26 @@ import java.util.Set;
  */
 public record MobDefinition(
     MobId id,
+    String name,
     MobLook look,
     Map<StatId, Double> stats,
     Map<EquipmentSlotKind, EquipmentId> equipment,
     List<Behavior> behaviors
 ) {
 
+    /** Same limit as a weapon's name. */
+    public static final int MAX_NAME_LENGTH = 64;
+
     public MobDefinition {
         Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(name, () -> "Mob '" + id + "' has no name");
+        name = name.strip();
+        if (name.isEmpty() || name.length() > MAX_NAME_LENGTH || name.chars().anyMatch(Character::isISOControl)) {
+            throw new IllegalArgumentException("Mob '" + id + "': name must be 1 to " + MAX_NAME_LENGTH
+                + " characters without line breaks, got '" + name + "'");
+        }
         Objects.requireNonNull(look, () -> "Mob '" + id + "' has no look");
-        stats =Collections.unmodifiableMap(new LinkedHashMap<>(stats));
+        stats = Collections.unmodifiableMap(new LinkedHashMap<>(stats));
         equipment = equipment.isEmpty()
             ? Map.of()
             : Collections.unmodifiableMap(new EnumMap<>(equipment));
@@ -51,11 +63,30 @@ public record MobDefinition(
             }
         }
         Set<String> seen = new HashSet<>();
+        List<String> targeting = new ArrayList<>();
         for (Behavior behavior : behaviors) {
             if (!seen.add(behavior.name())) {
                 throw new IllegalArgumentException("Mob '" + id + "' has behavior '" + behavior.name() + "' more than once");
             }
+            if (behavior.choosesTargets()) {
+                targeting.add(behavior.name());
+            }
         }
+        if (targeting.size() > 1) {
+            throw new IllegalArgumentException("Mob '" + id + "': " + String.join(" and ", targeting)
+                + " both decide whom it fights; keep only one (R4b O3)");
+        }
+        for (Behavior behavior : behaviors) {
+            if (behavior.needsTarget() && targeting.isEmpty()) {
+                throw new IllegalArgumentException("Mob '" + id + "': " + behavior.name()
+                    + " needs attack_players or neutral to give it a target (R4b O4)");
+            }
+        }
+    }
+
+    /** The same mob with another look; a reload keeps the body until a restart (R4b O9). */
+    public MobDefinition withLook(MobLook newLook) {
+        return new MobDefinition(id, name, newLook, stats, equipment, behaviors);
     }
 
     public static Builder builder(String id) {
@@ -74,9 +105,10 @@ public record MobDefinition(
         return values;
     }
 
-    /** Builds a definition step by step, so content files read like a list of properties. */
+    /** Builds a definition step by step, so tests read like a list of properties. */
     public static final class Builder {
         private final MobId id;
+        private String name;
         private MobLook look;
         private final Map<StatId, Double> stats = new LinkedHashMap<>();
         private final Map<EquipmentSlotKind, EquipmentId> equipment = new EnumMap<>(EquipmentSlotKind.class);
@@ -84,6 +116,12 @@ public record MobDefinition(
 
         private Builder(MobId id) {
             this.id = id;
+        }
+
+        /** Without a name the id is used, e.g. "brute"; mob files always have one (O13). */
+        public Builder name(String newName) {
+            this.name = Objects.requireNonNull(newName, "name");
+            return this;
         }
 
         public Builder look(MobLook newLook) {
@@ -116,7 +154,7 @@ public record MobDefinition(
         }
 
         public MobDefinition build() {
-            return new MobDefinition(id, look, stats, equipment, behaviors);
+            return new MobDefinition(id, name == null ? id.value() : name, look, stats, equipment, behaviors);
         }
     }
 }

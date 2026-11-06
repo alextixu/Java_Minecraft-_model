@@ -6,12 +6,13 @@ import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.stats;
 import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.test;
 
 import com.mojang.authlib.GameProfile;
-import io.github.alextixu.mobarmory.content.ModMobs;
 import io.github.alextixu.mobarmory.content.ModStats;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
 import io.github.alextixu.mobarmory.core.equipment.LoadoutCalculator;
 import io.github.alextixu.mobarmory.core.mob.AttackPlayersBehavior;
 import io.github.alextixu.mobarmory.core.mob.Behavior;
+import io.github.alextixu.mobarmory.core.mob.LeapBehavior;
+import io.github.alextixu.mobarmory.core.mob.NeutralBehavior;
 import io.github.alextixu.mobarmory.core.mob.MobDefinition;
 import io.github.alextixu.mobarmory.core.mob.WanderBehavior;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
@@ -96,6 +97,8 @@ final class MobGameTests {
         test("mob_behaviors_all_have_binders", MobGameTests::mobBehaviorsAllHaveBinders);
         test("skirmisher_dodges_and_crits", MobGameTests::skirmisherDodgesAndCrits);
         MobWeaponGameTests.registerAll();
+        test("neutral_mob_waits_until_hit", MobGameTests::neutralMobWaitsUntilHit);
+        MobAdminGameTests.registerAll();
     }
 
     // ---- helpers ----------------------------------------------------------------------------------------------
@@ -217,8 +220,8 @@ final class MobGameTests {
 
     /** H1 + H2 with 06's numbers: brute 40 hp, attack 4 + 6 = 10, speed 0.25 x 0.7 = 0.175; skirmisher with dagger. */
     static void h1h2PrototypeMobStats(GameTestHelper helper) {
-        ArmoryMob brute = spawn(helper, ModMobs.BRUTE, HERE);
-        ArmoryMob skirmisher = spawn(helper, ModMobs.SKIRMISHER, HERE);
+        ArmoryMob brute = spawn(helper, Mobs.brute(), HERE);
+        ArmoryMob skirmisher = spawn(helper, Mobs.skirmisher(), HERE);
         helper.succeedWhen(() -> {
             checkNear(helper, 40, value(brute, ModStats.MAX_HEALTH), "H1: brute max health");
             checkNear(helper, 40, brute.getHealth(), "H1: brute health");
@@ -239,7 +242,7 @@ final class MobGameTests {
 
     /** "Holding the heavy sword makes it slower": 0.175 with the sword, back to its own 0.25 without it. */
     static void bruteHeavySwordSlowsIt(GameTestHelper helper) {
-        ArmoryMob brute = spawn(helper, ModMobs.BRUTE, HERE);
+        ArmoryMob brute = spawn(helper, Mobs.brute(), HERE);
         helper.startSequence()
             .thenWaitUntil(() -> {
                 checkNear(helper, 0.25, base(brute, ModStats.MOVEMENT_SPEED), "brute's own speed");
@@ -257,9 +260,9 @@ final class MobGameTests {
      */
     static void mobSpawnsFromEggAndSummon(GameTestHelper helper) {
         ServerPlayer user = playerInLevel(helper, GameType.CREATIVE, HERE.north(3));
-        user.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(MOBS.spawnEgg(ModMobs.BRUTE.id())));
+        user.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(MOBS.spawnEgg(Mobs.brute().id())));
         helper.useBlock(HERE, user);
-        List<ArmoryMob> fromEgg = entitiesAt(helper, type(ModMobs.BRUTE), HERE);
+        List<ArmoryMob> fromEgg = entitiesAt(helper, type(Mobs.brute()), HERE);
         check(helper, fromEgg.size() == 1, "the brute spawn egg should spawn one brute, got " + fromEgg.size());
 
         BlockPos summonAt = HERE.east(2);
@@ -267,7 +270,7 @@ final class MobGameTests {
         var server = helper.getLevel().getServer();
         server.getCommands().performPrefixedCommand(server.createCommandSourceStack().withSuppressedOutput(),
             String.format(Locale.ROOT, "summon mobarmory:skirmisher %.2f %.2f %.2f", at.x, at.y, at.z));
-        List<ArmoryMob> summoned = entitiesAt(helper, type(ModMobs.SKIRMISHER), summonAt);
+        List<ArmoryMob> summoned = entitiesAt(helper, type(Mobs.skirmisher()), summonAt);
         check(helper, summoned.size() == 1, "/summon mobarmory:skirmisher should make one skirmisher, got " + summoned.size());
 
         ArmoryMob brute = fromEgg.getFirst();
@@ -286,7 +289,7 @@ final class MobGameTests {
 
     /** H3: a survival player 3 blocks away is targeted, chased and hit. Own environment: no other test sees the player. */
     static void mobAttacksSurvivalPlayer(GameTestHelper helper) {
-        ArmoryMob brute = spawn(helper, ModMobs.BRUTE, HERE);
+        ArmoryMob brute = spawn(helper, Mobs.brute(), HERE);
         ServerPlayer player = playerInLevel(helper, GameType.SURVIVAL, HERE.east(3));
         helper.succeedWhen(() -> {
             check(helper, brute.getTarget() == player, "H3: brute should target the survival player, target " + brute.getTarget());
@@ -297,7 +300,7 @@ final class MobGameTests {
 
     /** B8 + Q7: with a creative player and a cow right next to it, the brute targets no one and hurts no one. */
     static void mobIgnoresCreativePlayerAndAnimals(GameTestHelper helper) {
-        ArmoryMob brute = spawn(helper, ModMobs.BRUTE, HERE);
+        ArmoryMob brute = spawn(helper, Mobs.brute(), HERE);
         ServerPlayer player = playerInLevel(helper, GameType.CREATIVE, HERE.east(2));
         Cow cow = helper.spawn(EntityTypes.COW, HERE.west(2));
         helper.runAfterDelay(100, () -> {
@@ -314,7 +317,7 @@ final class MobGameTests {
      * retaliation goal ignores a hit taken on the mob's very first tick.
      */
     static void mobRetaliatesAgainstAttacker(GameTestHelper helper) {
-        ArmoryMob brute = spawn(helper, ModMobs.BRUTE, HERE);
+        ArmoryMob brute = spawn(helper, Mobs.brute(), HERE);
         Cow cow = helper.spawn(EntityTypes.COW, HERE.east(2));
         helper.startSequence()
             .thenIdle(5)
@@ -323,9 +326,29 @@ final class MobGameTests {
             .thenSucceed();
     }
 
+    /**
+     * H6 (R4b): the goblin is neutral (goblin.json, no Java). A survival player 3 blocks away is left alone; once the
+     * player hits it, it goes after that player. The hit comes a few ticks after spawning, because Minecraft's
+     * retaliation goal ignores a hit on the mob's first tick. Own environment, because of the player.
+     */
+    static void neutralMobWaitsUntilHit(GameTestHelper helper) {
+        ArmoryMob goblin = spawn(helper, Mobs.goblin(), HERE);
+        ServerPlayer player = playerInLevel(helper, GameType.SURVIVAL, HERE.east(3));
+        helper.startSequence()
+            .thenIdle(60)
+            .thenExecute(() -> {
+                check(helper, goblin.getTarget() == null, "H6: neutral goblin should leave the player alone, target " + goblin.getTarget());
+                checkNear(helper, player.getMaxHealth(), player.getHealth(), "H6: the player is not hurt");
+                goblin.hurtServer(helper.getLevel(), helper.getLevel().damageSources().playerAttack(player), 1);
+            })
+            .thenWaitUntil(() -> check(helper, goblin.getTarget() == player, "H6: after the hit the goblin goes after the player, target " + goblin.getTarget()))
+            .thenExecute(() -> remove(helper, player))
+            .thenSucceed();
+    }
+
     /** O8 + B15: follow range is exactly 16; a chased player who gets more than 16 blocks away is given up. */
     static void mobGivesUpBeyond16Blocks(GameTestHelper helper) {
-        ArmoryMob brute = spawn(helper, ModMobs.BRUTE, HERE);
+        ArmoryMob brute = spawn(helper, Mobs.brute(), HERE);
         ServerPlayer player = playerInLevel(helper, GameType.SURVIVAL, HERE.east(4));
         player.getAttribute(Attributes.MAX_HEALTH).setBaseValue(1000); // survives a hit or two while being chased
         player.setHealth(1000);
@@ -344,7 +367,7 @@ final class MobGameTests {
      * creative player is never attacked. Own environment, because of the player.
      */
     static void mobWandersWithoutPlayers(GameTestHelper helper) {
-        ArmoryMob brute = spawn(helper, ModMobs.BRUTE, HERE);
+        ArmoryMob brute = spawn(helper, Mobs.brute(), HERE);
         ServerPlayer watcher = playerInLevel(helper, GameType.CREATIVE, HERE.north(10));
         Vec3 start = brute.position();
         helper.succeedWhen(() -> {
@@ -360,7 +383,7 @@ final class MobGameTests {
     /** B13 + condition 9: save and load a brute with its sword; speed stays 0.175 (not 0.1225), health and drops kept. */
     static void mobReloadKeepsStatsOnce(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
-        ArmoryMob brute = spawn(helper, ModMobs.BRUTE, HERE);
+        ArmoryMob brute = spawn(helper, Mobs.brute(), HERE);
         Supplier<ArmoryMob> reloaded = new Supplier<>() {
             private ArmoryMob copy;
 
@@ -372,7 +395,7 @@ final class MobGameTests {
                     brute.save(out);
                     CompoundTag saved = out.buildResult();
                     brute.discard();
-                    Entity loaded = EntityType.loadEntityRecursive(type(ModMobs.BRUTE), saved, level, EntitySpawnReason.LOAD, EntityProcessor.NOP);
+                    Entity loaded = EntityType.loadEntityRecursive(type(Mobs.brute()), saved, level, EntitySpawnReason.LOAD, EntityProcessor.NOP);
                     check(helper, loaded instanceof ArmoryMob, "the save should load back as a brute, got " + loaded);
                     copy = (ArmoryMob) loaded;
                     copy.setUUID(UUID.randomUUID());
@@ -401,7 +424,7 @@ final class MobGameTests {
     /** B12 + O7: the brute is worth exactly 5 experience and never drops its sword. */
     static void mobDropsNoEquipmentAnd5Xp(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
-        ArmoryMob brute = spawn(helper, ModMobs.BRUTE, HERE);
+        ArmoryMob brute = spawn(helper, Mobs.brute(), HERE);
         check(helper, brute.getExperienceReward(level, null) == 5,
             "O7: experience should be 5, got " + brute.getExperienceReward(level, null));
         checkNear(helper, 0, brute.getDropChances().byEquipment(EquipmentSlot.MAINHAND), "B12: sword drop chance");
@@ -416,7 +439,7 @@ final class MobGameTests {
 
     /** B10, in its own environment at noon: a zombie next to it catches fire, the brute does not. */
     static void mobDoesNotBurnInDaylight(GameTestHelper helper) {
-        ArmoryMob brute = spawn(helper, ModMobs.BRUTE, HERE);
+        ArmoryMob brute = spawn(helper, Mobs.brute(), HERE);
         Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, HERE.east(2));
         zombie.setBaby(false);
         helper.succeedWhen(() -> {
@@ -431,11 +454,11 @@ final class MobGameTests {
      */
     static void mobRemovedOnPeaceful(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
-        ArmoryMob brute = spawn(helper, ModMobs.BRUTE, HERE);
+        ArmoryMob brute = spawn(helper, Mobs.brute(), HERE);
         level.getServer().setDifficulty(Difficulty.PEACEFUL, true);
         helper.succeedWhen(() -> {
             check(helper, brute.isRemoved(), "B11: the brute already in the world should be removed on peaceful");
-            check(helper, type(ModMobs.BRUTE).create(level, EntitySpawnReason.SPAWN_ITEM_USE) == null,
+            check(helper, type(Mobs.brute()).create(level, EntitySpawnReason.SPAWN_ITEM_USE) == null,
                 "B11: no new brute can be made on peaceful");
         });
     }
@@ -445,7 +468,9 @@ final class MobGameTests {
     /** One sample of each behavior kind for the binder contract. A new behavior adds one line here. */
     private static final Map<Class<? extends Behavior>, Behavior> SAMPLES = Map.of(
         WanderBehavior.class, new WanderBehavior(1.0),
-        AttackPlayersBehavior.class, new AttackPlayersBehavior(1.0));
+        AttackPlayersBehavior.class, new AttackPlayersBehavior(1.0),
+        NeutralBehavior.class, new NeutralBehavior(1.0),   // R4b
+        LeapBehavior.class, new LeapBehavior());           // R4b
 
     /**
      * Contract for behaviors (B4 and 05's binder contract): every behavior of every mob has a binder; a missing binder
@@ -467,13 +492,13 @@ final class MobGameTests {
             check(helper, expected.getMessage().contains("brute"), "B4: message should name the mob: " + expected.getMessage());
         }
 
-        ArmoryMob brute = spawn(helper, ModMobs.BRUTE, HERE);
+        ArmoryMob brute = spawn(helper, Mobs.brute(), HERE);
         int goals = goalCount(brute);
         standard.bind(brute, brute.definition().behaviors(), brute.goals());
         check(helper, goals == goalCount(brute), "binding the same definition twice must not add goals");
 
         SAMPLES.forEach((kind, sample) -> {
-            ArmoryMob mob = spawn(helper, ModMobs.BRUTE, HERE);
+            ArmoryMob mob = spawn(helper, Mobs.brute(), HERE);
             int before = goalCount(mob);
             standard.binderFor(sample).bind(mob, sample, mob.goals());
             check(helper, goalCount(mob) > before, kind.getSimpleName() + "'s binder should add at least one goal");
@@ -493,7 +518,7 @@ final class MobGameTests {
      */
     static void skirmisherDodgesAndCrits(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
-        ArmoryMob skirmisher = spawn(helper, ModMobs.SKIRMISHER, HERE);
+        ArmoryMob skirmisher = spawn(helper, Mobs.skirmisher(), HERE);
         Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, HERE.east(3));
         Cow cow = helper.spawn(EntityTypes.COW, HERE.west(3));
         cow.getAttribute(Attributes.MAX_HEALTH).setBaseValue(10000);

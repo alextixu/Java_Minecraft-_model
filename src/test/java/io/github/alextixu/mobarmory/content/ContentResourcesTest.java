@@ -1,6 +1,7 @@
 package io.github.alextixu.mobarmory.content;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.alextixu.mobarmory.core.equipment.EquipmentDefinition;
@@ -9,6 +10,7 @@ import io.github.alextixu.mobarmory.core.mob.MobDefinition;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
 import io.github.alextixu.mobarmory.data.BuiltInTextures;
 import io.github.alextixu.mobarmory.data.DefaultWeapons;
+import io.github.alextixu.mobarmory.data.MobAssets;
 import io.github.alextixu.mobarmory.data.PngCheck;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,7 +38,7 @@ class ContentResourcesTest {
     }
 
     static Stream<MobDefinition> allMobs() {
-        return ModMobs.ALL.stream();
+        return MobTestCatalog.everyMobFile();
     }
 
     static Stream<StatDefinition> customStats() {
@@ -76,21 +78,26 @@ class ContentResourcesTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("allMobs")
     void mobHasName(MobDefinition mob) throws IOException {
-        String key = "\"entity.mobarmory." + mob.id().value() + "\"";
-        assertTrue(lang().contains(key), "en_us.json is missing " + key);
+        // R4b O13: the name is in the mob file, so a new mob needs no line in the language file; only the egg's pattern.
+        assertFalse(mob.name().isBlank(), mob.id() + " has no name");
+        assertFalse(lang().contains("\"entity.mobarmory." + mob.id().value() + "\""), "the name belongs in the mob file now");
         assertTrue(lang().contains("\"item.mobarmory.spawn_egg\""), "en_us.json is missing the spawn egg name");
     }
 
-    /** The egg borrows the vanilla spawn egg of the body the mob borrows (a zombie-looking brute has a zombie egg). */
+    /**
+     * The egg borrows the vanilla spawn egg of the body the mob borrows (a zombie-looking brute has a zombie egg). Since
+     * R4b (O14) the runtime resource pack makes the model from the mob file, so no mob has a file in the jar.
+     */
     @ParameterizedTest(name = "{0}")
     @MethodSource("allMobs")
-    void mobHasSpawnEggModel(MobDefinition mob) throws IOException {
-        Path model = ASSETS.resolve("items/" + mob.id().value() + "_spawn_egg.json");
-        assertTrue(Files.exists(model), "missing " + model);
+    void mobHasSpawnEggModel(MobDefinition mob) {
+        String path = "items/" + mob.id().value() + "_spawn_egg.json";
+        assertFalse(Files.exists(ASSETS.resolve(path)), "a mob needs no egg model in the jar: " + path);
 
+        String model = MobAssets.spawnEggModels(List.of(mob)).get(path);
         String body = mob.look().body().name().toLowerCase(Locale.ROOT);
         String expected = "\"minecraft:item/" + body + "_spawn_egg\"";
-        assertTrue(Files.readString(model).contains(expected), model + " should use model " + expected);
+        assertTrue(model != null && model.contains(expected), path + " should use model " + expected + ", got " + model);
     }
 
     @ParameterizedTest(name = "{0}")

@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:t2_goblin_from_json_only",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

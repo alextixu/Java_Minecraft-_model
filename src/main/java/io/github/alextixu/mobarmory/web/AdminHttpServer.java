@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The web admin's HTTP server: JDK's built-in {@link HttpServer}, no extra libraries (decision O4). Serves the page
- * from the mod jar ({@code mobarmory/web/}) and the API ({@link WeaponApi}).
+ * from the mod jar ({@code mobarmory/web/}) and the API: {@link MobApi} for mobs (R4b), {@link WeaponApi} for the rest.
  * <p>
  * Who may change things (decision Q6 A, B13):
  * <ul>
@@ -49,13 +49,15 @@ public final class AdminHttpServer implements AutoCloseable {
     private final HttpServer server;
     private final ExecutorService executor;
     private final WeaponApi api;
+    private final MobApi mobApi;
     private final WebSettings settings;
     private final Set<String> allowedHosts;
 
-    private AdminHttpServer(HttpServer server, ExecutorService executor, WeaponApi api, WebSettings settings) {
+    private AdminHttpServer(HttpServer server, ExecutorService executor, WeaponApi api, MobApi mobApi, WebSettings settings) {
         this.server = server;
         this.executor = executor;
         this.api = api;
+        this.mobApi = mobApi;
         this.settings = settings;
         int port = server.getAddress().getPort();
         Set<String> hosts = new LinkedHashSet<>(List.of("127.0.0.1:" + port, "localhost:" + port, "[::1]:" + port));
@@ -78,7 +80,7 @@ public final class AdminHttpServer implements AutoCloseable {
             thread.setDaemon(true);
             return thread;
         });
-        AdminHttpServer instance = new AdminHttpServer(server, executor, new WeaponApi(admin, mobs), settings);
+        AdminHttpServer instance = new AdminHttpServer(server, executor, new WeaponApi(admin), new MobApi(mobs), settings);
         server.createContext("/", instance::handle);
         server.setExecutor(executor);
         server.start();
@@ -144,7 +146,7 @@ public final class AdminHttpServer implements AutoCloseable {
                 send(exchange, WeaponApi.Response.error(413, "too_large", "The request is too large"));
                 return;
             }
-            send(exchange, api.handle(method, path, body));
+            send(exchange, MobApi.handles(path) ? mobApi.handle(method, path, body) : api.handle(method, path, body));
         } catch (RuntimeException e) {
             // Never let one bad request take the server down; the page shows the message.
             try {

@@ -16,10 +16,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Module tests for the prototype mobs (O1): their own stats plus their equipment, worked out with R2's
- * calculator exactly as the game does it. The in-game tests check the same numbers on real entities.
+ * Module tests for the prototype mobs (O1), read from the shipped mob files (R4b, mobarmory/default_mobs/): their own
+ * stats plus their equipment, worked out with R2's calculator exactly as the game does it. The in-game tests check the same numbers on real entities.
  */
-class ModMobsTest {
+class DefaultMobsTest {
     private static final double EPS = 1e-9;
     /** Every stat after equipment: the spawn value, replaced by the equipped value where equipment changes it. */
     private static Map<StatId, Double> equipped(MobDefinition mob) {
@@ -42,7 +42,7 @@ class ModMobsTest {
     @Test
     @DisplayName("H1 + H2 Given 剛生成的狂戰士（生命 40、攻擊 4、速度 0.25、主手重劍） When 讀取數值 Then 最大生命 40、攻擊力 10、移動速度 0.175、攻擊速度 2.4，暴擊和迴避為預設 0")
     void bruteWithHeavySword() {
-        Map<StatId, Double> brute = equipped(ModMobs.BRUTE);
+        Map<StatId, Double> brute = equipped(MobTestCatalog.BRUTE);
 
         assertEquals(40, of(brute, ModStats.MAX_HEALTH), EPS);
         assertEquals(10, of(brute, ModStats.ATTACK_DAMAGE), EPS);
@@ -55,7 +55,7 @@ class ModMobsTest {
     @Test
     @DisplayName("H5 + H6 前提 Given 剛生成的遊擊兵（生命 16、攻擊 2、速度 0.32、暴擊 0.25、迴避 0.30、主手短刀） When 讀取數值 Then 攻擊力 4、暴擊率 0.5、迴避率 0.30、移動速度 0.352")
     void skirmisherWithDagger() {
-        Map<StatId, Double> skirmisher = equipped(ModMobs.SKIRMISHER);
+        Map<StatId, Double> skirmisher = equipped(MobTestCatalog.SKIRMISHER);
 
         assertEquals(16, of(skirmisher, ModStats.MAX_HEALTH), EPS);
         assertEquals(4, of(skirmisher, ModStats.ATTACK_DAMAGE), EPS);
@@ -73,13 +73,13 @@ class ModMobsTest {
             .forEach(builder::add);
         EquipmentCatalog withoutSword = builder.build();
 
-        Map<StatId, Double> brute = equipped(ModMobs.BRUTE, withoutSword);
+        Map<StatId, Double> brute = equipped(MobTestCatalog.BRUTE, withoutSword);
         assertEquals(40, of(brute, ModStats.MAX_HEALTH), EPS);
         assertEquals(4, of(brute, ModStats.ATTACK_DAMAGE), EPS);
         assertEquals(0.25, of(brute, ModStats.MOVEMENT_SPEED), EPS);
-        assertEquals(1, MobEquipmentCheck.check(ModMobs.BRUTE, withoutSword::find).problems().size());
+        assertEquals(1, MobEquipmentCheck.check(MobTestCatalog.BRUTE, withoutSword::find).problems().size());
 
-        assertEquals(equipped(ModMobs.SKIRMISHER), equipped(ModMobs.SKIRMISHER, withoutSword));
-        assertEquals(List.of(), MobEquipmentCheck.check(ModMobs.SKIRMISHER, withoutSword::find).problems());
+        assertEquals(equipped(MobTestCatalog.SKIRMISHER), equipped(MobTestCatalog.SKIRMISHER, withoutSword));
+        assertEquals(List.of(), MobEquipmentCheck.check(MobTestCatalog.SKIRMISHER, withoutSword::find).problems());
     }
 }

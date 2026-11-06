@@ -17,10 +17,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
@@ -41,7 +37,6 @@ public final class ServerWeaponAdmin implements WeaponAdmin {
         "_helmet", "_chestplate", "_leggings", "_boots");
     private static final List<String> LOOK_EXTRAS = List.of("minecraft:trident", "minecraft:mace", "minecraft:bow",
         "minecraft:crossbow", "minecraft:shield", "minecraft:stick", "minecraft:blaze_rod", "minecraft:bone");
-    private static final long TIMEOUT_SECONDS = 10;
 
     private final WeaponEditor editor;
     private final EquipmentStatApplier applier;
@@ -156,9 +151,6 @@ public final class ServerWeaponAdmin implements WeaponAdmin {
         T run() throws IOException, WeaponFormatException, WeaponLoadException;
     }
 
-    private record Outcome<T>(T value, Exception error) {
-    }
-
     /** A change that never reads all files, so it cannot fail with a load problem. */
     private <T> T change(Action<T> action) throws IOException, WeaponFormatException {
         try {
@@ -168,39 +160,14 @@ public final class ServerWeaponAdmin implements WeaponAdmin {
         }
     }
 
-    /** Runs on the server thread and waits for the answer; directly if already there (the reload command, game tests). */
+    /** Runs on the server thread and waits for the answer ({@link ServerThread}, shared with the mob admin). */
     private <T> T onServerThread(Action<T> action) throws IOException, WeaponFormatException, WeaponLoadException {
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server == null || server.isSameThread()) {
-            return action.run();
-        }
-        CompletableFuture<Outcome<T>> future = server.submit(() -> {
-            try {
-                return new Outcome<>(action.run(), null);
-            } catch (Exception e) {
-                return new Outcome<>(null, e);
-            }
-        });
-        Outcome<T> outcome;
         try {
-            outcome = future.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        } catch (TimeoutException e) {
-            throw new IOException("the game did not answer within " + TIMEOUT_SECONDS + " seconds");
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException("interrupted while waiting for the game");
-        } catch (ExecutionException e) {
-            throw new IOException("the game failed to apply the change: " + e.getCause(), e.getCause());
-        }
-        if (outcome.error() == null) {
-            return outcome.value();
-        }
-        switch (outcome.error()) {
-            case IOException e -> throw e;
-            case WeaponFormatException e -> throw e;
-            case WeaponLoadException e -> throw e;
-            case RuntimeException e -> throw e;
-            default -> throw new IOException(outcome.error());
+            return ServerThread.call(action::run);
+        } catch (IOException | WeaponFormatException | WeaponLoadException | RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException(e);
         }
     }
 }

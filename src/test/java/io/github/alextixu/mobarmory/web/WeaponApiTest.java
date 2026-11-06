@@ -6,22 +6,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import io.github.alextixu.mobarmory.content.ModMobs;
 import io.github.alextixu.mobarmory.content.ModStats;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
-import io.github.alextixu.mobarmory.core.mob.MobCatalog;
-import io.github.alextixu.mobarmory.core.mob.MobDefinition;
-import io.github.alextixu.mobarmory.core.mob.MobLook;
 import java.nio.charset.StandardCharsets;
 import java.nio.ByteBuffer;
-import java.util.Locale;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /** Component tests: every route of the web API, with the real editor and no game (09, H4 to H9, B10, B11, B17). */
 class WeaponApiTest {
     private final TestWeaponAdmin admin = new TestWeaponAdmin();
-    private final WeaponApi api = new WeaponApi(admin, ModMobs::catalog);
+    private final WeaponApi api = new WeaponApi(admin);
 
     private static final String SWORD_16 = """
         {"format": 1, "name": "Heavy Sword", "slot": "mainhand", "look": {"item": "minecraft:netherite_sword"},
@@ -134,63 +129,6 @@ class WeaponApiTest {
 
         assertEquals(400, broken.status());
         assertTrue(json(broken).getAsJsonArray("problems").get(0).getAsString().contains("dagger.json"));
-    }
-
-    @Test
-    @DisplayName("H10 列出怪物：每一隻都有 id、外觀、它設定的數值、裝備、行為，和 content/ModMobs 的定義一樣")
-    void listsMobsAsDefined() {
-        WeaponApi.Response response = call("GET", "/api/v1/mobs", "");
-        var mobs = json(response).getAsJsonArray("mobs");
-
-        assertEquals(200, response.status());
-        assertEquals(ModMobs.ALL.size(), mobs.size());
-        for (int i = 0; i < ModMobs.ALL.size(); i++) {
-            MobDefinition definition = ModMobs.ALL.get(i);
-            JsonObject mob = mobs.get(i).getAsJsonObject();
-            assertEquals(definition.id().value(), mob.get("id").getAsString());
-            assertEquals(definition.look().scale(), mob.getAsJsonObject("look").get("scale").getAsDouble());
-            JsonObject stats = mob.getAsJsonObject("stats");
-            assertEquals(definition.stats().size(), stats.size(), definition.id() + ": only the stats it sets");
-            definition.stats().forEach((stat, value) -> assertEquals(value, stats.get(stat.value()).getAsDouble(), stat.value()));
-            JsonObject equipment = mob.getAsJsonObject("equipment");
-            assertEquals(definition.equipment().size(), equipment.size());
-            definition.equipment().forEach((slot, id) ->
-                assertEquals(id.value(), equipment.get(slot.name().toLowerCase(Locale.ROOT)).getAsString()));
-            assertEquals(definition.behaviors().size(), mob.getAsJsonArray("behaviors").size());
-        }
-
-        JsonObject brute = mobs.get(0).getAsJsonObject();
-        assertEquals("zombie", brute.getAsJsonObject("look").get("body").getAsString());
-        assertEquals(40, brute.getAsJsonObject("stats").get("max_health").getAsInt());
-        assertEquals("heavy_sword", brute.getAsJsonObject("equipment").get("mainhand").getAsString());
-        assertEquals("wander", brute.getAsJsonArray("behaviors").get(0).getAsString());
-        assertEquals("attack_players", brute.getAsJsonArray("behaviors").get(1).getAsString());
-    }
-
-    @Test
-    @DisplayName("H10 邊界：沒有裝備、沒有行為的怪物 → equipment 是 {}、behaviors 是 []（站著不動，R4 B6）")
-    void mobWithNothingListsEmpty() {
-        MobCatalog bare = MobCatalog.builder(ModStats.CATALOG)
-            .add(MobDefinition.builder("statue").look(MobLook.of(MobLook.Body.STRAY)).build())
-            .build();
-        WeaponApi.Response response = new WeaponApi(admin, () -> bare).handle("GET", "/api/v1/mobs", new byte[0]);
-        JsonObject statue = json(response).getAsJsonArray("mobs").get(0).getAsJsonObject();
-
-        assertEquals("stray", statue.getAsJsonObject("look").get("body").getAsString());
-        assertEquals(0, statue.getAsJsonObject("stats").size());
-        assertEquals(0, statue.getAsJsonObject("equipment").size());
-        assertEquals(0, statue.getAsJsonArray("behaviors").size());
-    }
-
-    @Test
-    @DisplayName("B17 怪物只能看：POST、PUT、DELETE → 405，清單沒變")
-    void mobsAreReadOnly() {
-        String before = new String(call("GET", "/api/v1/mobs", "").body(), StandardCharsets.UTF_8);
-
-        assertEquals(405, call("POST", "/api/v1/mobs", "{}").status());
-        assertEquals(405, call("PUT", "/api/v1/mobs", "{}").status());
-        assertEquals(405, call("DELETE", "/api/v1/mobs", "").status());
-        assertEquals(before, new String(call("GET", "/api/v1/mobs", "").body(), StandardCharsets.UTF_8));
     }
 
     @Test

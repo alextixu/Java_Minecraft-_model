@@ -1,0 +1,26 @@
+{
+  "format": 1,
+  "name": "Brute",
+  "look": {
+    "body": "zombie",
+    "scale": 1.2
+  },
+  "stats": {
+    "max_health": 40,
+    "attack_damage": 4,
+    "movement_speed": 0.25
+  },
+  "equipment": {
+    "mainhand": "heavy_sword"
+  },
+  "behaviors": [
+    {
+      "type": "wander",
+      "speed": 1
+    },
+    {
+      "type": "attack_players",
+      "speed": 1
+    }
+  ]
+}

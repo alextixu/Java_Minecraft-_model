@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:live_edit",
+  "function": "mobarmory:mob_loads_with_current_stats",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

@@ -227,7 +227,7 @@ L（里氏替換）由契約測試保證：
 6. `forge/`：`NeutralGoalBinder`、`LeapGoalBinder`，附 binder 契約測試。
 7. `web/`、`forge/`：`MobAdmin`、`MobApi`、`ServerMobAdmin`（改完套用到世界上的怪物）、`MobSyncChannel`。
 8. 網頁：怪物分頁的編輯表單、新增怪物表單。
-9. 系統測試（GameTest）、行為報告 24（編號照 README 的規則，到時候再確認）。
+9. 系統測試（GameTest）、行為報告 [28](28-r4b-mob-admin-behavior-report.md)（24～27 已被架構師的段落 E 用掉）。
 
 ## 5. 測試計畫
 

@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:live_edit",
+  "function": "mobarmory:mob_save_changes_name_and_size_at_once",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

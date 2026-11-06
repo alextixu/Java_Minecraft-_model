@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.alextixu.mobarmory.content.ModMobs;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,6 +29,7 @@ class AdminHttpServerTest {
 
     private final HttpClient client = HttpClient.newHttpClient();
     private final TestWeaponAdmin admin = new TestWeaponAdmin();
+    private final TestMobAdmin mobs = new TestMobAdmin();
     private AdminHttpServer server;
 
     @AfterEach
@@ -40,7 +40,7 @@ class AdminHttpServerTest {
     }
 
     private AdminHttpServer start(String token) throws IOException {
-        server = AdminHttpServer.start(admin, ModMobs::catalog, new WebSettings(true, "127.0.0.1", 0, token));
+        server = AdminHttpServer.start(admin, mobs, new WebSettings(true, "127.0.0.1", 0, token));
         return server;
     }
 
@@ -74,7 +74,7 @@ class AdminHttpServerTest {
         HttpResponse<String> page = send(HttpRequest.newBuilder(uri("/")));
 
         assertEquals(200, page.statusCode());
-        assertTrue(page.body().contains("Mob Armory 武器後台"));
+        assertTrue(page.body().contains("Mob Armory 後台"), "R4b: the page is for weapons and mobs");
         assertTrue(page.headers().firstValue("Content-Security-Policy").orElse("").contains("default-src 'self'"));
         assertEquals("nosniff", page.headers().firstValue("X-Content-Type-Options").orElse(""));
         assertFalse(page.body().contains("http://") || page.body().contains("https://"), "the page must not load anything from outside");
@@ -96,19 +96,27 @@ class AdminHttpServerTest {
     }
 
     @Test
-    @DisplayName("H10 透過 HTTP 讀怪物清單（JSON）；怪物只能看，送修改 → 405")
-    void mobsAreReadOnlyOverHttp() throws Exception {
+    @DisplayName("H13 H4 透過 HTTP 讀怪物清單（JSON），再從這個網頁存狂戰士（R4b：原本的唯讀清單改成可以存檔）")
+    void mobsOverHttp() throws Exception {
         start("");
-        HttpResponse<String> mobs = send(HttpRequest.newBuilder(uri("/api/v1/mobs")));
+        HttpResponse<String> list = send(HttpRequest.newBuilder(uri("/api/v1/mobs")));
 
-        assertEquals(200, mobs.statusCode(), mobs.body());
-        assertTrue(mobs.headers().firstValue("Content-Type").orElse("").startsWith("application/json"));
-        assertTrue(mobs.body().contains("\"brute\"") && mobs.body().contains("\"skirmisher\""), mobs.body());
+        assertEquals(200, list.statusCode(), list.body());
+        assertTrue(list.headers().firstValue("Content-Type").orElse("").startsWith("application/json"));
+        assertTrue(list.body().contains("\"brute\"") && list.body().contains("\"skirmisher\""), list.body());
 
-        HttpResponse<String> change = send(HttpRequest.newBuilder(uri("/api/v1/mobs"))
+        String brute = io.github.alextixu.mobarmory.data.DefaultMobs.text("brute").replace("\"attack_damage\": 4", "\"attack_damage\": 8");
+        HttpResponse<String> change = send(HttpRequest.newBuilder(uri("/api/v1/mobs/brute"))
             .header("Content-Type", "application/json").header("Origin", "http://127.0.0.1:" + server.port())
-            .POST(HttpRequest.BodyPublishers.ofString("{}")));
-        assertEquals(405, change.statusCode(), change.body());
+            .PUT(HttpRequest.BodyPublishers.ofString(brute)));
+        assertEquals(200, change.statusCode(), change.body());
+        assertEquals(8.0, mobs.library.current().get(io.github.alextixu.mobarmory.data.DefaultMobs.BRUTE).stats()
+            .get(io.github.alextixu.mobarmory.core.stat.StatId.of("attack_damage")));
+
+        HttpResponse<String> otherSite = send(HttpRequest.newBuilder(uri("/api/v1/mobs/brute"))
+            .header("Content-Type", "application/json").header("Origin", "http://evil.example")
+            .PUT(HttpRequest.BodyPublishers.ofString(brute.replace("\"attack_damage\": 8", "\"attack_damage\": 1"))));
+        assertEquals(403, otherSite.statusCode(), "the same Origin check as weapons (B13)");
     }
 
     @Test
@@ -170,7 +178,7 @@ class AdminHttpServerTest {
     @DisplayName("B14 埠已經被佔用 → 丟出 IOException（遊戲端只記警告，照常進行）")
     void portInUse() throws Exception {
         start("");
-        assertThrows(IOException.class, () -> AdminHttpServer.start(admin, ModMobs::catalog, new WebSettings(true, "127.0.0.1", server.port(), "")));
+        assertThrows(IOException.class, () -> AdminHttpServer.start(admin, mobs, new WebSettings(true, "127.0.0.1", server.port(), "")));
     }
 
     @Test

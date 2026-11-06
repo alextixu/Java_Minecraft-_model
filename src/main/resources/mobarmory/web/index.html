@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Mob Armory 武器後台</title>
+  <title>Mob Armory 後台</title>
   <link rel="stylesheet" href="/style.css">
   <script src="/app.js" defer></script>
 </head>
 <body>
   <header class="top">
     <div class="brand">
-      <h1>Mob Armory 武器後台</h1>
-      <p class="sub">改了以後立刻套用到遊戲裡所有同種武器，並寫回 <code>config/mobarmory/weapons/</code></p>
+      <h1>Mob Armory 後台</h1>
+      <p class="sub">武器和怪物改了以後立刻套用到遊戲裡，並寫回 <code>config/mobarmory/</code></p>
     </div>
     <div class="top-actions">
       <button type="button" id="refresh" class="ghost">重新整理</button>
@@ -23,6 +23,7 @@
     <button type="button" role="tab" class="tab active" data-tab="weapons" aria-selected="true">武器</button>
     <button type="button" role="tab" class="tab" data-tab="create" aria-selected="false">新增武器</button>
     <button type="button" role="tab" class="tab" data-tab="mobs" aria-selected="false">怪物</button>
+    <button type="button" role="tab" class="tab" data-tab="create-mob" aria-selected="false">新增怪物</button>
   </nav>
 
   <div id="notice" class="notice hidden" role="status" aria-live="polite"></div>
@@ -48,9 +49,23 @@
     </section>
 
     <section id="tab-mobs" class="panel hidden">
-      <h2>伺服器上的怪物</h2>
-      <p class="hint">這裡只能查看。怪物定義在模組的程式裡（<code>content/ModMobs.java</code>），要新增或修改怪物，請照 README 的「加一隻怪物」改程式，再重開遊戲。裝備欄寫的是武器的 id，武器本身可以在「武器」分頁修改。</p>
-      <ul id="mob-list" class="mob-list"></ul>
+      <p class="hint">每種怪物是 <code>config/mobarmory/mobs/&lt;id&gt;.json</code> 的一個檔案。存檔後，<strong>名稱、數值、大小</strong>立刻套用到世界上的同種怪物；<strong>行為和裝備</strong>等下次生成才生效；<strong>身體</strong>要重開遊戲才能換。</p>
+      <div class="layout">
+        <aside>
+          <h2>伺服器上的怪物</h2>
+          <ul id="mob-list" class="weapon-list"></ul>
+        </aside>
+        <section class="editor-wrap">
+          <div id="mob-editor-empty" class="empty">從左邊選一種怪物來編輯。</div>
+          <form id="mob-editor" class="editor hidden" novalidate></form>
+        </section>
+      </div>
+    </section>
+
+    <section id="tab-create-mob" class="panel hidden">
+      <h2>新增怪物</h2>
+      <p class="hint">新的怪物會存成 <code>config/mobarmory/mobs/&lt;id&gt;.json</code>。Minecraft 只在啟動時建立生物種類，所以<strong>重開遊戲後</strong>才能用生怪蛋或 <code>/summon</code> 生出來。不用改任何程式。</p>
+      <form id="mob-creator" class="editor" novalidate></form>
     </section>
   </main>
 

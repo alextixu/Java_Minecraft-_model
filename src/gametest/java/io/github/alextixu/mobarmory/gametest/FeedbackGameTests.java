@@ -5,7 +5,6 @@ import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.checkNear
 import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.stats;
 import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.test;
 
-import io.github.alextixu.mobarmory.content.ModMobs;
 import io.github.alextixu.mobarmory.content.ModStats;
 import io.github.alextixu.mobarmory.core.feedback.HitReport;
 import io.github.alextixu.mobarmory.core.feedback.HitResult;
@@ -496,7 +495,7 @@ final class FeedbackGameTests {
      * </ol>
      */
     static void skirmisherCritAndDodge(GameTestHelper helper) {
-        ArmoryMob skirmisher = helper.spawn(MobArmoryMod.MOBS.type(ModMobs.SKIRMISHER.id()), new BlockPos(12, 0, 12),
+        ArmoryMob skirmisher = helper.spawn(MobArmoryMod.MOBS.type(Mobs.skirmisher().id()), new BlockPos(12, 0, 12),
             EntitySpawnReason.SPAWN_ITEM_USE);
         ServerPlayer player = hurtablePlayer(helper);
         helper.startSequence()

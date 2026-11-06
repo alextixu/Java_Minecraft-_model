@@ -5,11 +5,11 @@ package io.github.alextixu.mobarmory.core.mob;
  *
  * @param speed multiplier on the mob's movement speed while wandering (1.0 = its normal speed)
  */
-public record WanderBehavior(double speed) implements Behavior {
+public record WanderBehavior(double speed) implements SpeedBehavior {
     public static final String NAME = "wander";
 
     public WanderBehavior {
-        Behavior.requirePositive(NAME, "speed", speed);
+        Behavior.requireSpeed(NAME, speed);
     }
 
     @Override

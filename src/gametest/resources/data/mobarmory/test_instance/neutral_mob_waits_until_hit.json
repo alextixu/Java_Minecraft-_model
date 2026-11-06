@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:alone_neutral",
+  "function": "mobarmory:neutral_mob_waits_until_hit",
+  "max_ticks": 300,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

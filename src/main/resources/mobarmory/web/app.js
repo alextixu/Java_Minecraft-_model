@@ -1,4 +1,4 @@
-// Mob Armory weapon admin (R6). Talks only to /api/v1 on the same server; no libraries, no outside requests.
+// Mob Armory admin: weapons (R6) and mobs (R4b). Talks only to /api/v1 on the same server; no libraries, no outside requests.
 'use strict';
 
 const STAT_LABELS = {
@@ -8,9 +8,10 @@ const STAT_LABELS = {
 const SLOT_LABELS = { mainhand: '主手', offhand: '副手', head: '頭盔', chest: '胸甲', legs: '護腿', feet: '靴子' };
 const STATUS_LABELS = { active: '生效中', pending_restart: '待重開遊戲', file_missing: '檔案已刪除，重開後消失' };
 const BODY_LABELS = { zombie: '殭屍', husk: '屍殼', skeleton: '骷髏', stray: '流髑' };
-const BEHAVIOR_LABELS = { wander: '閒晃', attack_players: '攻擊玩家' };
+const BEHAVIOR_LABELS = { wander: '閒晃', attack_players: '攻擊玩家', neutral: '中立（被打才反擊）', leap: '衝刺（撲向目標）' };
+const ATTACK_LABELS = { attack_players: '主動攻擊玩家', neutral: '中立：被打才反擊', none: '不攻擊' };
 
-const state = { stats: [], looks: { items: [], textures: [] }, weapons: [], mobs: [], selected: null };
+const state = { stats: [], looks: { items: [], textures: [] }, weapons: [], mobs: [], mobOptions: null, selected: null, selectedMob: null };
 const token = readToken();
 
 function readToken() {
@@ -78,17 +79,22 @@ function describeError(error) {
 
 // ---------- loading ----------
 async function loadAll(keepSelection = true) {
-  const [stats, looks, list, mobs] = await Promise.all([
-    api('GET', '/api/v1/stats'), api('GET', '/api/v1/looks'), api('GET', '/api/v1/weapons'), api('GET', '/api/v1/mobs')]);
+  const [stats, looks, list, mobs, mobOptions] = await Promise.all([
+    api('GET', '/api/v1/stats'), api('GET', '/api/v1/looks'), api('GET', '/api/v1/weapons'), api('GET', '/api/v1/mobs'),
+    api('GET', '/api/v1/mob-options')]);
   state.stats = stats;
   state.looks = looks;
   state.weapons = list.weapons;
   state.mobs = mobs.mobs;
+  state.mobOptions = mobOptions;
   renderList();
   renderMobs();
   const still = keepSelection && state.selected && state.weapons.find((w) => w.id === state.selected);
   if (still) openEditor(still); else if (!keepSelection) closeEditor();
+  const stillMob = keepSelection && state.selectedMob && state.mobs.find((m) => m.id === state.selectedMob);
+  if (stillMob) openMobEditor(stillMob); else if (!keepSelection) closeMobEditor();
   renderCreator();
+  renderMobCreator();
 }
 
 function renderList() {
@@ -291,7 +297,7 @@ function showFieldErrors(form, error) {
   for (const [name, reason] of Object.entries(fields)) {
     const input = form.querySelector(`[data-field="${CSS.escape(name)}"]`);
     if (input) input.classList.add('invalid');
-    const key = name.startsWith('modifiers') ? 'modifiers' : name.startsWith('look') ? 'look' : name;
+    const key = name.split(/[.[]/)[0]; // modifiers[1].add → modifiers, look.body → look, stats.max_health → stats
     const slot = form.querySelector(`[data-error-for="${CSS.escape(key)}"]`);
     if (slot) slot.textContent = `${name}：${reason}`;
   }
@@ -345,7 +351,7 @@ function renderCreator() {
   };
 }
 
-// ---------- mobs (read only) ----------
+// ---------- mobs (R4b: list, edit, create) ----------
 function statValue(id, value) {
   const stat = statById(id);
   return stat && stat.chance ? `${round(value * 100)}%` : String(round(value));
@@ -366,31 +372,198 @@ function renderMobs() {
     const stats = Object.entries(mob.stats).map(([id, value]) => `${statLabel(id)} ${statValue(id, value)}`);
     const equipment = Object.entries(mob.equipment).map(([slot, id]) => `${SLOT_LABELS[slot] || slot}：${weaponLabel(id)}`);
     const behaviors = mob.behaviors.map((name) => BEHAVIOR_LABELS[name] || name);
-    const row = (label, text) => el('div', { class: 'mob-row' }, el('span', { class: 'mob-label', text: label }), el('span', { text }));
-    return el('li', { class: 'mob-card' },
-      el('div', { class: 'name', text: mob.id }),
-      row('外觀', `${BODY_LABELS[mob.look.body] || mob.look.body}的身體，大小 ×${round(mob.look.scale)}`),
-      row('數值', stats.length ? stats.join('、') + '（沒列出的用預設值）' : '全部用預設值'),
-      row('裝備', equipment.length ? equipment.join('、') : '沒有'),
-      row('行為', behaviors.length ? behaviors.join('、') : '沒有（站著不動）'));
+    return el('li', {}, el('button', {
+      type: 'button',
+      class: 'weapon-item' + (mob.id === state.selectedMob ? ' selected' : ''),
+      'aria-label': `${mob.name}，${STATUS_LABELS[mob.status]}`,
+      onclick: () => { state.selectedMob = mob.id; renderMobs(); openMobEditor(mob); },
+    },
+    el('div', {}, el('span', { class: 'name', text: mob.name }), el('span', { class: 'badge ' + mob.status, text: STATUS_LABELS[mob.status] })),
+    el('div', { class: 'meta', text: `${mob.id} · ${BODY_LABELS[mob.look.body] || mob.look.body} ×${round(mob.look.scale)}` }),
+    el('div', { class: 'meta', text: stats.length ? stats.join('、') : '數值全部用預設值' }),
+    el('div', { class: 'meta', text: (equipment.length ? equipment.join('、') : '沒有裝備') + ' · '
+      + (behaviors.length ? behaviors.join('、') : '沒有行為（站著不動）') })));
   }));
 }
 
-// ---------- header, tabs ----------
-async function reloadFromFiles() {
-  try {
-    const report = await api('POST', '/api/v1/reload');
-    const lines = [];
-    if (report.changed.length) lines.push('已套用：' + report.changed.join('、'));
-    if (report.pendingRestart.length) lines.push('新武器，重開後生效：' + report.pendingRestart.join('、'));
-    if (report.fileMissing.length) lines.push('檔案不見了，維持到重開（重開後會從世界消失）：' + report.fileMissing.join('、'));
-    if (report.slotWaits.length) lines.push('欄位改了，重開後生效：' + report.slotWaits.join('、'));
-    notice('ok', lines.length ? '已從檔案重新載入。' : '已從檔案重新載入，沒有變動。', lines);
-    await loadAll();
-  } catch (error) {
-    const problems = (error.data && error.data.problems) || [];
-    notice('error', problems.length ? '沒有任何變動。請先修好這些檔案：' : '重新載入失敗：' + describeError(error), problems);
+/** The mob form, shared by edit and create; reads and writes the mob file format (data/MobFileJson). */
+function buildMobForm(form, entry, mode) {
+  const mob = entry ? entry.mob : {
+    name: '', look: { body: 'zombie', scale: 1 }, stats: {}, equipment: {},
+    behaviors: [{ type: 'wander', speed: 1 }, { type: 'attack_players', speed: 1 }],
+  };
+  const options = state.mobOptions || { bodies: Object.keys(BODY_LABELS), maxSpeed: 3, minScale: 0.0625, maxScale: 16 };
+  const editable = mode === 'create' || entry.status === 'active';
+  const byType = Object.fromEntries(mob.behaviors.map((b) => [b.type, b]));
+  const attack = byType.attack_players ? 'attack_players' : byType.neutral ? 'neutral' : 'none';
+  const chase = (byType.attack_players || byType.neutral || { speed: 1 }).speed ?? 1;
+  const parts = [];
+
+  if (mode === 'create') {
+    parts.push(field('id', 'id（檔名，也是 /summon 用的名稱）',
+      el('input', { name: 'id', required: true, pattern: '[a-z][a-z0-9_]*', placeholder: '例如 goblin', maxlength: 40 }),
+      '只能用小寫英文、數字、底線，開頭要是英文字母。'));
+  } else {
+    parts.push(el('div', { class: 'field' }, el('span', { class: 'legend', text: mob.name }),
+      el('p', { class: 'note', text: `id：${entry.id}　狀態：${STATUS_LABELS[entry.status]}` })));
   }
+  parts.push(field('name', '名稱（遊戲裡顯示的名字）', el('input', { name: 'name', value: mob.name, maxlength: 64, required: true })));
+
+  const body = el('select', { name: 'body', disabled: mode !== 'create' },
+    options.bodies.map((value) => el('option', { value, selected: value === mob.look.body, text: BODY_LABELS[value] || value })));
+  const scale = el('input', { name: 'scale', type: 'number', step: 'any', min: options.minScale, max: options.maxScale, value: mob.look.scale });
+  parts.push(el('div', { class: 'field' }, el('span', { class: 'legend', text: '外觀' }),
+    el('label', { class: 'choice' }, '身體', body), el('label', { class: 'choice' }, '大小倍率', scale),
+    el('p', { class: 'note', text: mode === 'create' ? '從原版的人形身體挑一種；大小 1 是原版大小。' : '身體要重開遊戲才能換，這裡不能改；大小立刻套用。' }),
+    el('div', { class: 'field-error', 'data-error-for': 'look' })));
+  body.dataset.field = 'look.body';
+  scale.dataset.field = 'look.scale';
+
+  const statInputs = state.stats.map((stat) => {
+    const value = mob.stats[stat.id];
+    const input = el('input', { type: 'number', step: 'any', min: stat.min, max: stat.max, value: value ?? '',
+      placeholder: `預設 ${statValue(stat.id, stat.default)}` });
+    input.dataset.field = 'stats.' + stat.id;
+    input.dataset.stat = stat.id;
+    return el('label', {}, el('span', { text: `${statLabel(stat.id)}（${stat.min}～${stat.max}）` }), input);
+  });
+  parts.push(el('div', { class: 'field' }, el('span', { class: 'legend', text: '數值' }), el('div', { class: 'stat-grid' }, statInputs),
+    el('p', { class: 'note', text: '空白就用預設值。機率類（暴擊率、迴避率）填 0～1。' }), el('div', { class: 'field-error', 'data-error-for': 'stats' })));
+
+  const slots = Object.keys(SLOT_LABELS).map((slot) => {
+    const choices = state.weapons.filter((w) => w.status === 'active' && w.weapon.slot === slot);
+    const select = el('select', {},
+      el('option', { value: '', text: '無', selected: !mob.equipment[slot] }),
+      choices.map((w) => el('option', { value: w.id, selected: mob.equipment[slot] === w.id, text: `${w.weapon.name}（${w.id}）` })));
+    if (mob.equipment[slot] && !choices.some((w) => w.id === mob.equipment[slot])) {
+      select.append(el('option', { value: mob.equipment[slot], selected: true, text: `${mob.equipment[slot]}（目前沒有這件或欄位不對，生成時不拿）` }));
+    }
+    select.dataset.field = 'equipment.' + slot;
+    select.dataset.slot = slot;
+    return el('label', {}, el('span', { text: SLOT_LABELS[slot] }), select);
+  });
+  parts.push(el('div', { class: 'field' }, el('span', { class: 'legend', text: '裝備' }), el('div', { class: 'stat-grid' }, slots),
+    el('p', { class: 'note', text: '只列出在那個欄位生效的武器。武器本身在「武器」分頁改。' }), el('div', { class: 'field-error', 'data-error-for': 'equipment' })));
+
+  const wander = el('input', { type: 'checkbox', name: 'wander', checked: !!byType.wander });
+  wander.dataset.speed = byType.wander ? (byType.wander.speed ?? 1) : 1;
+  const radios = Object.entries(ATTACK_LABELS).map(([value, label]) =>
+    el('label', { class: 'choice' }, el('input', { type: 'radio', name: 'attack', value, checked: value === attack }), label));
+  const speed = el('input', { name: 'chase', type: 'number', step: 'any', min: 0.1, max: options.maxSpeed, value: chase });
+  const leap = el('input', { type: 'checkbox', name: 'leap', checked: !!byType.leap });
+  parts.push(el('div', { class: 'field' }, el('span', { class: 'legend', text: '行為' }),
+    el('label', { class: 'choice' }, wander, '閒晃（沒事時隨意走動）'),
+    el('div', {}, radios),
+    el('label', { class: 'choice' }, '追擊速度', speed),
+    el('p', { class: 'note', text: `奔跑：1 是原本的速度，1.3 以上看起來像在跑，最多 ${options.maxSpeed}。追擊距離固定 16 格。` }),
+    el('label', { class: 'choice' }, leap, '衝刺：靠近目標時往前撲（要搭配攻擊或中立）'),
+    el('div', { class: 'field-error', 'data-error-for': 'behaviors' })));
+  speed.dataset.field = 'behaviors';
+
+  if (editable) parts.push(el('div', { class: 'actions' }, el('button', { type: 'submit', text: mode === 'create' ? '新增' : '儲存並套用' })));
+  else parts.push(el('p', { class: 'note', text: '這種怪物要重開遊戲後才能改。' }));
+  form.replaceChildren(...parts);
+}
+
+function readMobForm(form) {
+  const number = (input) => (input.value.trim() === '' ? undefined : Number(input.value));
+  const stats = {};
+  form.querySelectorAll('[data-stat]').forEach((input) => {
+    const value = number(input);
+    if (value !== undefined) stats[input.dataset.stat] = value;
+  });
+  const equipment = {};
+  form.querySelectorAll('[data-slot]').forEach((select) => { if (select.value) equipment[select.dataset.slot] = select.value; });
+  const behaviors = [];
+  const wander = $('[name="wander"]', form);
+  if (wander.checked) behaviors.push({ type: 'wander', speed: Number(wander.dataset.speed) });
+  const attack = $('[name="attack"]:checked', form).value;
+  const chase = number($('[name="chase"]', form)) ?? 1;
+  if (attack !== 'none') behaviors.push({ type: attack, speed: chase });
+  if ($('[name="leap"]', form).checked) behaviors.push({ type: 'leap' });
+  return {
+    format: 1,
+    name: $('[name="name"]', form).value,
+    look: { body: $('[name="body"]', form).value, scale: number($('[name="scale"]', form)) ?? 1 },
+    stats,
+    equipment,
+    behaviors,
+  };
+}
+
+function openMobEditor(entry) {
+  const form = $('#mob-editor');
+  $('#mob-editor-empty').classList.add('hidden');
+  form.classList.remove('hidden');
+  buildMobForm(form, entry, 'edit');
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    clearErrors(form);
+    try {
+      const saved = await api('PUT', '/api/v1/mobs/' + encodeURIComponent(entry.id), readMobForm(form));
+      notice('ok', `「${saved.name}」已存成 ${entry.id}.json。名稱、數值、大小已套用到世界上的${saved.name}；行為和裝備等下次生成才生效；身體要重開遊戲。`);
+      await loadAll();
+    } catch (error) {
+      showFieldErrors(form, error);
+      notice('error', '沒有儲存：' + describeError(error));
+    }
+  };
+}
+
+function closeMobEditor() {
+  $('#mob-editor').classList.add('hidden');
+  $('#mob-editor-empty').classList.remove('hidden');
+}
+
+function renderMobCreator() {
+  const form = $('#mob-creator');
+  if (form.dataset.ready) return;
+  form.dataset.ready = 'yes';
+  buildMobForm(form, null, 'create');
+  form.onsubmit = async (event) => {
+    event.preventDefault();
+    clearErrors(form);
+    const body = Object.assign({ id: $('[data-field="id"]', form).value.trim() }, readMobForm(form));
+    try {
+      const created = await api('POST', '/api/v1/mobs', body);
+      notice('ok', `已存成 config/mobarmory/mobs/${created.id}.json。重開遊戲後就能用生怪蛋或 /summon mobarmory:${created.id} 生出來。`);
+      delete form.dataset.ready;
+      await loadAll();
+    } catch (error) {
+      showFieldErrors(form, error);
+      notice('error', '沒有儲存：' + describeError(error));
+    }
+  };
+}
+
+// ---------- header, tabs ----------
+/** One button, two kinds of files (R4b O12): weapons, then mobs; each is all or nothing on its own. */
+async function reloadFromFiles() {
+  const lines = [];
+  const problems = [];
+  try {
+    const report = await api('POST', '/api/v1/reload', {}); // a JSON body: the server only takes changes as JSON (B13)
+    if (report.changed.length) lines.push('武器已套用：' + report.changed.join('、'));
+    if (report.pendingRestart.length) lines.push('新武器，重開後生效：' + report.pendingRestart.join('、'));
+    if (report.fileMissing.length) lines.push('武器檔不見了，維持到重開（重開後會從世界消失）：' + report.fileMissing.join('、'));
+    if (report.slotWaits.length) lines.push('武器欄位改了，重開後生效：' + report.slotWaits.join('、'));
+  } catch (error) {
+    const found = (error.data && error.data.problems) || [];
+    problems.push(...(found.length ? found.map((p) => '武器：' + p) : ['武器重新載入失敗：' + describeError(error)]));
+  }
+  try {
+    const report = await api('POST', '/api/v1/mobs/reload', {});
+    if (report.changed.length) lines.push('怪物已套用：' + report.changed.join('、'));
+    if (report.pendingRestart.length) lines.push('新怪物，重開後生效：' + report.pendingRestart.join('、'));
+    if (report.fileMissing.length) lines.push('怪物檔不見了，維持到重開（重開後那種怪物會從世界消失）：' + report.fileMissing.join('、'));
+    if (report.bodyWaits.length) lines.push('怪物身體改了，重開後生效：' + report.bodyWaits.join('、'));
+  } catch (error) {
+    const found = (error.data && error.data.problems) || [];
+    problems.push(...(found.length ? found.map((p) => '怪物：' + p) : ['怪物重新載入失敗：' + describeError(error)]));
+  }
+  if (problems.length) notice('error', '有問題的那一種沒有任何變動。請先修好這些檔案：', problems.concat(lines));
+  else notice('ok', lines.length ? '已從檔案重新載入。' : '已從檔案重新載入，沒有變動。', lines);
+  await loadAll().catch(() => {});
 }
 
 function switchTab(name) {
