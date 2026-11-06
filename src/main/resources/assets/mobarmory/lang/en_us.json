@@ -6,7 +6,6 @@
   "item.mobarmory.heavy_armor": "Heavy Armor",
   "entity.mobarmory.brute": "Brute",
   "entity.mobarmory.skirmisher": "Skirmisher",
-  "entity.mobarmory.sentinel": "Sentinel",
   "item.mobarmory.spawn_egg": "%s Spawn Egg",
   "attribute.name.mobarmory.crit_chance": "Crit Chance",
   "attribute.name.mobarmory.dodge_chance": "Dodge Chance",
