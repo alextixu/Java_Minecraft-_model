@@ -276,3 +276,29 @@ R4 說的「遊戲內 48」是伺服器報告的數字。遊戲內測試的報�
 3. 站著讓它打：畫面下方出現紅色的 `Skirmisher hit you -x ❤ …/20`，大約一半會是 `… CRIT …`，數字是一般的 1.5 倍。
 4. 空手打它：大約三成出現灰色的 `Skirmisher MISS ❤ 16.0/16`，它的血不會少；打中時出現白色的 `Skirmisher -1.0 ❤ 15.0/16`。
 5. `/attribute @s mobarmory:dodge_chance base set 0.75`，再讓它打：大部分是灰色的 `Dodged Skirmisher ❤ …/20`。
+
+## 9. SOLID／Pattern 檢查
+
+這一節是 2026-11-07 由架構師補的，依長期規定第 3 點：每份行為報告都要有這一節（review-03 P3-9）。上面各節是連招小弟寫的，沒有改動。內容逐條對照當天 main 上的 D1 程式。合併時每一步的檢查在 [prompts/damage-display-round-03-merge.md](prompts/damage-display-round-03-merge.md)。
+
+### SOLID
+
+| 原則 | 對照的程式 | 判斷 |
+|---|---|---|
+| S 單一職責 | `HitFilter`：哪些傷害要顯示、給誰看。`HitText`：顯示的文字。`HitReport`：一次命中的結果，只是資料。`HitFeedbackListener`：從遊戲事件組出 `HitReport`，並記住暴擊的判定。`ActionBarDisplay`：顯示在 action bar。規則都在純 Java 的 `core/feedback` | 符合 |
+| O 開放封閉 | 加一種顯示方式（例如之後的 combo 名稱、網頁的戰鬥紀錄）：實作 `HitDisplay`，在 `MobArmoryMod` 加一行，既有的顯示和規則都不用改 | 符合 |
+| O（注意） | `HitText` 用 `switch` 判斷 `HitResult`（命中、暴擊、迴避），`ActionBarDisplay` 用 `switch` 判斷 `Tone`。兩個都是封閉集合，加一種結果要改這兩處 | 刻意的取捨 |
+| L 替換 | 用 `CombatObserver.NONE` 時，`CombatEffectListener` 的行為和 D1 之前完全一樣，舊的建構子就是這樣。`HitDisplay` 有正式的 `ActionBarDisplay`，還有遊戲內測試用 `addDisplay` 加上的觀察用 display，兩者收到同樣的 `HitReport`。`HitText` 有契約測試（`HitTextContractTest`） | 符合 |
+| I 介面隔離 | `CombatObserver` 有兩個 default 方法，實作的一方只要覆寫需要的那個；`HitDisplay` 只有 `show` | 符合 |
+| D 依賴反轉 | `CombatEffectListener` 依賴 `CombatObserver` 介面，不知道 action bar 存在。`core/feedback` 只 import `core/combat` 和 JDK（`CoreBoundaryTest`）。顯示出錯時，`HitFeedbackListener` 會接住例外，不會影響戰鬥 | 符合 |
+
+### Pattern
+
+| Pattern | 在哪裡 | 為什麼 |
+|---|---|---|
+| Observer | `CombatObserver`（戰鬥 → 回饋）、`HitDisplay`（回饋 → 各種顯示） | 只聽不改，所以加了 D1 之後戰鬥規則照舊 |
+| 規則和顯示分開 | `HitFilter`、`HitText` 在 `core/feedback`；`ActionBarDisplay` 在 `forge/feedback` | 規則可以不開遊戲就測（單元 +54）；換顯示方式時規則不動 |
+
+### 結論
+
+沒有發現違反。唯一的「注意」是用 `switch` 判斷結果和色調，屬於刻意的取捨。

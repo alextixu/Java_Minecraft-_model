@@ -50,7 +50,7 @@ web/              （純 Java）WeaponAdmin、WeaponApi、AdminHttpServer、WebS
 forge/            ServerWeaponAdmin、WeaponLooks（武器帶著目前外觀）、WeaponSyncChannel（定義＋PNG 封包）、
                   WebAdminLifecycle、ReloadCommand、EquipmentItem、EquipmentItemFactory、EquipmentStatApplier、WeaponStartup
 forge/client/     GeneratedWeaponPack（執行時資源包）、ClientTextures（從伺服器收到的 PNG）、ClientResourceReload
-resources/        mobarmory/default_weapons/*.json；assets/mobarmory/textures/item/（7 張＋CREDITS.md）；
+resources/        mobarmory/default_weapons/*.json；assets/mobarmory/textures/item/（7 張）；mobarmory/CREDITS.md（2026-11-07 從貼圖旁邊搬來）；
                   assets/mobarmory/items/look/、models/item/look/（7 種內建外觀）；assets/mobarmory/items/<4 件預設>.json；
                   mobarmory/web/（index.html、app.js、style.css）
 ```

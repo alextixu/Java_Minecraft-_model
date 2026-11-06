@@ -162,10 +162,12 @@ forge/client/     GeneratedWeaponPack、ClientTextures、ClientResourceReload
 
 ## 10. 示範影片劇本（D2）
 
+> 正式錄影以腳本小弟的 `demo/scripts/02-prototype-short-script.md` 為準（不在 repo 裡）。這份保留當作 R2b＋R6 的逐步檢查清單。
+
 前置：
 - `run/config/mobarmory/weapons/heavy_sword.json` 是預設值（攻擊力 +6）。要還原時，從 `src/main/resources/mobarmory/default_weapons/heavy_sword.json` 複製過去，再執行 `/mobarmory reload`。
 - 白天（`/time set day`）、生存模式（`/gamemode survival`）。錄影用 NVIDIA 的 Alt+F9。
-- D1 還沒合併時，用括號裡的 `/data` 指令看殭屍剩下的血。
+- D1 已經在 2026-11-07 合進 main：打中殭屍時，action bar 會直接顯示傷害和剩下的血。括號裡的 `/data` 指令可以拿來對照。
 
 | 步驟 | 畫面 | 說明／預期 |
 |---|---|---|
@@ -191,8 +193,8 @@ forge/client/     GeneratedWeaponPack、ClientTextures、ClientResourceReload
 |---|---|---|
 | S 單一職責 | `WeaponJson` 只管 JSON 格式；`WeaponLoader` 只管讀整個資料夾和檢查外觀；`WeaponEditor` 只管「先寫檔，再換定義」；`EquipmentLibrary` 只管目前的定義快照；`ServerWeaponAdmin` 只管切到伺服器執行緒，改完後重算數值、換外觀、送封包；`WeaponApi` 只管 HTTP 路由和 JSON；`AdminHttpServer` 只管安全檢查 | 符合 |
 | S（注意） | `MobArmoryMod` 是組裝根，R2b、R4、D1 都在這裡加欄位和註冊（現在有 10 個共用元件欄位，從 `STATS` 到 `HIT_FEEDBACK`）。它只負責組裝、沒有規則，所以不算違反；再加功能時可以考慮按功能拆成幾個註冊類別 | 注意，沒有違反 |
-| O 開放封閉 | 加一把武器：1 個 JSON，0 行 Java。加一張內建貼圖：PNG、2 個模型 JSON、`BuiltInTextures.NAMES` 一行。加一種數值：`ModStats` 一行，武器 JSON 和網頁表單會自動出現（R4 的 `max_health` 就是這樣） | 符合 |
-| O（注意） | 外觀種類是 sealed 的 `EquipmentLook`（原版物品、貼圖，Q5 決定的封閉集合）。`WeaponJson`、`WeaponLoader`、`WeaponAssets`、`WeaponLooks` 用窮舉的 `switch`，`WeaponAssets`、`WeaponSync`、`EquipmentItemFactory` 用 `instanceof`。加第三種外觀要改這 6 個檔案，但窮舉 `switch` 漏改時編譯器會報錯。外觀種類是使用者決定的封閉集合，所以這裡選 sealed 加 switch，不另外抽 Strategy | 刻意的取捨 |
+| O 開放封閉 | 加一把武器：1 個 JSON，0 行 Java。加一張內建貼圖：PNG、2 個模型 JSON、`BuiltInTextures.NAMES` 一行。加一種數值：`ModStats` 一行，武器 JSON 和網頁表單會自動出現（R4 的 `max_health` 就是這樣）；但網頁要顯示中文名稱，`app.js` 的 `STAT_LABELS` 還要多一行，否則顯示英文 id（review-03 指出；`max_health` 的中文名稱在 `012a2de` 補上） | 符合 |
+| O（注意） | 外觀種類是 sealed 的 `EquipmentLook`（原版物品、貼圖，Q5 決定的封閉集合）。`WeaponJson`、`WeaponLoader`、`WeaponAssets`、`WeaponLooks` 用窮舉的 `switch`，`WeaponAssets`、`WeaponSync`、`EquipmentItemFactory` 用 `instanceof`。加第三種外觀要改型別本身（`EquipmentLook`）、上面 6 個 Java 檔案，以及網頁的外觀選單（`app.js`）（review-03 指出原本少算了型別本身和網頁）。窮舉 `switch` 漏改時編譯器會報錯，`instanceof` 和網頁則不會。外觀種類是使用者決定的封閉集合，所以這裡選 sealed 加 switch，不另外抽 Strategy | 刻意的取捨 |
 | L 替換 | `WeaponStore` 有兩個實作：`WeaponFolder`（正式）和 `InMemoryWeaponStore`（測試），用同一組參數化契約測試（`WeaponStoreContractTest`）。`WeaponAdmin` 有兩個實作：`ServerWeaponAdmin`（正式）和 `TestWeaponAdmin`（`WeaponApiTest` 用） | 符合 |
 | I 介面隔離 | `WeaponAdmin` 有 9 個方法，只有網頁一個使用者，而且每個方法都用到；`WeaponStore` 只有讀寫武器檔和貼圖；`EquipmentLook` 沒有方法，只是資料 | 符合 |
 | D 依賴反轉 | `web` 只認得 `WeaponAdmin`，不 import `forge` 或 Minecraft；`data`、`web`、`core` 不 import Minecraft，由 `CoreBoundaryTest` 守住；`WeaponEditor` 依賴 `WeaponStore` 介面；`LoadoutCalculator` 依賴 `Supplier<EquipmentCatalog>`，不依賴 library 本身 | 符合 |
@@ -211,3 +213,45 @@ forge/client/     GeneratedWeaponPack、ClientTextures、ClientResourceReload
 ### 結論
 
 沒有發現違反。兩個「注意」是已知的取捨，不需要現在改：組裝根變大、外觀種類用 sealed switch。
+
+## 12. 交付前的追加（2026-11-07 夜間段落 A）
+
+依 review-03 第 7 節，在 main 上做了下面幾件事。指令、每一步寫程式前的 SOLID／Pattern／變更邊界，都在 [prompts/round-07-delivery-prep.md](prompts/round-07-delivery-prep.md)。
+
+| 項目 | commit | 內容 | 測試 |
+|---|---|---|---|
+| 根目錄 README（P0-3） | `d50f14f` | 安裝、玩法、加武器、加怪物、多人規則、已知限制、跑測試、文件索引、素材來源 | 只有文件 |
+| 網頁的怪物（P1-6） | `012a2de` | `GET /api/v1/mobs` 唯讀列出怪物；網頁「怪物」分頁改成清單；刪掉「要等 R4」的文字 | H10、B17（上面第 7 節）；單元 +4 |
+| 多人的兩個小修正（P2-8） | `6c01cfd` | 離開伺服器後還原本機的武器和貼圖；送 PNG 前跑 `PngCheck`（第 3 節） | 單元 +7、遊戲內 +1 |
+| 文件和小瑕疵（P3-9） | 本節所在的 commit | 04、14、16 補「SOLID／Pattern 檢查」；第 10、11 節的過時或不精確的地方；`CREDITS.md` 搬出 `assets/`，加「資源路徑都合法」的契約測試；修好網頁遊戲內測試的時間問題（見下） | 單元 +1 |
+
+**最後的結果**：`gradlew clean build runGameTestServer` 連跑兩次都全過，**單元 333/333、遊戲內 59/59**（58 個我們的加原版 `always_pass`）。
+
+**跑測試時發現的既有問題**：
+
+- **現象**：第一次 clean build 時，`web_admin_saves_through_the_game` 失敗，訊息是「waiting for the web server to answer on tick 202」。接著兩個怪物測試讀到重劍攻擊 +16，所以也失敗了。
+- **原因**：
+  - 測試伺服器會盡快跑 tick，200 tick 大約只要 0.7 秒；網頁存檔要等真實的時間，所以這個測試以前是剛好來得及。
+  - 測試失敗時，`finally` 沒有機會執行，重劍的 +16 就留到後面的批次。
+- **修正**：
+  - 請求加上 15 秒的 timeout。
+  - `max_ticks` 改成 6000。
+  - 關網頁伺服器、還原重劍改放在 `helper.addCleanup`，不管測試通過或失敗都會執行。
+- 這是 R6 原本就有的測試問題，不是這一輪的改動造成的。
+
+**`Invalid path in pack` 已經不見**：
+- 搬家前，`run/logs` 舊的 log 有「Invalid path in pack: mobarmory:textures/item/CREDITS.md」。
+- 搬家後開一次 `runClient`，資源載入完成，log 裡沒有這一行。
+- 單元測試 `everyAssetPathIsAValidResourcePath` 會擋下以後放錯的檔案。
+
+### 這一輪新增的程式：SOLID／Pattern 檢查
+
+| 類別 | S | O | L | I | D | Pattern |
+|---|---|---|---|---|---|---|
+| `web/MobAdmin` | 只回答「有哪些怪物」 | 之後要讓網頁改怪物，在這裡加方法 | 正式（`MOBS::catalog`）和測試（`ModMobs::catalog`）回傳同一種不可變的 `MobCatalog` | 一個方法，`WeaponAdmin` 沒有加任何怪物的方法 | `web` 只認得這個介面，由組裝根接上實作 | Adapter／port，和 `WeaponAdmin` 同一個形狀 |
+| `web/MobJson` | 只管怪物清單的 JSON 長什麼樣子 | 加怪物不用改它 | — | — | 只依賴 `core/mob` 的資料型別 | — |
+| `data/ClientWeaponState` | 只管「客戶端現在用的是誰的定義、怎麼回到本機的」 | — | — | 三個方法 | 依賴 `WeaponStore` 介面和 `WeaponLoader`，純 Java | 不可變快照（`replaceAll` 整份換掉） |
+| `forge/client/WeaponClientEvents` | 只接一個客戶端事件 | — | — | — | 只在客戶端註冊，獨立伺服器不會載入 | Observer（Forge 事件匯流排）＋Adapter |
+
+- **名稱上的小瑕疵**：`WeaponApi` 現在也處理 `/api/v1/mobs`，名字不完全貼切。改名要動 `AdminHttpServer`、測試和文件，這次不改。
+- **沒有覆蓋**：`LoggingOut` 事件本身，以及畫面上「回到單人後看到本機的外觀」，只有手動步驟（第 3 節）。

@@ -21,7 +21,7 @@
 | [03-open-questions.md](03-open-questions.md) | 確認點的問題與決定（設計 3 題、商業規則 4 題、其他 9 項、命名） | 已決定（全部照建議） |
 | [prompts/](prompts/) | 每一輪交給 AI 的 prompt | 持續更新 |
 | [screenshots/](screenshots/) | 遊戲內手動走查的截圖（行為報告第 6 節） | 2026-11-06 |
-| [04-behavior-report.md](04-behavior-report.md) | 行為報告：結構摘要、各層測試數量、Given / When / Then 對照、沒有覆蓋的範圍、待決定的新問題 | 已產出（第 3 輪更新：單元 106/106、遊戲內 18/18） |
+| [04-behavior-report.md](04-behavior-report.md) | 行為報告：結構摘要、各層測試數量、Given / When / Then 對照、沒有覆蓋的範圍、待決定的新問題、SOLID／Pattern 檢查（第 8 節，2026-11-07 補） | 已產出（第 3 輪更新：單元 106/106、遊戲內 18/18） |
 
 ## R4：自訂怪物（驗收 T2）
 
@@ -32,7 +32,7 @@ R4 由另一個 session 在 `feature/r4-mobs` 分支做，2026-11-07 合進 main
 | [05-r4-boundary-note.md](05-r4-boundary-note.md) | 需求翻譯、平台限制、變更邊界、實作順序、測試計畫 | 已確認 |
 | [06-r4-given-when-then.md](06-r4-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 已確認 |
 | [07-r4-open-questions.md](07-r4-open-questions.md) | 確認點的問題與決定（設計 3 題、商業規則 4 題、其他 10 項，加上第三輪的 Q8、第四輪的 O2 裝備部分） | 已決定（全部照建議；Q8 選 B；O2 的裝備部分 11/07 改成 B） |
-| [14-r4-behavior-report.md](14-r4-behavior-report.md) | 行為報告：結構摘要、各層測試數量、Given / When / Then 對照、T2 實測（加第 3 種怪物）、合併到 main 的紀錄（第 8 節） | 已產出（合併 main 後：單元 268/268、遊戲內 48/48，含原版 1 個） |
+| [14-r4-behavior-report.md](14-r4-behavior-report.md) | 行為報告：結構摘要、各層測試數量、Given / When / Then 對照、T2 實測（加第 3 種怪物）、合併到 main 的紀錄（第 8 節）、SOLID／Pattern 檢查（第 9 節，架構師 2026-11-07 補） | 已產出（合併 main 後：單元 268/268、遊戲內 48/48，含原版 1 個） |
 | [prompts/round-r4-02-decisions.md](prompts/round-r4-02-decisions.md)、[round-r4-03-merge.md](prompts/round-r4-03-merge.md) | R4 的決定和合併 main 時的 prompt | 2026-11-07 |
 
 ## D1：砍怪傷害顯示（action bar）
@@ -44,7 +44,7 @@ D1 由另一個 session 在 `feature/damage-hud` 分支做，2026-11-07 合進 m
 | [11-damage-display-boundary-note.md](11-damage-display-boundary-note.md) | 需求翻譯、平台限制、變更邊界、實作順序、測試計畫 | 已確認（只做 action bar，Q4 C） |
 | [12-damage-display-given-when-then.md](12-damage-display-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 已確認 |
 | [13-damage-display-open-questions.md](13-damage-display-open-questions.md) | 確認點的問題與決定（照審查員 review-01 X3 縮小成只做 action bar） | 已決定 |
-| [16-damage-display-behavior-report.md](16-damage-display-behavior-report.md) | 行為報告：結構摘要、各層測試數量、Given / When / Then 對照、沒有覆蓋的範圍、合併到 main 的紀錄（第 8 節） | 已產出（合併 R4 後：單元 322/322、遊戲內 58/58，含原版 1 個） |
+| [16-damage-display-behavior-report.md](16-damage-display-behavior-report.md) | 行為報告：結構摘要、各層測試數量、Given / When / Then 對照、沒有覆蓋的範圍、合併到 main 的紀錄（第 8 節）、SOLID／Pattern 檢查（第 9 節，架構師 2026-11-07 補） | 已產出（合併 R4 後：單元 322/322、遊戲內 58/58，含原版 1 個） |
 | [prompts/damage-display-round-01～03](prompts/) | D1 的邊界草案、決定、合併的 prompt | 2026-11-07 |
 
 ## R2b ＋ R6：武器改成資料驅動、網頁後台
@@ -54,7 +54,7 @@ D1 由另一個 session 在 `feature/damage-hud` 分支做，2026-11-07 合進 m
 | [08-weapon-data-web-boundary-note.md](08-weapon-data-web-boundary-note.md) | 需求翻譯、平台限制、變更邊界、給其他模組的穩定介面、網頁 API、實作順序、測試計畫 | 已確認（最終版） |
 | [09-weapon-data-web-given-when-then.md](09-weapon-data-web-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 已確認（最終版） |
 | [10-weapon-data-web-open-questions.md](10-weapon-data-web-open-questions.md) | 確認點的問題與決定，含決定的經過（先「全部照建議」，後改「照審查建議版」） | 已決定 |
-| [15-weapon-data-web-behavior-report.md](15-weapon-data-web-behavior-report.md) | 行為報告：第一版和最終版的差別、結構、給 R4／D1 的穩定介面、各層測試數量、Given / When / Then 對照、實測紀錄、沒有覆蓋的範圍、示範影片劇本、SOLID／Pattern 檢查（第 11 節） | 已產出（單元 237/237、遊戲內 29/29） |
+| [15-weapon-data-web-behavior-report.md](15-weapon-data-web-behavior-report.md) | 行為報告：第一版和最終版的差別、結構、給 R4／D1 的穩定介面、各層測試數量、Given / When / Then 對照、實測紀錄、沒有覆蓋的範圍、示範影片劇本、SOLID／Pattern 檢查（第 11 節）、交付前的追加（第 12 節） | 已產出（單元 237/237、遊戲內 29/29；第 12 節之後是 333/333、59/59） |
 
 ## 合併到 main（2026-11-07）
 
@@ -64,6 +64,19 @@ D1 由另一個 session 在 `feature/damage-hud` 分支做，2026-11-07 合進 m
 |---|---|
 | 單元測試 | **322 / 322** |
 | 遊戲內系統測試 | **58 / 58**（我們的 57 個加原版 `always_pass`） |
+
+## 交付前的準備（2026-11-07 夜間段落 A）
+
+使用者睡前授權（「繼續把所有內容補齊……我睡醒再回來驗收」）。主 session 依審查員 review-03 第 7 節下指令，架構師在 main 上做了下面這些事。指令和每一步的 SOLID、Pattern、變更邊界見 [prompts/round-07-delivery-prep.md](prompts/round-07-delivery-prep.md)，結果見 15 號第 12 節。
+
+| 項目 | commit |
+|---|---|
+| 根目錄 [README](../../README.md)：安裝、玩法、加武器、加怪物、多人規則、已知限制 | `d50f14f` |
+| 網頁的怪物分頁：唯讀清單，`GET /api/v1/mobs` | `012a2de` |
+| 多人的兩個小修正：離開伺服器後還原、送 PNG 前檢查 | `6c01cfd` |
+| 04、14、16 補 SOLID／Pattern 檢查；15 號的過時文字；`CREDITS.md` 搬家；網頁遊戲內測試的時間問題 | 這一份索引所在的 commit |
+
+結果：`gradlew clean build runGameTestServer` 單元 **333/333**、遊戲內 **59/59**（58 個我們的加原版 1 個）。
 
 ## 文件編號
 

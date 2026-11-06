@@ -253,3 +253,35 @@ src/gametest/（獨立 source set，只在測試伺服器載入，不進正式 j
 - 規則放在核心：`CombatContext` 多一個 `fullStrength`（生物、投射物沒有蓄力，一律算蓄滿），`CritEffect` 只在蓄滿時擲暴擊。原版跳劈本來就要求蓄滿，所以兩種暴擊的條件一致。
 - Minecraft 在觸發 `CriticalHitEvent` 之前就把蓄力歸零（`Player.attack` 先呼叫 `onAttack()`）。所以 `CombatEffectListener` 改在更早的 `AttackEntityEvent` 記下這一擊的蓄力，暴擊事件再讀出來；門檻和原版一樣是 0.9。
 - 測試：`CritEffectTest` 多 2 個；遊戲內 `player_crit_needs_full_charge` 用真正的揮劍確認沒蓄滿不暴擊。
+
+## 8. SOLID／Pattern 檢查
+
+這一節是 2026-11-07 補的，依長期規定第 3 點：每份行為報告都要有這一節（review-03 P3-9）。內容逐條對照當天 main 上的程式。R1、R2 之後有兩處變動：
+- R2b 把裝備改成 JSON 檔，`content/ModEquipment` 已經刪除。
+- R4 在 `ModStats` 加了 `max_health`。
+
+### SOLID
+
+| 原則 | 對照的程式 | 判斷 |
+|---|---|---|
+| S 單一職責 | `StatCatalog` 只列出有哪些數值；`StackingRules` 只管多個修飾怎麼合起來（固定值相加、百分比相乘、上下限）；`DodgeEffect`、`CritEffect` 各管一種戰鬥效果；`CombatResolver` 只管依序執行效果；`LoadoutCalculator` 只管「身上的裝備 → 目標數值」；`StatAttributeBridge` 只管數值和原版 Attribute 的對應；`EntityStatBinder` 只管把自訂數值掛到每種生物；`EquipmentStatApplier` 只管換裝時套用修飾 | 符合 |
+| O 開放封閉 | 加一種數值：`ModStats` 一行，自訂數值再加語系檔一行。有戰鬥效果的話，再加一個 `StatEffect` 實作和效果清單一行。N3 實測加「攻擊速度」：2 個檔案、6 行，事件處理器都沒改（第 1 節）。加一件裝備：R2b 之後是 1 個 JSON 檔、0 行 Java；第 1 節表格裡的 3 個檔案是 R2b 之前的做法 | 符合 |
+| O（注意） | `StackingRules` 用 `switch` 判斷 `ModifierOperation`（`ADD`、`MULTIPLY`）。疊加方式是 Q4 決定的封閉集合，加第三種疊加方式要改 enum、`StackingRules` 和武器 JSON 的格式（`WeaponJson`） | 刻意的取捨 |
+| L 替換 | `StatEffect` 的兩個實作跑同一組契約測試（`StatEffectContractTest`）：數值 0 不觸發、超出範圍會夾住、怪數字不丟例外、同樣的亂數得到同樣的結果、環境傷害不變、傷害不會變負數。裝備定義也有契約測試（`EquipmentContractTest`） | 符合 |
+| I 介面隔離 | `StatEffect` 只有 `apply` 一個方法；`StatReader` 只有 `get`；`RandomSource` 只有擲骰子用的方法 | 符合 |
+| D 依賴反轉 | `core/` 只依賴自己的 `StatReader`、`RandomSource` 介面，不 import Minecraft（`CoreBoundaryTest`）；`forge/EntityStatReader` 實作 `StatReader`，遊戲裡擲骰用生物自己的亂數；`CombatEffectListener` 只認得 `CombatEffects` 裡的 `StatEffect`，不知道有暴擊、迴避 | 符合 |
+
+### Pattern
+
+| Pattern | 在哪裡 | 為什麼 |
+|---|---|---|
+| Strategy | `StatEffect`：`DodgeEffect`、`CritEffect` | 數值的戰鬥效果會一直加（Q7）；事件處理器不用跟著改 |
+| 依序執行的效果鏈 | `CombatResolver`：每個效果看到前一個的結果，被取消就停 | 迴避在前、暴擊在後；新的效果只要排進清單 |
+| Builder | `StatCatalog.builder()`、`EquipmentCatalog.builder()` | 建好之後唯讀；建的時候檢查 id 重複、數值不存在（O2） |
+| Adapter | `StatAttributeBridge`（數值 → 原版 Attribute）、`EntityStatReader`（生物 → `StatReader`） | 核心是純 Java，可以不開遊戲就測 |
+| Factory | `EquipmentItemFactory`：每個定義做一個物品 | 新裝備不用新的類別 |
+| 固定 id、每次從頭算 | `EquipmentStatApplier` 只用一個固定 id 的修飾（`mobarmory:equipment`），值是「目標值 − 基礎值」 | 重生、重新登入、換多少次裝都不會疊加（B11、B12） |
+
+### 結論
+
+沒有發現違反。唯一的「注意」是疊加方式用 `switch`，屬於刻意的取捨。

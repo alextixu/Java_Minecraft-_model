@@ -15,6 +15,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
@@ -32,7 +33,14 @@ final class WebAdminGameTests {
         test("web_admin_saves_through_the_game", WebAdminGameTests::savesThroughTheGame);
     }
 
-    /** H5 end to end: PUT /api/v1/weapons/heavy_sword with attack +16, and the held sword hits for 17. */
+    /**
+     * H5 end to end: PUT /api/v1/weapons/heavy_sword with attack +16, and the held sword hits for 17.
+     * <p>
+     * The answer takes wall-clock time, but the test server runs ticks as fast as it can (200 ticks passed in about
+     * 0.7 s on 2026-11-07, and this test then failed once). So the request has its own 15-second timeout, the test
+     * instance allows many ticks, and the cleanup closes the server and puts the shipped sword back whether the test
+     * passes or fails; otherwise a failure here would leave attack +16 for every later batch.
+     */
     static void savesThroughTheGame(GameTestHelper helper) {
         AdminHttpServer server;
         try {
@@ -40,6 +48,10 @@ final class WebAdminGameTests {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+        helper.addCleanup(passed -> {
+            server.close();
+            LiveEditGameTests.restore();
+        });
         ServerPlayer player = LiveEditGameTests.playerHoldingSword(helper);
         checkNear(helper, 7.0, player.getAttributeValue(stats().holder(ModStats.ATTACK_DAMAGE.id())), "given: attack with the shipped sword");
         String body = """
@@ -49,6 +61,7 @@ final class WebAdminGameTests {
         // Sent from another thread while this one keeps ticking: the request waits for the server thread to apply it.
         CompletableFuture<HttpResponse<String>> response = HttpClient.newHttpClient().sendAsync(
             HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + server.port() + "/api/v1/weapons/heavy_sword"))
+                .timeout(Duration.ofSeconds(15))
                 .header("Content-Type", "application/json")
                 .PUT(HttpRequest.BodyPublishers.ofString(body)).build(),
             HttpResponse.BodyHandlers.ofString());
@@ -56,15 +69,10 @@ final class WebAdminGameTests {
         helper.startSequence()
             .thenWaitUntil(() -> check(helper, response.isDone(), "waiting for the web server to answer"))
             .thenExecute(() -> {
-                try {
-                    HttpResponse<String> answer = response.join();
-                    check(helper, answer.statusCode() == 200, "web save answered " + answer.statusCode() + ": " + answer.body());
-                    checkNear(helper, 17.0, player.getAttributeValue(stats().holder(ModStats.ATTACK_DAMAGE.id())),
-                        "then: attack right after the web save");
-                } finally {
-                    server.close();
-                    LiveEditGameTests.restore();
-                }
+                HttpResponse<String> answer = response.join();
+                check(helper, answer.statusCode() == 200, "web save answered " + answer.statusCode() + ": " + answer.body());
+                checkNear(helper, 17.0, player.getAttributeValue(stats().holder(ModStats.ATTACK_DAMAGE.id())),
+                    "then: attack right after the web save");
             })
             .thenSucceed();
     }

@@ -144,3 +144,49 @@
 - 單元測試 332/332：325 加上 `ClientWeaponStateTest` 5 個、`WeaponSyncTest` 1 個、`ClientTexturesTest` 1 個。
 - 遊戲內 59/59：多了 `left_server_restores_local_weapons`。log 有「left the server; weapons are read from this game's files again (changed: [heavy_sword])」。
 - `LoggingOut` 事件和畫面上的結果沒有自動測試，手動步驟寫在 15 號第 3 節。
+- commit `6c01cfd`。
+
+## 第 4 步：文件和小瑕疵（review-03 P3-9）
+
+### 要做的事
+
+1. 04、14、16 號報告各補一節「SOLID／Pattern 檢查」，逐條對照現在 main 上的程式。
+   - 14、16 是其他 session 寫的報告。這次由架構師補，是因為主 session 的指令這樣交代；原本的內容一個字都不改，只在文末加一節。
+2. 15 號：
+   - 第 10 節：過時的「D1 還沒合併時……」。
+   - 第 11 節：review-03 指出兩處不精確。
+     - 加第三種外觀時，漏算了 `EquipmentLook` 本身和網頁的外觀選單。
+     - 加一種數值時，網頁要顯示中文名稱，`app.js` 也要加一行。
+   - 新增第 12 節，記錄這一輪的追加和它們的 SOLID／Pattern 檢查。
+3. `app.js` 的 `max_health` 中文名稱：已在第 2 步做了（`012a2de`），這一步不再改。
+4. `CREDITS.md`：
+   - 從 `assets/mobarmory/textures/item/` 搬到 `src/main/resources/mobarmory/CREDITS.md`。這個位置在 jar 裡，但不在 `assets/`、`data/` 底下，不會被當成資源讀取。
+   - 大寫的檔名在資源包裡是不合法的路徑，所以每次啟動 log 都有 `Invalid path in pack`。
+   - `ContentResourcesTest` 改讀新位置，另外加一個契約測試：`assets/` 底下每個檔案的路徑都是 Minecraft 允許的資源路徑（小寫英文、數字和 `_-./`），以後放錯檔案會在單元測試就被擋下。
+   - **和 O15 的張力**：O15 寫的是「旁邊放作者標註」。搬家之後，標註仍然在同一個 repo、同一個 jar，README 也有素材來源一節，作者標註的目的沒有變，只是不再和 PNG 放在同一個資料夾。所以照指令搬，並在 10 號記一行。如果使用者要求標註一定要緊鄰貼圖，可以改成小寫的 `credits.md` 放回原處，同樣不會報錯。
+
+### 檢查
+
+- **SOLID**：除了 `ContentResourcesTest`，這一步只改文件和資源的位置，不改程式，不適用。
+- **Pattern**：新的資源路徑測試是契約測試：`assets/` 底下的每一個檔案，都跑同一條規則。
+- **變更邊界**：
+  - 文件：04、14、15、16 號（14、16 只在文末加一節）、10 號（O15 加一行）、08 號（檔案位置）、README。
+  - 資源：`git mv` 搬 `CREDITS.md`。
+  - 測試：`ContentResourcesTest`。
+  - 不改 `core/`、`content/` 的程式。
+
+### 結果
+
+- **第一次全跑**：clean build 時遊戲內有 3 個失敗。
+  - 根本原因是 `web_admin_saves_through_the_game` 原本就有的時間問題：測試伺服器 200 tick 大約只要 0.7 秒，網頁存檔要等真實的時間。
+  - 它失敗時沒有還原重劍，所以後面兩個怪物測試讀到攻擊 +16，也跟著失敗。
+- **修正**（不在原本的範圍，但會讓「全部通過」不可靠，所以在這一步處理）：
+  - 請求加上 15 秒的 timeout。
+  - `max_ticks` 改成 6000。
+  - 收尾改用 `helper.addCleanup`，通過或失敗都會還原。
+  - 這是 R6 的測試程式碼，屬於架構師負責的範圍，沒有動到正式程式。
+- **修正後**：連跑兩次 `clean build runGameTestServer` 都全過，單元 333/333、遊戲內 59/59。
+- **`Invalid path in pack`**：
+  - 搬家前的舊 log 有「Invalid path in pack: mobarmory:textures/item/CREDITS.md」。
+  - 搬家後開一次 `runClient`，資源載入完成，log 沒有這一行。只看了 log，沒有對遊戲做任何操作，看完就關掉。
+- **另外看到**：有一個 04:23 開的 Minecraft 視窗，是別的 session 從 `demo/builds/main-061e7a9` 開的快照，和 `mod/` 是不同的資料夾，沒有去動它。

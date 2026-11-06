@@ -196,7 +196,7 @@
 - `build`：跑單元測試，不用開遊戲。結果在 `build/test-results/test/`。
 - `runGameTestServer`：開一個沒有畫面的遊戲伺服器跑系統測試。結果在 `run-gametest/gametest-report.xml`，有測試失敗時指令會失敗。
 - 遊戲內測試在獨立的 `run-gametest/` 資料夾跑，每次先清空，所以不受 `run/config/` 裡改過的設定影響。
-- 2026-11-07 main（`061e7a9`）的結果：單元 322/322，遊戲內 58/58。遊戲內的 58 個是我們的 57 個，加上 Minecraft 自帶的 `always_pass`。
+- 2026-11-07 交付準備之後的 main：單元 333/333，遊戲內 59/59。遊戲內的 59 個是我們的 58 個，加上 Minecraft 自帶的 `always_pass`。
 
 ## 文件索引
 
@@ -213,4 +213,4 @@
 
 ## 素材來源
 
-武器貼圖來自 HanhanPx 的 [Minecraft Weapon Pack](https://hanhanpx.itch.io/minecraft-weapon-pack)。作者頁面寫「Feel free to use and modify it!」並要求標註作者。這個 repo 只放模組用到的 7 張貼圖，內容沒有修改，也不轉發整個素材包。每個檔案對應素材包裡的哪個檔案，見 [`CREDITS.md`](src/main/resources/assets/mobarmory/textures/item/CREDITS.md)。
+武器貼圖來自 HanhanPx 的 [Minecraft Weapon Pack](https://hanhanpx.itch.io/minecraft-weapon-pack)。作者頁面寫「Feel free to use and modify it!」並要求標註作者。這個 repo 只放模組用到的 7 張貼圖，內容沒有修改，也不轉發整個素材包。每個檔案對應素材包裡的哪個檔案，見 [`CREDITS.md`](src/main/resources/mobarmory/CREDITS.md)。
