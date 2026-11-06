@@ -91,3 +91,56 @@
 - **結果**：
   - 單元測試 325/325：原本 322，刪 1 個 501 的測試，加 4 個。遊戲內 58/58。
   - 用一次性的本機預覽（記憶體裡的武器，不寫檔）在瀏覽器打開「怪物」分頁：狂戰士、遊擊兵的外觀、數值（含「最大生命」、百分比）、裝備名稱、行為都正確顯示，console 沒有錯誤。
+  - commit `012a2de`。
+
+## 第 3 步：多人的兩個小修正（review-03 P2-8）
+
+### 做法
+
+1. **登出或斷線時還原**：
+   - 新增 `data/ClientWeaponState`，記住客戶端的 library 現在放的是不是伺服器的定義。
+   - 收到伺服器的定義時，經由 `applyFromServer`，再用既有的 `WeaponSync.apply` 套用。
+   - 登出時，如果剛才用的是伺服器的定義，就用同一個 `WeaponLoader` 從本機的 `config/mobarmory/weapons/` 重新讀一次，放回 library。
+   - 單人遊戲從來不套用伺服器的定義，所以登出時什麼都不做。
+   - 同時清掉 `ClientTextures`。
+   - 監聽 Forge 的 `ClientPlayerNetworkEvent.LoggingOut`。這是客戶端才有的類別，所以放在新的 `forge/client/WeaponClientEvents`，只在客戶端註冊，和 R4 的 `MobArmoryClient` 一樣。
+2. **送 PNG 前跑 `PngCheck`**：
+   - `WeaponSync.uploadedTexturesInUse` 從磁碟讀到圖之後，先跑 `PngCheck`。不合格的不送、也不列進摘要，並回報給呼叫的一方，由 `forge/` 寫一行警告。
+   - `sendToAll` 改成每次修改只讀一次磁碟，所有玩家共用，警告也只寫一次。
+
+### 考慮過、沒採用的做法
+
+連線前先把本機的定義存一份，登出時放回去。沒採用，因為 08 號規定設定檔是唯一的來源，review-03 也建議從檔案重新載入。
+
+### 檢查
+
+- **SOLID**：
+  - S：
+    - `ClientWeaponState` 只管「客戶端現在用的是誰的定義、怎麼回到本機的」。
+    - `WeaponSyncChannel` 仍然只是封包的轉接器。
+    - `WeaponClientEvents` 只接一個客戶端事件。
+    - PNG 的規則仍然只在 `PngCheck` 一處。
+  - O：沒有新增型別判斷。
+  - L：沒有新的介面實作；`WeaponStore` 的兩個實作照舊。
+  - I：沒有改介面。
+  - D：
+    - `ClientWeaponState` 依賴 `WeaponStore` 介面和 `WeaponLoader`，是純 Java，可以直接做單元測試。
+    - `forge/` 只負責接線。
+  - 結論：不違反。
+- **Pattern**：
+  - Observer：Forge 的事件匯流排，`LoggingOut` 監聽器。
+  - Adapter：`WeaponClientEvents` 把 Forge 事件轉成 `WeaponSyncChannel.leftServer()`。
+  - 不可變快照：沿用 `EquipmentLibrary.replaceAll`，整份換掉。
+- **變更邊界**：
+  - 新增：`data/ClientWeaponState`、`forge/client/WeaponClientEvents`。
+  - 修改：`data/WeaponSync`、`forge/WeaponSyncChannel`、`forge/client/ClientTextures`（加 `clear()`）、`forge/MobArmoryMod`（建構參數、客戶端註冊各一行）。
+  - 測試：`ClientWeaponStateTest`、`WeaponSyncTest`、`ClientTexturesTest`，以及遊戲內一個新測試，放在會改重劍的 `live_edit` 批次。
+  - 文件：15 號第 3 節的手動驗證步驟、README 的已知限制。
+  - 不動：`core/`、`content/`、R4 和 D1 的類別、封包格式（協定版本維持 2）。
+  - 在 08 號允許的 `data/`、`forge/`、`forge/client/` 範圍內。
+
+### 結果
+
+- 單元測試 332/332：325 加上 `ClientWeaponStateTest` 5 個、`WeaponSyncTest` 1 個、`ClientTexturesTest` 1 個。
+- 遊戲內 59/59：多了 `left_server_restores_local_weapons`。log 有「left the server; weapons are read from this game's files again (changed: [heavy_sword])」。
+- `LoggingOut` 事件和畫面上的結果沒有自動測試，手動步驟寫在 15 號第 3 節。

@@ -51,6 +51,30 @@
 3. 在伺服器那台開 `http://127.0.0.1:8765/`，上傳一張 PNG，把重劍外觀換成它、攻擊力改成 16。
 4. 兩個客戶端：tooltip 都是 +16、名稱一樣；畫面出現幾秒的載入後，手上的重劍都變成上傳的圖。
 
+**離開伺服器後還原**（review-03 P2-8，2026-11-07 補上）：
+
+- 做法：
+  - 客戶端登出或斷線時（Forge 的 `ClientPlayerNetworkEvent.LoggingOut`），清掉收到的 PNG（`ClientTextures.clear()`）。
+  - 如果剛才用的是伺服器的定義，就從本機的 `config/mobarmory/weapons/` 重新讀一次（`ClientWeaponState.restoreLocal()`）。
+  - 單人遊戲從來不套用伺服器的定義，所以什麼都不做。
+- 自動測試涵蓋的範圍：
+  - `ClientWeaponStateTest` 有 5 個情況。
+  - `ClientTexturesTest`。
+  - 遊戲內的 `left_server_restores_local_weapons`：在遊戲裡透過 `MobArmoryMod.WEAPON_SYNC`，模擬遠端客戶端收到伺服器的定義和 PNG，再呼叫 `leftServer()`。
+- 自動測試沒涵蓋：`LoggingOut` 事件本身，以及畫面上的結果。手動驗證步驟：
+  1. 照上面的步驟 1～3，讓伺服器把重劍改名，外觀換成上傳的 PNG。
+  2. 客戶端 A 看到新名稱和貼圖後，按「中斷連線」回到標題畫面。log 會有一行 `left the server; weapons are read from this game's files again`。
+  3. 客戶端 A 開一個單人世界，`/give @p mobarmory:heavy_sword`。名稱、tooltip 是本機檔案的內容；外觀是本機設定的外觀。如果本機也用同名的上傳貼圖，進世界時會出現幾秒的載入畫面，之後顯示本機的圖。
+
+**送 PNG 前先檢查**（review-03 P2-8）：
+
+- 做法：
+  - 伺服器每次要送上傳的 PNG 之前，先從磁碟讀一次，跑 `PngCheck`。
+  - 不合格的不送、也不列進摘要，log 寫一行 `not sending texture '<名稱>' to players`。
+  - 玩家不會因為收到太大的檔案，在解碼時斷線。
+- 自動測試：`WeaponSyncTest.unusableFilesAreNotSent`。
+- 手動驗證：伺服器執行中，把一張正在用的上傳 PNG 換成超過 256 KB 的檔案或文字檔，再讓客戶端連進來。客戶端應該能正常進入，伺服器 log 有上面那一行。
+
 ## 4. 給 R4、D1 的穩定介面
 
 合併順序是 R2b 先進 main。請用下面這些，不要再用 `content/ModEquipment`（已刪除）：

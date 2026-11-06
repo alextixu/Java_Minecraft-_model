@@ -2,8 +2,11 @@ package io.github.alextixu.mobarmory.forge;
 
 import com.mojang.logging.LogUtils;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
+import io.github.alextixu.mobarmory.data.ClientWeaponState;
 import io.github.alextixu.mobarmory.data.PngCheck;
 import io.github.alextixu.mobarmory.data.WeaponFormatException;
+import io.github.alextixu.mobarmory.data.WeaponLoadException;
+import io.github.alextixu.mobarmory.data.WeaponLoader;
 import io.github.alextixu.mobarmory.data.WeaponStore;
 import io.github.alextixu.mobarmory.data.WeaponSync;
 import io.github.alextixu.mobarmory.forge.client.ClientResourceReload;
@@ -39,7 +42,8 @@ import org.slf4j.Logger;
  * </ol>
  * The client puts the definitions into its library (names, tooltips) and, if its runtime resource pack lacks one of
  * those textures, reloads its resources. In single player the client and the server share one library and one folder,
- * so only the reload check runs.
+ * so only the reload check runs. When the player leaves a server, {@link #leftServer()} drops the received PNGs and
+ * reads this game's own weapon files again (review-03 P2-8).
  */
 public final class WeaponSyncChannel {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -92,12 +96,15 @@ public final class WeaponSyncChannel {
 
     private final EquipmentLibrary library;
     private final WeaponStore store;
+    /** On a client: whether the library holds a server's definitions, and how to go back to this game's files. */
+    private final ClientWeaponState client;
     /** Which texture versions each player already has; only touched on the server thread. */
     private final Map<ServerPlayer, Map<String, String>> sentTextures = new WeakHashMap<>();
 
-    public WeaponSyncChannel(EquipmentLibrary library, WeaponStore store) {
+    public WeaponSyncChannel(EquipmentLibrary library, WeaponStore store, WeaponLoader loader) {
         this.library = library;
         this.store = store;
+        this.client = new ClientWeaponState(library, store, loader);
     }
 
     public void register() {
@@ -114,10 +121,15 @@ public final class WeaponSyncChannel {
         return new Definitions(WeaponSync.snapshot(library), WeaponSync.digests(uploadedTextures()));
     }
 
-    /** The texture packets a player who has nothing yet would get now. */
+    /**
+     * The texture packets a player who has nothing yet would get now. Files that fail {@code PngCheck} are left out
+     * with a warning, so no player is sent a PNG it would refuse.
+     */
     public Map<String, byte[]> uploadedTextures() {
         try {
-            return WeaponSync.uploadedTexturesInUse(library, store);
+            return WeaponSync.uploadedTexturesInUse(library, store, (name, problem) -> LOGGER.warn(
+                "Mob Armory: not sending texture '{}' to players: the file {} (fix or replace it in the textures folder)",
+                name, problem));
         } catch (IOException e) {
             LOGGER.warn("Mob Armory: could not read uploaded textures: {}", e.toString());
             return Map.of();
@@ -125,13 +137,38 @@ public final class WeaponSyncChannel {
     }
 
     public void sendToAll(MinecraftServer server) {
+        Map<String, byte[]> textures = uploadedTextures(); // read once for everyone
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            sendTo(player);
+            sendTo(player, textures);
+        }
+    }
+
+    /** The client side of this channel; the game tests use it to act as a remote client. */
+    public ClientWeaponState client() {
+        return client;
+    }
+
+    /**
+     * On the client, when the player leaves a world or a server: forgets the PNGs the server sent and, if the library
+     * held a server's definitions, reads this game's own weapon files again. Called from {@code WeaponClientEvents}.
+     */
+    public void leftServer() {
+        ClientTextures.clear();
+        try {
+            client.restoreLocal().ifPresent(report ->
+                LOGGER.info("Mob Armory: left the server; weapons are read from this game's files again (changed: {})",
+                    report.changed()));
+        } catch (IOException | WeaponLoadException e) {
+            LOGGER.warn("Mob Armory: left the server but could not read this game's weapon files ({}); "
+                + "the server's definitions stay until the next restart or server", e.getMessage());
         }
     }
 
     private void sendTo(ServerPlayer player) {
-        Map<String, byte[]> textures = uploadedTextures();
+        sendTo(player, uploadedTextures());
+    }
+
+    private void sendTo(ServerPlayer player, Map<String, byte[]> textures) {
         Map<String, String> digests = WeaponSync.digests(textures);
         Map<String, String> sent = sentTextures.computeIfAbsent(player, p -> new HashMap<>());
         try {
@@ -170,7 +207,7 @@ public final class WeaponSyncChannel {
         context.setPacketHandled(true);
         if (!singlePlayer()) {
             try {
-                WeaponSync.apply(MobArmoryMod.EQUIPMENT_LIBRARY, definitions.weapons());
+                MobArmoryMod.WEAPON_SYNC.client().applyFromServer(definitions.weapons());
             } catch (WeaponFormatException e) {
                 LOGGER.warn("Mob Armory: ignored weapon definitions from the server: {}", e.getMessage());
                 return;

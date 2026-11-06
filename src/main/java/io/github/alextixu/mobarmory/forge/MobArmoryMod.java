@@ -9,6 +9,7 @@ import io.github.alextixu.mobarmory.data.WeaponEditor;
 import io.github.alextixu.mobarmory.data.WeaponFolder;
 import io.github.alextixu.mobarmory.forge.client.GeneratedWeaponPack;
 import io.github.alextixu.mobarmory.forge.client.MobArmoryClient;
+import io.github.alextixu.mobarmory.forge.client.WeaponClientEvents;
 import io.github.alextixu.mobarmory.forge.feedback.ActionBarDisplay;
 import io.github.alextixu.mobarmory.forge.feedback.HitFeedbackListener;
 import java.util.List;
@@ -47,7 +48,8 @@ public final class MobArmoryMod {
     public static final EquipmentItemFactory EQUIPMENT = new EquipmentItemFactory(EQUIPMENT_LIBRARY, STATS, MODID);
     public static final EquipmentStatApplier EQUIPMENT_STATS = new EquipmentStatApplier(EQUIPMENT_LIBRARY, STATS);
     /** Sends the definitions to players so remote clients show the same names and tooltips (decision Q3 B). */
-    public static final WeaponSyncChannel WEAPON_SYNC = new WeaponSyncChannel(EQUIPMENT_LIBRARY, WEAPON_FILES);
+    public static final WeaponSyncChannel WEAPON_SYNC =
+        new WeaponSyncChannel(EQUIPMENT_LIBRARY, WEAPON_FILES, WeaponStartup.loader(ModStats.CATALOG));
     /** The one way to change weapons while the game runs: reload command and web page (R2b, R6). */
     public static final ServerWeaponAdmin WEAPON_ADMIN = new ServerWeaponAdmin(
         new WeaponEditor(EQUIPMENT_LIBRARY, WEAPON_FILES, WeaponStartup.loader(ModStats.CATALOG)), EQUIPMENT_STATS, WEAPON_SYNC);
@@ -98,6 +100,7 @@ public final class MobArmoryMod {
         HIT_FEEDBACK.register();
         if (FMLEnvironment.dist == Dist.CLIENT) {
             MobArmoryClient.register(MOBS);
+            WeaponClientEvents.register(WEAPON_SYNC);
         }
 
         FMLCommonSetupEvent.getBus(modBusGroup).addListener(event -> {
