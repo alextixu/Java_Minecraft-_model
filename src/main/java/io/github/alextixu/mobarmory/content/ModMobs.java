@@ -39,7 +39,18 @@ public final class ModMobs {
         .behavior(new AttackPlayersBehavior(1.0))
         .build();
 
-    public static final List<MobDefinition> ALL = List.of(BRUTE, SKIRMISHER);
+    public static final MobDefinition SENTINEL = MobDefinition.builder("sentinel")
+        .look(MobLook.of(MobLook.Body.SKELETON))
+        .stat(ModStats.MAX_HEALTH, 24)
+        .stat(ModStats.ATTACK_DAMAGE, 3)
+        .stat(ModStats.MOVEMENT_SPEED, 0.23)
+        .equip(EquipmentSlotKind.MAINHAND, "dagger")
+        .equip(EquipmentSlotKind.CHEST, "heavy_armor")
+        .behavior(new WanderBehavior(0.8))
+        .behavior(new AttackPlayersBehavior(1.2))
+        .build();
+
+    public static final List<MobDefinition> ALL = List.of(BRUTE, SKIRMISHER, SENTINEL);
 
     private ModMobs() {
     }
