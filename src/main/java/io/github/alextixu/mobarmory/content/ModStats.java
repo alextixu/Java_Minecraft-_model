@@ -21,6 +21,9 @@ public final class ModStats {
         StatDefinition.vanilla("movement_speed", "minecraft:movement_speed", 0.1, 0, 1024).withFloorRatio(0.3);
     public static final StatDefinition ARMOR =
         StatDefinition.vanilla("armor", "minecraft:armor", 0, 0, 30);
+    /** Swings per second; the attack bar refills in 20 / attack speed ticks. Added for N3 (heavy weapons swing slower). */
+    public static final StatDefinition ATTACK_SPEED =
+        StatDefinition.vanilla("attack_speed", "minecraft:attack_speed", 4.0, 0, 1024);
     /** Chance that an attack deals 1.5x damage. Capped at 100%. */
     public static final StatDefinition CRIT_CHANCE = StatDefinition.custom("crit_chance", 0, 0, 1.0);
     /** Chance to avoid damage caused by a mob (melee or projectile). Capped at 75%. */
@@ -30,6 +33,7 @@ public final class ModStats {
         .add(ATTACK_DAMAGE)
         .add(MOVEMENT_SPEED)
         .add(ARMOR)
+        .add(ATTACK_SPEED)
         .add(CRIT_CHANCE)
         .add(DODGE_CHANCE)
         .build();

@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:heavy_sword_swings_slower",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

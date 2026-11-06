@@ -41,6 +41,20 @@ final class EquipmentGameTests {
         test("dagger_attack_damage", EquipmentGameTests::daggerAttackDamage);
         test("vanilla_sword_adds_no_stats", EquipmentGameTests::vanillaSwordAddsNoStats);
         test("zombie_equipment_event", EquipmentGameTests::zombieEquipmentEvent);
+        test("heavy_sword_swings_slower", EquipmentGameTests::heavySwordSwingsSlower);
+    }
+
+    /** N3: the heavy sword's -40% attack speed: 4.0 x 0.6 = 2.4, back to 4.0 without it. */
+    static void heavySwordSwingsSlower(GameTestHelper helper) {
+        Player player = player(helper);
+        checkNear(helper, 4.0, value(player, ModStats.ATTACK_SPEED), "N3 given: empty-handed attack speed");
+
+        equip(player, EquipmentSlot.MAINHAND, stack(ModEquipment.HEAVY_SWORD));
+        checkNear(helper, 2.4, value(player, ModStats.ATTACK_SPEED), "N3 then: attack speed with heavy sword");
+
+        equip(player, EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+        checkNear(helper, 4.0, value(player, ModStats.ATTACK_SPEED), "N3: attack speed after putting it away");
+        helper.succeed();
     }
 
     private static ItemStack stack(EquipmentDefinition equipment) {

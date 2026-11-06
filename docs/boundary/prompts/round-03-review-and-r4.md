@@ -42,3 +42,10 @@
 > - 規則放在核心：`CombatContext` 多一個 `fullStrength`（這一擊是否蓄滿；生物沒有蓄力，永遠算蓄滿，原本 5 個參數的建構子預設為 true）。`CritEffect` 只有在蓄滿時才擲暴擊；原版跳劈本來就要求蓄滿，所以兩邊條件一致。
 > - `CombatEffectListener`：Minecraft 在觸發 `CriticalHitEvent` 之前就把蓄力歸零（`Player.attack` 先呼叫 `onAttack()`），所以改在更早的 `AttackEntityEvent` 記下這一擊的蓄力，暴擊事件再讀出來；門檻和原版一樣是 0.9。
 > - 測試：Component（`CritEffectTest`：沒蓄滿不暴擊）；System（真的伺服器端玩家用 `Player.attack` 打牛：沒蓄滿 100% 暴擊率也不暴擊；蓄滿時暴擊、跳劈、兩者同時都是 1.5 倍）。
+
+### N3：新增「攻擊速度」數值，重劍 −40%
+
+> - 照 R1 的規則：在 `content/ModStats` 加一筆對應原版 `minecraft:attack_speed` 的定義（預設 4.0、範圍 0～1024），並加進登記表；在 `content/ModEquipment` 的重劍加上 `percent(ATTACK_SPEED, −0.40)`。
+> - 原版已有翻譯「Attack Speed」，tooltip 和 `/mobarmory stats` 用的是 Attribute 本身的名稱，所以語系檔不用改。
+> - 不准動：`core/`、`forge/`。新增數值不應該需要改任何事件處理器或轉接層。
+> - 測試：Module（重劍：4.0 × 0.6 = 2.4）、契約（自動涵蓋）、System（玩家拿重劍攻速 2.4，放下回 4.0）。

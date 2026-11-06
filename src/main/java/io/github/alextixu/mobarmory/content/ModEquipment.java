@@ -15,7 +15,8 @@ public final class ModEquipment {
     public static final EquipmentDefinition HEAVY_SWORD = EquipmentDefinition.of(
         "heavy_sword", EquipmentSlotKind.MAINHAND, "minecraft:netherite_sword",
         add(ModStats.ATTACK_DAMAGE.id(), 6),
-        percent(ModStats.MOVEMENT_SPEED.id(), -0.30));
+        percent(ModStats.MOVEMENT_SPEED.id(), -0.30),
+        percent(ModStats.ATTACK_SPEED.id(), -0.40));
 
     public static final EquipmentDefinition DAGGER = EquipmentDefinition.of(
         "dagger", EquipmentSlotKind.MAINHAND, "minecraft:iron_sword",

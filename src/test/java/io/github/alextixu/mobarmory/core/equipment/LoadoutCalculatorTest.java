@@ -26,8 +26,9 @@ class LoadoutCalculatorTest {
     private static final StatId DODGE = ModStats.DODGE_CHANCE.id();
 
     /** Base values of a vanilla player. */
+    private static final StatId ATTACK_SPEED = ModStats.ATTACK_SPEED.id();
     private static final Map<StatId, Double> PLAYER_BASE = Map.of(
-        ATTACK, 1.0, SPEED, 0.1, ModStats.ARMOR.id(), 0.0, CRIT, 0.0, DODGE, 0.0);
+        ATTACK, 1.0, SPEED, 0.1, ModStats.ARMOR.id(), 0.0, ATTACK_SPEED, 4.0, CRIT, 0.0, DODGE, 0.0);
 
     private final LoadoutCalculator calculator = new LoadoutCalculator(ModEquipment.CATALOG);
 
@@ -52,6 +53,13 @@ class LoadoutCalculatorTest {
     @DisplayName("H1 Given 玩家空手，移動速度 0.1 When 主手拿起重劍 Then 移動速度 = 0.1 × 0.7 = 0.07")
     void h1HeavySwordSlowsDown() {
         assertEquals(0.07, valueOf(loadout(EquipmentSlotKind.MAINHAND, ModEquipment.HEAVY_SWORD), SPEED), EPS);
+    }
+
+    @Test
+    @DisplayName("N3 Given 玩家空手，攻擊速度 4.0 When 主手拿起重劍 Then 攻擊速度 = 4.0 × 0.6 = 2.4；放下回到 4.0")
+    void n3HeavySwordSwingsSlower() {
+        assertEquals(2.4, valueOf(loadout(EquipmentSlotKind.MAINHAND, ModEquipment.HEAVY_SWORD), ATTACK_SPEED), EPS);
+        assertEquals(4.0, valueOf(Map.of(), ATTACK_SPEED), EPS);
     }
 
     @Test
