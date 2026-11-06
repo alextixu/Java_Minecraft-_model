@@ -11,6 +11,7 @@ import io.github.alextixu.mobarmory.core.stat.StackingRules;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
 import io.github.alextixu.mobarmory.core.stat.StatId;
 import io.github.alextixu.mobarmory.core.stat.StatModifier;
+import io.github.alextixu.mobarmory.data.WeaponJson;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -32,6 +33,13 @@ class EquipmentContractTest {
     /** Each stat starts at its catalog default, which for vanilla stats is the player's base. */
     private static double base(StatId stat) {
         return ModStats.CATALOG.get(stat).defaultValue();
+    }
+
+    /** R2b: saving a piece to its file and reading it back loses nothing (the web page saves this way). */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("allEquipment")
+    void jsonRoundTripIsLossless(EquipmentDefinition equipment) throws Exception {
+        assertEquals(equipment, WeaponJson.read(equipment.id(), WeaponJson.write(equipment), ModStats.CATALOG));
     }
 
     @ParameterizedTest(name = "{0}")
