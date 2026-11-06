@@ -1,8 +1,8 @@
 package io.github.alextixu.mobarmory.forge;
 
-import io.github.alextixu.mobarmory.core.equipment.EquipmentCatalog;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentDefinition;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
+import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentLook;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,7 +21,8 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * Builds and registers one item per equipment definition (Factory). Adding equipment never needs a new class.
+ * Builds and registers one item per piece found at startup (Factory). Adding equipment never needs a new class,
+ * only a new weapon file and a restart (the item registry is frozen after startup).
  */
 public final class EquipmentItemFactory {
     private static final List<String> ARMOR_PIECES = List.of("_helmet", "_chestplate", "_leggings", "_boots");
@@ -29,12 +30,12 @@ public final class EquipmentItemFactory {
     private final DeferredRegister<Item> items;
     private final Map<EquipmentId, RegistryObject<Item>> byId = new LinkedHashMap<>();
 
-    public EquipmentItemFactory(EquipmentCatalog catalog, StatAttributeBridge stats, String modId) {
+    public EquipmentItemFactory(EquipmentLibrary library, StatAttributeBridge stats, String modId) {
         this.items = DeferredRegister.create(ForgeRegistries.ITEMS, modId);
-        for (EquipmentDefinition definition : catalog.all()) {
-            String name = definition.id().value();
-            byId.put(definition.id(), items.register(name,
-                () -> new EquipmentItem(properties(definition, items.key(name)), definition.id(), catalog, stats)));
+        for (EquipmentId id : library.registered()) {
+            EquipmentDefinition definition = library.current().get(id);
+            String name = id.value();
+            byId.put(id, items.register(name, () -> new EquipmentItem(properties(definition, items.key(name)), id, library, stats)));
         }
     }
 
@@ -54,18 +55,25 @@ public final class EquipmentItemFactory {
         return item.get();
     }
 
+    /**
+     * Whether something is drawn on the body is fixed when the item is registered (the {@code equippable}
+     * component), so it follows the look the piece had at startup (decision O12).
+     */
     private static Item.Properties properties(EquipmentDefinition definition, ResourceKey<Item> key) {
         Item.Properties properties = new Item.Properties().setId(key).stacksTo(1);
         if (definition.slot().isArmor()) {
-            properties = properties.component(DataComponents.EQUIPPABLE,
-                Equippable.builder(Slots.toMinecraft(definition.slot())).setAsset(armorAsset(definition)).build());
+            Equippable.Builder equippable = Equippable.builder(Slots.toMinecraft(definition.slot()));
+            if (definition.look() instanceof EquipmentLook.VanillaItem item) {
+                equippable.setAsset(armorAsset(item));
+            }
+            properties = properties.component(DataComponents.EQUIPPABLE, equippable.build());
         }
         return properties;
     }
 
     /** "minecraft:iron_chestplate" is drawn on the body with Minecraft's "iron" armor (O8). */
-    private static ResourceKey<EquipmentAsset> armorAsset(EquipmentDefinition definition) {
-        Identifier look = Identifier.parse(((EquipmentLook.VanillaItem) definition.look()).item());
+    private static ResourceKey<EquipmentAsset> armorAsset(EquipmentLook.VanillaItem item) {
+        Identifier look = Identifier.parse(item.item());
         String material = look.getPath();
         for (String piece : ARMOR_PIECES) {
             if (material.endsWith(piece)) {

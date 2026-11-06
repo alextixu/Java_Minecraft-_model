@@ -52,4 +52,5 @@ R3 combo → R5 多人同步，每一項各跑一次同樣的流程。
 ```
 
 - `build` 會跑單元測試（`core/`、`content/`，不用開遊戲）。
-- `runGameTestServer` 會開一個無畫面的遊戲伺服器跑系統測試（實際執行的是 `runGametestGameTestServer`，載入 `src/gametest` 的測試用模組），結果寫在 `run/gametest-report.xml`，有測試失敗時指令會失敗。測試不會打包進正式 jar。
+- `runGameTestServer` 會開一個無畫面的遊戲伺服器跑系統測試（實際執行的是 `runGametestGameTestServer`，載入 `src/gametest` 的測試用模組），結果寫在 `run-gametest/gametest-report.xml`，有測試失敗時指令會失敗。測試不會打包進正式 jar。
+- 遊戲內測試在獨立的 `run-gametest/` 資料夾跑，每次先清空，所以永遠用模組內建的 4 件預設武器，不受 `run/config/mobarmory/` 裡改過的設定影響（R2b 的 O14）。

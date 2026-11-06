@@ -5,7 +5,6 @@ import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.checkNear
 import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.stats;
 import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.test;
 
-import io.github.alextixu.mobarmory.content.ModEquipment;
 import io.github.alextixu.mobarmory.content.ModStats;
 import io.github.alextixu.mobarmory.forge.EquipmentStatApplier;
 import io.github.alextixu.mobarmory.forge.MobArmoryMod;
@@ -35,7 +34,7 @@ final class PlayerGameTests {
     }
 
     private static ItemStack heavySword() {
-        return new ItemStack(MobArmoryMod.EQUIPMENT.item(ModEquipment.HEAVY_SWORD.id()));
+        return new ItemStack(MobArmoryMod.EQUIPMENT.item(Weapons.HEAVY_SWORD));
     }
 
     private static AttributeInstance speed(ServerPlayer player) {

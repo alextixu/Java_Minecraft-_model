@@ -1,7 +1,7 @@
 package io.github.alextixu.mobarmory.forge;
 
-import io.github.alextixu.mobarmory.core.equipment.EquipmentCatalog;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
+import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentSlotKind;
 import io.github.alextixu.mobarmory.core.equipment.LoadoutCalculator;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
@@ -28,8 +28,9 @@ public final class EquipmentStatApplier {
     private final LoadoutCalculator calculator;
     private final StatAttributeBridge stats;
 
-    public EquipmentStatApplier(EquipmentCatalog catalog, StatAttributeBridge stats) {
-        this.calculator = new LoadoutCalculator(catalog);
+    /** Reads the definitions in effect at each recomputation, so a changed definition applies on the next one. */
+    public EquipmentStatApplier(EquipmentLibrary library, StatAttributeBridge stats) {
+        this.calculator = new LoadoutCalculator(library::current);
         this.stats = stats;
     }
 

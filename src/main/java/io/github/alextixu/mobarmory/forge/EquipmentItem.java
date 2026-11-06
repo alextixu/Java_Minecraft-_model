@@ -1,8 +1,8 @@
 package io.github.alextixu.mobarmory.forge;
 
-import io.github.alextixu.mobarmory.core.equipment.EquipmentCatalog;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentDefinition;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
+import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
 import io.github.alextixu.mobarmory.core.stat.ModifierOperation;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
 import io.github.alextixu.mobarmory.core.stat.StatModifier;
@@ -16,18 +16,19 @@ import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.component.TooltipDisplay;
 
 /**
- * The item for one kind of equipment. It carries only the equipment id; stats and tooltip are read from the
- * shared definition every time, so changing the definition changes every copy (decision Q6 A).
+ * The item for one kind of equipment. It carries only the equipment id; name, stats and tooltip are read from
+ * the definition in effect every time, so changing the definition (reload command, web page) changes every copy
+ * at once (R2 decision Q6 A).
  */
 public final class EquipmentItem extends Item {
     private final EquipmentId equipmentId;
-    private final EquipmentCatalog catalog;
+    private final EquipmentLibrary library;
     private final StatAttributeBridge stats;
 
-    public EquipmentItem(Item.Properties properties, EquipmentId equipmentId, EquipmentCatalog catalog, StatAttributeBridge stats) {
+    public EquipmentItem(Item.Properties properties, EquipmentId equipmentId, EquipmentLibrary library, StatAttributeBridge stats) {
         super(properties);
         this.equipmentId = equipmentId;
-        this.catalog = catalog;
+        this.library = library;
         this.stats = stats;
     }
 
@@ -35,10 +36,18 @@ public final class EquipmentItem extends Item {
         return equipmentId;
     }
 
+    /** The name from the weapon file, in whatever language it was written. */
+    @Override
+    public Component getName(ItemStack stack) {
+        return library.current().find(equipmentId)
+            .<Component>map(definition -> Component.literal(definition.name()))
+            .orElseGet(() -> super.getName(stack));
+    }
+
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, TooltipDisplay display,
                                 Consumer<Component> builder, TooltipFlag flag) {
-        catalog.find(equipmentId).ifPresent(definition -> appendModifiers(definition, builder));
+        library.current().find(equipmentId).ifPresent(definition -> appendModifiers(definition, builder));
     }
 
     /** Same layout as Minecraft's own attribute lines: a gray slot header, then blue bonuses and red penalties. */
@@ -51,7 +60,7 @@ public final class EquipmentItem extends Item {
     }
 
     private Component line(StatModifier modifier) {
-        StatDefinition stat = catalog.stats().get(modifier.stat());
+        StatDefinition stat = library.stats().get(modifier.stat());
         boolean asPercent = modifier.operation() == ModifierOperation.MULTIPLY || isChance(stat);
         double shown = asPercent ? modifier.amount() * 100 : modifier.amount();
         String key = "attribute.modifier." + (shown >= 0 ? "plus." : "take.") + (asPercent ? 1 : 0);

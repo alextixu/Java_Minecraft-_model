@@ -5,12 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.alextixu.mobarmory.content.ModEquipment;
 import io.github.alextixu.mobarmory.content.ModStats;
 import io.github.alextixu.mobarmory.core.stat.StackingRules;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
 import io.github.alextixu.mobarmory.core.stat.StatId;
 import io.github.alextixu.mobarmory.core.stat.StatModifier;
+import io.github.alextixu.mobarmory.data.DefaultWeapons;
 import io.github.alextixu.mobarmory.data.WeaponJson;
 import java.util.List;
 import java.util.Map;
@@ -20,14 +20,15 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Contract tests: every piece of equipment runs the same checks. A new piece is covered as soon as it is
- * added to {@link ModEquipment#CATALOG}; nothing in this file needs to change.
+ * added to the shipped defaults ({@link DefaultWeapons}); nothing in this file needs to change.
  */
 class EquipmentContractTest {
     private static final double EPS = 1e-9;
-    private final LoadoutCalculator calculator = new LoadoutCalculator(ModEquipment.CATALOG);
+    private static final EquipmentCatalog DEFAULTS = DefaultWeapons.catalog(ModStats.CATALOG);
+    private final LoadoutCalculator calculator = new LoadoutCalculator(DEFAULTS);
 
     static Stream<EquipmentDefinition> allEquipment() {
-        return ModEquipment.CATALOG.all().stream();
+        return DEFAULTS.all().stream();
     }
 
     /** Each stat starts at its catalog default, which for vanilla stats is the player's base. */

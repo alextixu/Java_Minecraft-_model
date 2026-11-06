@@ -50,6 +50,9 @@ minecraft {
         }
 
         register('gameTestServer') {
+            // Its own folder, emptied before every run (cleanGameTestRun below): the tests always start from the
+            // shipped default weapons, never from weapon files a player edited in run/config (R2b, decision O14).
+            workingDir = layout.projectDirectory.dir('run-gametest')
             // JUnit-style XML with every system test's result (see docs/boundary/04-behavior-report.md)
             args '--report', 'gametest-report.xml'
         }
@@ -92,6 +95,15 @@ tasks.named('test', Test) {
 tasks.matching { it.name == 'runGameTestServer' }.configureEach {
     dependsOn 'runGametestGameTestServer'
     enabled = false
+}
+
+def gameTestRunDir = layout.projectDirectory.dir('run-gametest').asFile
+def cleanGameTestRun = tasks.register('cleanGameTestRun', Delete) {
+    delete gameTestRunDir
+    doLast { gameTestRunDir.mkdirs() }
+}
+tasks.matching { it.name == 'runGametestGameTestServer' }.configureEach {
+    dependsOn cleanGameTestRun
 }
 
 // `build` also compiles the game tests, so a broken test is caught even without running the test server.
