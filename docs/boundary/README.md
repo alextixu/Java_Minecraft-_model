@@ -49,7 +49,7 @@ D1 由另一個 session 在 `feature/damage-hud` 分支做，2026-11-07 合進 m
 
 ## R3：combo（出招順序不同就是不同 combo）
 
-R3 由連招小弟在 `feature/r3-combo` 分支做。2026-11-07 夜間依使用者主軸把 combo 定義改成 `config/mobarmory/combos/<id>.json`，玩家放一個檔、打 `/mobarmory reload`，就多一種 combo。分支先合了 main `56423bd`（合併 commit MERGE_COMMIT），再由架構師把 main 快轉過去。主 session 依夜間授權採用建議值，**待使用者確認**。
+R3 由連招小弟在 `feature/r3-combo` 分支做。2026-11-07 夜間依使用者主軸把 combo 定義改成 `config/mobarmory/combos/<id>.json`，玩家放一個檔、打 `/mobarmory reload`，就多一種 combo。分支先合了 main `56423bd`（合併 commit `130240d`），再由架構師把 main 快轉過去。主 session 依夜間授權採用建議值，**待使用者確認**。
 
 | 檔案 | 內容 | 狀態 |
 |---|---|---|

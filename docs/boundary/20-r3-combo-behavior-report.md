@@ -1,7 +1,7 @@
 # 行為報告：R3 combo（最小版，combo 定義是 JSON 檔）
 
 > boundary-first 第 6 步。日期：2026-11-07（夜間）。分支 `feature/r3-combo`（worktree `mod-damage-hud`），先合了 main `061e7a9`（含 R2b、R6、R4、D1）。
-> **合併到 main**：依 review-04 X1，再合了 main `56423bd`（合併 commit MERGE_COMMIT）。合併後單元 450/450、遊戲內 68/68（含原版 1 個），由架構師快轉 main，見[第 8 節](#8-合併到-main2026-11-07-夜間review-04-x1)。下面第 1～7 節是合併前的數字和內容。
+> **合併到 main**：依 review-04 X1，再合了 main `56423bd`（合併 commit `130240d`）。合併後單元 450/450、遊戲內 68/68（含原版 1 個），由架構師快轉 main，見[第 8 節](#8-合併到-main2026-11-07-夜間review-04-x1)。下面第 1～7 節是合併前的數字和內容。
 > 結果：**單元測試 396/396**（基準 322 ＋ 新增 74）、**遊戲內系統測試 64/64**（基準 57 ＋ 新增 7；伺服器報告「All 65 required tests passed」，多的一個是原版的 `always_pass`）。
 > 指令：`gradlew clean build runGameTestServer`，遊戲內報告在 `run-gametest/gametest-report.xml`（65 個 testcase、0 個 failure）。
 > **決策狀態**：使用者沒有回答 [19](19-r3-combo-open-questions.md) 的問題。主 session 依使用者夜間授權**採用建議值**；同一晚又依使用者主軸把 Q2 改成 JSON 檔。全部**待使用者確認**，見 19 的決定紀錄。
@@ -265,7 +265,7 @@ LivingDamageEvent ─▶ D1：HitReport（含 combo 名稱）─▶ action bar�
 
 ## 8. 合併到 main（2026-11-07 夜間，review-04 X1）
 
-- **做法**：在 `feature/r3-combo` 執行 `git merge --no-ff 56423bd`（main：段落 E 的 `6a3e1fc` 加上架構師修的文件）。合併 commit 是 MERGE_COMMIT，架構師之後把 main 快轉過來。沒有 rebase，沒有動 main，沒有 push。每一步的 SOLID／Pattern 檢查見 [prompts/r3-combo-round-03-merge.md](prompts/r3-combo-round-03-merge.md)。
+- **做法**：在 `feature/r3-combo` 執行 `git merge --no-ff 56423bd`（main：段落 E 的 `6a3e1fc` 加上架構師修的文件）。合併 commit 是 `130240d`，架構師之後把 main 快轉過來。沒有 rebase，沒有動 main，沒有 push。每一步的 SOLID／Pattern 檢查見 [prompts/r3-combo-round-03-merge.md](prompts/r3-combo-round-03-merge.md)。
 - **測試**：`gradlew clean build runGameTestServer` 全過。
 
 | | main `56423bd` | 分支（合併前 `7c8b082`） | 合併後 |
