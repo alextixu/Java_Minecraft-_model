@@ -1,6 +1,5 @@
 package io.github.alextixu.mobarmory.content;
 
-import io.github.alextixu.mobarmory.core.equipment.EquipmentCatalog;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentSlotKind;
 import io.github.alextixu.mobarmory.core.mob.AttackPlayersBehavior;
 import io.github.alextixu.mobarmory.core.mob.MobCatalog;
@@ -14,7 +13,8 @@ import java.util.List;
  * {@code assets/mobarmory/lang/en_us.json} and its spawn egg's item model in {@code assets/mobarmory/items/}.
  * Entity type, attributes, AI, renderer and spawn egg are all built from the definition.
  * <p>
- * Equipment is named by id, not by a {@code ModEquipment} constant, because R2b moves equipment to JSON files.
+ * Equipment is named by id, because weapons are JSON files in {@code config/mobarmory/weapons/} (R2b). A mob whose
+ * weapon is missing or works in another slot spawns without it (O2 changed to B on 11/07).
  */
 public final class ModMobs {
     public static final MobDefinition BRUTE = MobDefinition.builder("brute")
@@ -45,10 +45,10 @@ public final class ModMobs {
     }
 
     /**
-     * Every mob, checked against the stats and the given equipment (O2: a mistake stops the game at startup).
-     * The equipment catalog is a parameter because where it comes from changes with R2b.
+     * Every mob, checked against the stats (O2: a mistake stops the game at startup). Equipment is looked up when a
+     * mob spawns, from the weapon files in effect then; a missing piece is left out with a warning (O2 changed to B).
      */
-    public static MobCatalog catalog(EquipmentCatalog equipment) {
-        return MobCatalog.builder(ModStats.CATALOG, equipment).addAll(ALL).build();
+    public static MobCatalog catalog() {
+        return MobCatalog.builder(ModStats.CATALOG).addAll(ALL).build();
     }
 }

@@ -1,13 +1,9 @@
 package io.github.alextixu.mobarmory.core.mob;
 
-import static io.github.alextixu.mobarmory.core.stat.StatModifier.add;
-import static io.github.alextixu.mobarmory.core.stat.StatModifier.percent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.alextixu.mobarmory.core.equipment.EquipmentCatalog;
-import io.github.alextixu.mobarmory.core.equipment.EquipmentDefinition;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentSlotKind;
 import io.github.alextixu.mobarmory.core.stat.StatCatalog;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
@@ -18,8 +14,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Component and module tests for mob definitions: the catalog accepts a valid mob and rejects each broken
- * success condition from 06 (B1-B5) at startup, naming the mob and the problem. Uses its own small stat and
- * equipment catalogs, so it does not depend on where the real equipment comes from (R2b).
+ * success condition from 06 (B1, B2, B5) at startup, naming the mob and the problem. Equipment (B3) is no longer a
+ * startup failure since 11/07; see {@link MobEquipmentCheckTest}. Uses its own small stat catalog.
  */
 class MobCatalogTest {
     private static final StatDefinition HEALTH = StatDefinition.vanilla("max_health", "minecraft:max_health", 20, 1, 1024);
@@ -28,13 +24,6 @@ class MobCatalogTest {
     private static final StatDefinition DODGE = StatDefinition.custom("dodge_chance", 0, 0, 0.75);
     private static final StatDefinition CRIT = StatDefinition.custom("crit_chance", 0, 0, 1.0);
     private static final StatCatalog STATS = StatCatalog.builder().add(HEALTH).add(SPEED).add(DODGE).add(CRIT).build();
-
-    private static final EquipmentCatalog EQUIPMENT = EquipmentCatalog.builder(STATS)
-        .add(EquipmentDefinition.of("heavy_sword", EquipmentSlotKind.MAINHAND, "minecraft:netherite_sword",
-            percent(SPEED.id(), -0.30)))
-        .add(EquipmentDefinition.of("evasion_chestplate", EquipmentSlotKind.CHEST, "minecraft:chainmail_chestplate",
-            add(DODGE.id(), 0.15)))
-        .build();
 
     private static MobDefinition.Builder brute() {
         return MobDefinition.builder("brute")
@@ -47,7 +36,7 @@ class MobCatalogTest {
     }
 
     private static MobCatalog.Builder catalog() {
-        return MobCatalog.builder(STATS, EQUIPMENT);
+        return MobCatalog.builder(STATS);
     }
 
     /** Asserts the call fails with a message that names every given word. */
@@ -86,28 +75,6 @@ class MobCatalogTest {
         MobDefinition tooSlippery = brute().stat(DODGE, 0.9).build();
 
         failsNaming(() -> catalog().add(tooSlippery), "brute", "dodge_chance", "0.9");
-    }
-
-    @Test
-    @DisplayName("B3 Given 怪物的裝備引用不存在的裝備 When 建立怪物登記表 Then 啟動失敗，寫出怪物和裝備")
-    void unknownEquipmentFails() {
-        MobDefinition spearman = MobDefinition.builder("spearman")
-            .look(MobLook.of(MobLook.Body.SKELETON))
-            .equip(EquipmentSlotKind.MAINHAND, "spear")
-            .build();
-
-        failsNaming(() -> catalog().add(spearman), "spearman", "spear");
-    }
-
-    @Test
-    @DisplayName("B3 Given 怪物把重劍放在胸甲欄 When 建立怪物登記表 Then 啟動失敗，寫出怪物、裝備和欄位")
-    void equipmentInWrongSlotFails() {
-        MobDefinition confused = MobDefinition.builder("confused")
-            .look(MobLook.of(MobLook.Body.ZOMBIE))
-            .equip(EquipmentSlotKind.CHEST, "heavy_sword")
-            .build();
-
-        failsNaming(() -> catalog().add(confused), "confused", "heavy_sword", "CHEST");
     }
 
     @Test

@@ -65,7 +65,7 @@ final class LiveEditGameTests {
     }
 
     /** The shipped heavy sword with one modifier replaced. */
-    private static EquipmentDefinition swordWith(StatModifier replacement) {
+    static EquipmentDefinition swordWith(StatModifier replacement) {
         EquipmentDefinition sword = shipped();
         List<StatModifier> modifiers = new ArrayList<>();
         for (StatModifier modifier : sword.modifiers()) {
@@ -74,12 +74,12 @@ final class LiveEditGameTests {
         return new EquipmentDefinition(SWORD, sword.name(), sword.slot(), modifiers, sword.look());
     }
 
-    private interface Body {
+    interface Body {
         void run() throws Exception;
     }
 
     /** Runs the body within this tick, always puts the shipped heavy sword back, then passes. */
-    private static void inBatch(GameTestHelper helper, Body body) {
+    static void inBatch(GameTestHelper helper, Body body) {
         try {
             body.run();
         } catch (RuntimeException e) {

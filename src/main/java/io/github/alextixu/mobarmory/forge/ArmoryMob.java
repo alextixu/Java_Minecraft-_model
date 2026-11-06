@@ -1,9 +1,10 @@
 package io.github.alextixu.mobarmory.forge;
 
-import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
+import io.github.alextixu.mobarmory.core.equipment.EquipmentSlotKind;
 import io.github.alextixu.mobarmory.core.mob.Behavior;
 import io.github.alextixu.mobarmory.core.mob.MobDefinition;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import net.minecraft.server.level.ServerLevel;
@@ -14,7 +15,6 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
@@ -34,15 +34,15 @@ public final class ArmoryMob extends Monster {
 
     private final MobDefinition definition;
     private final BehaviorGoals behaviors;
-    private final Function<EquipmentId, Item> equipmentItems;
+    private final Function<MobDefinition, Map<EquipmentSlotKind, ItemStack>> outfit;
     private final Set<String> boundBehaviors;
 
     ArmoryMob(EntityType<? extends ArmoryMob> type, Level level, MobDefinition definition, BehaviorGoals behaviors,
-              Function<EquipmentId, Item> equipmentItems) {
+              Function<MobDefinition, Map<EquipmentSlotKind, ItemStack>> outfit) {
         // Set before super(): Mob's constructor calls registerGoals(), which reads them (Java 25 flexible constructor bodies).
         this.definition = definition;
         this.behaviors = behaviors;
-        this.equipmentItems = equipmentItems;
+        this.outfit = outfit;
         this.boundBehaviors = new HashSet<>();
         super(type, level);
     }
@@ -92,13 +92,14 @@ public final class ArmoryMob extends Monster {
     }
 
     /**
-     * Holds and wears what the definition lists. The stats follow through R2's equipment-change event on the next
-     * tick, exactly as for a player. Drop chance 0: killing the mob never drops its equipment (O7, B12).
+     * Holds and wears what the definition lists, as far as those weapons exist now (O2 changed to B: a missing piece
+     * is left out). The stats follow through R2's equipment-change event on the next tick, exactly as for a player.
+     * Drop chance 0: killing the mob never drops its equipment (O7, B12).
      */
     private void equipFromDefinition() {
-        definition.equipment().forEach((kind, id) -> {
+        outfit.apply(definition).forEach((kind, stack) -> {
             EquipmentSlot slot = Slots.toMinecraft(kind);
-            setItemSlot(slot, new ItemStack(equipmentItems.apply(id)));
+            setItemSlot(slot, stack);
             setDropChance(slot, 0.0F);
         });
     }

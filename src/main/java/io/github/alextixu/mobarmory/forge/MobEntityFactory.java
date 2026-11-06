@@ -1,6 +1,6 @@
 package io.github.alextixu.mobarmory.forge;
 
-import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
+import io.github.alextixu.mobarmory.core.equipment.EquipmentSlotKind;
 import io.github.alextixu.mobarmory.core.mob.MobCatalog;
 import io.github.alextixu.mobarmory.core.mob.MobDefinition;
 import io.github.alextixu.mobarmory.core.mob.MobId;
@@ -16,6 +16,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.eventbus.api.bus.BusGroup;
 import net.minecraftforge.registries.DeferredRegister;
@@ -36,11 +37,11 @@ public final class MobEntityFactory {
     private final Map<MobId, RegistryObject<Item>> eggById = new LinkedHashMap<>();
 
     /**
-     * @param equipmentItems the item of a piece of equipment, looked up by id when a mob spawns
+     * @param outfit what a mob holds and wears when it spawns ({@link MobEquipmentSource#stacksFor} in the game)
      * @throws IllegalStateException if a mob uses a behavior without a binder (B4)
      */
     public MobEntityFactory(MobCatalog catalog, StatAttributeBridge stats, BehaviorGoals behaviors,
-                            Function<EquipmentId, Item> equipmentItems, String modId) {
+                            Function<MobDefinition, Map<EquipmentSlotKind, ItemStack>> outfit, String modId) {
         behaviors.verify(catalog);
         this.catalog = catalog;
         this.stats = stats;
@@ -49,7 +50,7 @@ public final class MobEntityFactory {
         for (MobDefinition definition : catalog.all()) {
             String name = definition.id().value();
             RegistryObject<EntityType<ArmoryMob>> type = types.register(name, () -> EntityType.Builder
-                .<ArmoryMob>of((entityType, level) -> new ArmoryMob(entityType, level, definition, behaviors, equipmentItems),
+                .<ArmoryMob>of((entityType, level) -> new ArmoryMob(entityType, level, definition, behaviors, outfit),
                     MobCategory.MONSTER)
                 .sized(0.6F, 1.95F)          // a vanilla zombie's size; the look's scale attribute resizes it
                 .eyeHeight(1.74F)

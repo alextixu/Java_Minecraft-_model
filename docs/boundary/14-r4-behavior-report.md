@@ -4,6 +4,7 @@
 > 結果：**`gradlew clean build runGameTestServer` 全過：單元測試 133/133、遊戲內系統測試 34/34**（R1／R2 原有 106 ＋ 18，R4 新增 27 ＋ 16）。
 > 驗收測試 **T2 通過**：實際加第 3 種怪物，只改 3 個檔案、Java 只加一筆定義，測試全過（第 1 節「T2 實測」）。
 > 第三輪 Q8 已決定 **B**（使用者 11/06）：怪物的揮擊間隔不跟著攻擊速度，維持原版每秒打一下。程式本來就是原版行為，不用改。
+> **11/07 合併到 main**：main `40ee556`（R2b＋R6 最終版）合進本分支，merge commit `eecabeb`；之後照 review-02 6-3 修正，O2 的裝備部分改成 B（使用者 11/07）。**全過：單元 268/268、遊戲內 48/48**（含原版 `always_pass`）。詳見第 8 節。
 > **還沒做**：`runClient` 手動走查和截圖（依指示和示範影片一起做，劇本在第 6 節）。
 
 ## 1. 邊界說明（已確認的版本）
@@ -115,17 +116,19 @@ io.github.alextixu.mobarmory
 │  ├─ MobDefinition             record：id、look、stats（數值 id → 基礎值）、equipment（欄位 → 裝備 id 字串）、behaviors
 │  │                            ＋ Builder；spawnStats(StatCatalog)：每個數值的生成值（定義的值或預設值）
 │  ├─ MobLook                   record：Body（ZOMBIE／HUSK／SKELETON／STRAY）＋ scale
-│  ├─ MobCatalog                Builder，用 StatCatalog 和 EquipmentCatalog 驗證（B1～B3、B5）
+│  ├─ MobCatalog                Builder，用 StatCatalog 驗證（B1、B2、B5）；11/07 起不再驗裝備
+│  ├─ MobEquipmentCheck         11/07 新增：怪物拿得到哪些裝備、哪些要跳過（B3 改 B，第 8 節）
 │  └─ Behavior（介面）
 │     ├─ WanderBehavior(speed)        record
 │     └─ AttackPlayersBehavior(speed) record
 ├─ content/
 │  ├─ ModStats                  ＋ MAX_HEALTH（對應 minecraft:max_health，O9）
-│  └─ ModMobs                   BRUTE、SKIRMISHER、ALL；catalog(EquipmentCatalog)
+│  └─ ModMobs                   BRUTE、SKIRMISHER、ALL；catalog()
 └─ forge/
-   ├─ MobArmoryMod              ＋ MOBS（R2b 合併點，見第 7 節）、分頁加生怪蛋、客戶端接線
+   ├─ MobArmoryMod              ＋ MOB_EQUIPMENT、MOBS、分頁加生怪蛋、客戶端接線（合併後的樣子見第 8 節）
+   ├─ MobEquipmentSource        11/07 新增：唯一查裝備的地方；從目前的武器決定怪物生成時拿什麼，跳過的寫 log 警告
    ├─ MobEntityFactory          每筆定義 → EntityType、AttributeSupplier（EntityAttributeCreationEvent）、生怪蛋（Factory）
-   ├─ ArmoryMob extends Monster 所有自訂怪物都是這個類別；registerGoals 交給 BehaviorGoals；finalizeSpawn 穿上定義的裝備
+   ├─ ArmoryMob extends Monster 所有自訂怪物都是這個類別；registerGoals 交給 BehaviorGoals；finalizeSpawn 穿上 MobEquipmentSource 給的裝備
    ├─ ArmorySpawnEggItem extends SpawnEggItem   名稱由怪物名稱組成
    ├─ GoalBinder<B>（介面）＋ record Goals(goals, targets)
    │  ├─ WanderGoalBinder        WaterAvoidingRandomStrollGoal、LookAtPlayerGoal、RandomLookAroundGoal
@@ -137,6 +140,7 @@ io.github.alextixu.mobarmory
 
 src/gametest/（測試用模組，不進正式 jar）
 ├─ MobGameTests                 R4 的 16 個系統測試
+├─ MobWeaponGameTests           11/07 新增 3 個：怪物和武器檔（6-3 a、b）
 └─ resources/data/mobarmory/
    ├─ structure/arena.nbt       24×4×24 的空場地（見第 4 節「測試環境」）
    ├─ test_environment/         alone_attack、alone_chase、alone_creative、alone_spawn、alone_wander、noon、difficulty_restored
@@ -189,7 +193,7 @@ src/gametest/（測試用模組，不進正式 jar）
 | H7 | 原版殭屍和狂戰士 | 查數值 | 兩隻都在同一套數值系統 | S `h7_custom_mobs_have_every_stat` | 通過* |
 | B1 | 定義寫了不存在的數值 | 啟動 | 失敗，寫出怪物和數值 | C `unknownStatFails` | 通過 |
 | B2 | 迴避率寫 0.9 | 啟動 | 失敗，不默默夾到 0.75 | C `statOutOfRangeFails` | 通過 |
-| B3 | 引用不存在的裝備，或重劍放胸甲欄 | 啟動 | 失敗，寫出怪物和裝備 | C `unknownEquipmentFails`、C `equipmentInWrongSlotFails`、K `equipsRegisteredPiecesInTheirOwnSlot` | 通過 |
+| B3 | 引用不存在的裝備（例如武器檔被刪），或重劍放胸甲欄 | 啟動、`/mobarmory reload` 後生成 | **11/07 改 B**：照常啟動，log 警告，生成時不拿那件 | C `MobEquipmentCheckTest`（4 條）、M `bruteWithoutHeavySword`、K `getsAllItsEquipmentFromTheShippedWeapons`、S `mob_spawns_without_deleted_weapon`、S `mob_equipment_from_startup_weapons`（見第 8 節） | 通過 |
 | B4 | 行為沒有 binder | 啟動 | 失敗，寫出行為 | S `mob_behaviors_all_have_binders` | 通過 |
 | B5 | 兩隻怪物同 id | 啟動 | 失敗 | C `duplicateIdFails` | 通過 |
 | B6 | 行為清單是空的 | 生成 | 允許（木樁） | C `noBehaviorsIsAllowed` | 通過* |
@@ -200,7 +204,7 @@ src/gametest/（測試用模組，不進正式 jar）
 | B11 | 和平難度 | 生成或已經在世界上 | 消失 | S `mob_removed_on_peaceful`（切成和平後已在世界上的被移除，也生不出新的；測試環境結束時把難度還原） | 通過 |
 | B12 | 狂戰士死掉 | 掉落物 | 不掉裝備；經驗 5 | S `mob_drops_no_equipment_and_5_xp` | 通過 |
 | B13 | 拿重劍的狂戰士 | 存檔再載入 | 速度仍是 0.175，不是 0.1225 | S `mob_reload_keeps_stats_once`（存成 NBT 再讀回：速度 0.175、基礎 0.25、生命 30/40、還拿著重劍、掉落機率仍是 0） | 通過 |
-| B14 | R6 網頁改攻擊力 | 世界上已有狂戰士 | 數值立刻生效；行為下次生成才生效 | — | **沒有覆蓋**（R6 還沒做，沒有「改定義」的入口） |
+| B14 | R6 網頁改攻擊力 | 世界上已有狂戰士 | 數值立刻生效；行為下次生成才生效 | — | **沒有覆蓋**（R6 沒有「改怪物定義」的入口）。相關的「網頁改**武器** → 拿著它的狂戰士跟著變」11/07 已有 S `brute_follows_heavy_sword_edit`（第 8 節） |
 | B15 | 玩家跑到 16 格外 | 狂戰士正在追 | 放棄追擊 | S `mob_gives_up_beyond_16_blocks`（追擊距離正好 16；先鎖定 4 格外的玩家，玩家移到 24 格外後目標清空） | 通過 |
 
 \* 說明：
@@ -244,6 +248,8 @@ src/gametest/（測試用模組，不進正式 jar）
 
 ## 7. 合併到 main 時要注意的地方
 
+> 這一節是合併前（11/06）寫的。實際怎麼處理見第 8 節。
+
 `mc-dev` 的 R2b 會先合進 main：刪掉 `content/ModEquipment`，裝備改從 JSON 讀。R4 已照約束寫成「用字串 id 引用裝備」，查裝備的地方只有兩處：
 
 | # | 位置 | 現在 | R2b 合併後要改成 |
@@ -259,3 +265,105 @@ src/gametest/（測試用模組，不進正式 jar）
 - **新數值 `max_health`**：R6 網頁的數值表單會自動多出這一項。如果之後有裝備修改最大生命值，現有生命不會跟著調整，要另外決定。
 - **遊戲內測試數**：18 → 34。R4 的測試用自己的場地結構和測試環境（都在 `src/gametest/resources`，不進正式 jar，`ShippedDataTest` 照樣守著）。R2b 把遊戲內測試改到 `run-gametest/` 跑不影響它們。
 - **R6 的 `/api/v1/mobs`**：R2b 預留 501。之後的 `MobAdmin` 可以直接讀 `MobArmoryMod.MOBS.catalog()`。
+
+## 8. 合併到 main（2026-11-07）
+
+> 使用者 11/07 決定先把 R4 合進 main，之後用合併後的版本一次錄示範影片。照 [review-02](../../../reviews/review-02-d1-r4.md) 第 6 節，在 `mod-r4-mobs/` 執行 `git merge main`，把 main `40ee556`（R2b＋R6 最終版，單元 237、遊戲內 29）合進 `feature/r4-mobs`。沒有 rebase，沒有動 main，沒有 push。main 之後由架構師快轉到這個分支。
+
+### commit
+
+| commit | 內容 | `gradlew clean build runGameTestServer` |
+|---|---|---|
+| `eecabeb` | merge：解衝突，加上 review-02 6-2 的介面點。O2 還是原本的「啟動失敗」 | 單元 264/264、遊戲內 45/45 |
+| merge 之後的下一個 commit | 6-3 a（O2 的裝備部分改 B）、6-3 b、6-3 d，以及本節文件 | **單元 268/268、遊戲內 48/48** |
+
+遊戲內的數字含 Minecraft 自己的 `always_pass`，和 main 的算法一樣（R4 合併前的「34」不含它，等於 35）。
+
+### 衝突怎麼解
+
+| 檔案 | 衝突區塊 | 怎麼解 |
+|---|---|---|
+| `forge/MobArmoryMod.java` | 5（import 兩處、欄位、分頁、啟動 log） | 裝備用 main 的接線（`WEAPON_FILES` → `EQUIPMENT_LIBRARY` → `EQUIPMENT` …），`MOBS` 放在 `EQUIPMENT_LIBRARY` 之後。分頁圖示用 main 的 `tabIcon()`（重劍被刪時會換圖示），`displayItems` 用 main 的 `WeaponLooks.stackOf`，再加上生怪蛋。啟動 log 加上怪物數 |
+| `lang/en_us.json` | 1 | 刪掉 4 件裝備的名稱（main 改由武器檔提供名稱），保留 R4 的 3 行 |
+| `test/.../ContentResourcesTest.java` | 4（import 兩處、類別說明、測試方法） | 兩邊都留：main 的內建貼圖檢查，加上 R4 的怪物名稱、生怪蛋外觀檢查（6-3 d） |
+| `gametest/.../MobArmoryGameTests.java` | 1 | 兩邊都留：`MobGameTests.registerAll()`，加上 main 的 `LiveEdit`、`WebAdmin`、`Sync` |
+
+### git 抓不到、但要跟著改的地方
+
+| # | 位置 | 改法 | 來源 |
+|---|---|---|---|
+| 1 | `MobArmoryMod.MOBS` | merge 時改成 `ModMobs.catalog(EQUIPMENT_LIBRARY.current())`，物品用 `EQUIPMENT::item`。6-3 a 之後改成 `ModMobs.catalog()`（不再拿裝備驗證），裝備由 `MOB_EQUIPMENT::stacksFor` 提供 | 6-2 第 1 點 |
+| 2 | 分頁圖示和內容 | main 的 `tabIcon()`，加上生怪蛋 | 6-2 第 2 點 |
+| 3 | 啟動 log | `Mob Armory: 7 stats, 4 pieces of equipment from <武器資料夾>, 2 mobs` | 6-2 第 3 點 |
+| 4 | `MobTestCatalog` | 改讀 mod 內附的預設武器 `DefaultWeapons.catalog(ModStats.CATALOG)`，和 main 的 `EquipmentContractTest` 寫法一樣。6-3 a 之後和怪物清單分成兩個欄位（`MOBS`、`SHIPPED_WEAPONS`） | 6-2 第 4 點 |
+| 5 | `en_us.json` | 見上表 | 6-2 第 5 點 |
+| 6 | `MobGameTests.expectedStats` | 期望值改用 `EQUIPMENT_LIBRARY.current()`（目前生效的武器），不用啟動時的快照 | 6-2 第 6 點（建議） |
+| 7 | `WeaponApiTest.statsAndLooks` | main 寫死「6 個數值」，但 R4 加了 `max_health`，變成 7 個。改成 `ModStats.CATALOG.size()` | 合併後第一次跑測試發現（review-02 6-3 c 提過 `max_health` 會出現在表單） |
+| 8 | 怪物手上武器的外觀 | 生成時用 main 的 `WeaponLooks.stackOf` 做物品。武器外觀在網頁換過，怪物手上的一開始就是新外觀 | main 的 `WeaponLooks`（R2b O11）。合併時發現 |
+| 9 | `gametest/.../LiveEditGameTests.java` | `swordWith`、`inBatch`、`Body` 從 private 改成 package 可見（3 處，只改可見度）。怪物的測試沿用同一套「一個 tick 內做完、最後放回內附檔案」的規則，不另抄一份 | 6-3 a、b 的測試 |
+
+不准動的部分：`core/stat`、`core/equipment`、`core/combat`、`EquipmentStatApplier`、`CombatEffectListener`、`EntityStatBinder`、R2b 的 `data/`、`web/`、`ServerWeaponAdmin` 都沒改。動到 main 的檔案只有上表第 7、9 點的兩個測試檔。
+
+### 6-3 a：怪物引用的武器不存在或欄位對不上（O2 改 B）
+
+使用者 11/07 選 B（review-02 6-3 a 的建議），記在 [07](07-r4-open-questions.md) 第四輪。數值、id、行為寫錯還是啟動失敗；只有裝備（B3）改成警告。
+
+做法：
+
+- `core/mob/MobCatalog` 不再拿裝備驗證，只驗數值和 id（B1、B2、B5），所以 `ModMobs.catalog()` 不需要裝備。
+- 新增 `core/mob/MobEquipmentCheck`（純 Java）：輸入一隻怪物和「現在給得出去的武器」，輸出拿得到的裝備，以及每件跳過的原因（怪物、裝備、欄位、原因）。
+- 新增 `forge/MobEquipmentSource`，是唯一查裝備的地方：
+  - 從 `EQUIPMENT_LIBRARY` 目前的狀態判斷。不是物品，或檔案已被刪（`fileMissing`），就不給；欄位不同也不給。
+  - 做出的物品帶著武器目前的外觀。
+  - 跳過的寫 log 警告：啟動時每隻怪物各檢查一次；之後每個新問題寫一次，不會每生一隻就洗一行。
+- `ArmoryMob` 生成時向它要裝備（建構時傳入一個函式），不再自己查。
+
+重開遊戲和 `/mobarmory reload` 的處理寫在 07 第四輪「實作時的解讀」。其中**遊戲中改欄位再 reload，重開前怪物照舊拿**，因為 R2b B9 規定物品本身的欄位要重開才換；這是照「預設不做」做的選擇，要改需約 30 分鐘。
+
+遊戲內測試的 log 實際印出：
+
+```
+Mob 'brute' spawns without 'heavy_sword' in mainhand: there is no such weapon now (its file is missing or was deleted)
+Mob 'brute' spawns without 'heavy_sword' in mainhand: it now works in offhand
+Mob 'skirmisher' spawns without 'dagger' in mainhand: there is no such weapon now (its file is missing or was deleted)
+```
+
+打錯裝備 id 這類錯誤不再擋在啟動時，改由契約測試 `MobContractTest.getsAllItsEquipmentFromTheShippedWeapons` 擋：用 mod 內附的預設武器檢查，每隻怪物都要拿得到全部裝備。
+
+### 6-3 b、c、d
+
+- **b**：新增遊戲內測試 `brute_follows_heavy_sword_edit`，經由網頁存檔用的同一個呼叫（`WEAPON_ADMIN.update`）把重劍的移動速度改成 −50%：
+  - 手上已經拿著重劍的狂戰士，速度立刻從 0.175 變成 0.125。
+  - 之後新生成的狂戰士也是 0.125。
+- **c**：`max_health` 出現在網頁數值清單，已處理（上表第 7 點）。裝備改最大生命值時，目前生命不會跟著調整（第 7 節），照「預設不做」維持。
+- **d**：R4 的兩條怪物檢查（名稱、生怪蛋外觀）保留。main 的 `ContentResourcesTest` 新結構（裝備讀 `DefaultWeapons`、內建貼圖用 `@FieldSource`）不影響它們，照樣 2 隻 × 2 條。
+
+### 新增和調整的測試
+
+| 層級 | 測試 | Given / When / Then |
+|---|---|---|
+| C | `MobEquipmentCheckTest`（5 條） | 裝備都在 → 全拿；重劍檔被刪 → 不拿重劍、胸甲照拿，訊息寫出怪物、裝備、欄位；重劍改成副手 → 不拿，訊息寫出現在的欄位；裝備全不存在 → 登記表照樣建立，生成時兩件都不拿；沒有裝備 → 沒有問題 |
+| M | `ModMobsTest.bruteWithoutHeavySword` | Given 重劍檔被刪 When 狂戰士生成 Then 生命 40、攻擊 4、速度 0.25；遊擊兵完全不受影響 |
+| K | `MobContractTest.getsAllItsEquipmentFromTheShippedWeapons`（取代 `equipsRegisteredPiecesInTheirOwnSlot`） | 每隻怪物用內附武器檢查，沒有問題，拿到的就是定義列的 |
+| S | `mob_spawns_without_deleted_weapon` | Given 刪掉 `heavy_sword.json` 再 reload When 生成狂戰士和遊擊兵 Then 狂戰士空手、生命 40、攻擊 4、速度 0.25，遊擊兵照拿短刀；檔案放回再 reload 後，新的狂戰士又拿重劍、速度 0.175 |
+| S | `mob_equipment_from_startup_weapons` | Given 重開時重劍改成副手、短刀檔被刪 When 決定裝備 Then 兩隻都不拿、只有警告；用內附檔案時，狂戰士拿到重劍，而且是目前的外觀 |
+| S | `brute_follows_heavy_sword_edit` | 6-3 b，見上 |
+
+拿掉的：`MobCatalogTest` 的 B3 兩條（`unknownEquipmentFails`、`equipmentInWrongSlotFails`），因為登記表不再擋裝備。
+
+**測試抓得到錯**：故意把「檔案被刪就不給」的判斷拿掉，再跑遊戲內測試。只有 `mob_spawns_without_deleted_weapon` 失敗，訊息是「狂戰士應該空手，卻拿著 heavy_sword」。改回後全過。
+
+### 測試數字
+
+| 時間點 | 單元 | 遊戲內（含 `always_pass`） |
+|---|---|---|
+| main `40ee556`（合併前） | 237 | 29 |
+| R4 `714befb`（合併前） | 133 | 35 |
+| merge `eecabeb` | 264（237 ＋ 27） | 45（29 ＋ 16） |
+| 6-3 之後 | **268**（＋5 −2 ＋1） | **48**（＋3） |
+
+### 還沒做
+
+- `runClient`／`runServer` 走查和截圖（和示範影片一起做）。第 6 節的劇本再加一步：刪掉 `heavy_sword.json`，`/mobarmory reload`，用蛋生狂戰士 → 空手，log 有警告。
+- `docs/boundary/README.md` 的索引（依指示不改，由 mc-dev 或主 session 補）。
+- D1（`feature/damage-hud`）的合併，不在這次範圍（review-02 6-4 第 2 步）。

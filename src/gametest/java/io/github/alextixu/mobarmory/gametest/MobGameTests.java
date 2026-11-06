@@ -95,6 +95,7 @@ final class MobGameTests {
         test("mob_removed_on_peaceful", MobGameTests::mobRemovedOnPeaceful);
         test("mob_behaviors_all_have_binders", MobGameTests::mobBehaviorsAllHaveBinders);
         test("skirmisher_dodges_and_crits", MobGameTests::skirmisherDodgesAndCrits);
+        MobWeaponGameTests.registerAll();
     }
 
     // ---- helpers ----------------------------------------------------------------------------------------------

@@ -2,11 +2,15 @@ package io.github.alextixu.mobarmory.content;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.github.alextixu.mobarmory.core.equipment.EquipmentCatalog;
+import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
 import io.github.alextixu.mobarmory.core.equipment.LoadoutCalculator;
 import io.github.alextixu.mobarmory.core.mob.MobDefinition;
+import io.github.alextixu.mobarmory.core.mob.MobEquipmentCheck;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
 import io.github.alextixu.mobarmory.core.stat.StatId;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,13 +21,17 @@ import org.junit.jupiter.api.Test;
  */
 class ModMobsTest {
     private static final double EPS = 1e-9;
-    private final LoadoutCalculator calculator = new LoadoutCalculator(MobTestCatalog.MOBS.equipment());
-
     /** Every stat after equipment: the spawn value, replaced by the equipped value where equipment changes it. */
-    private Map<StatId, Double> equipped(MobDefinition mob) {
+    private static Map<StatId, Double> equipped(MobDefinition mob) {
+        return equipped(mob, MobTestCatalog.SHIPPED_WEAPONS);
+    }
+
+    /** The same with other weapon files: only what the mob really gets counts (O2 changed to B). */
+    private static Map<StatId, Double> equipped(MobDefinition mob, EquipmentCatalog weapons) {
         Map<StatId, Double> base = mob.spawnStats(ModStats.CATALOG);
         Map<StatId, Double> values = new LinkedHashMap<>(base);
-        values.putAll(calculator.compute(mob.equipment(), base::get));
+        var given = MobEquipmentCheck.check(mob, weapons::find).given();
+        values.putAll(new LoadoutCalculator(weapons).compute(given, base::get));
         return values;
     }
 
@@ -54,5 +62,24 @@ class ModMobsTest {
         assertEquals(0.5, of(skirmisher, ModStats.CRIT_CHANCE), EPS);
         assertEquals(0.30, of(skirmisher, ModStats.DODGE_CHANCE), EPS);
         assertEquals(0.352, of(skirmisher, ModStats.MOVEMENT_SPEED), EPS);
+    }
+
+    @Test
+    @DisplayName("B3（11/07 改 B，review-02 6-3 a）Given heavy_sword.json 被刪掉 When 狂戰士生成 Then 不拿重劍：攻擊力 4、移動速度 0.25；遊擊兵不受影響")
+    void bruteWithoutHeavySword() {
+        EquipmentCatalog.Builder builder = EquipmentCatalog.builder(ModStats.CATALOG);
+        MobTestCatalog.SHIPPED_WEAPONS.all().stream()
+            .filter(piece -> !piece.id().equals(EquipmentId.of("heavy_sword")))
+            .forEach(builder::add);
+        EquipmentCatalog withoutSword = builder.build();
+
+        Map<StatId, Double> brute = equipped(ModMobs.BRUTE, withoutSword);
+        assertEquals(40, of(brute, ModStats.MAX_HEALTH), EPS);
+        assertEquals(4, of(brute, ModStats.ATTACK_DAMAGE), EPS);
+        assertEquals(0.25, of(brute, ModStats.MOVEMENT_SPEED), EPS);
+        assertEquals(1, MobEquipmentCheck.check(ModMobs.BRUTE, withoutSword::find).problems().size());
+
+        assertEquals(equipped(ModMobs.SKIRMISHER), equipped(ModMobs.SKIRMISHER, withoutSword));
+        assertEquals(List.of(), MobEquipmentCheck.check(ModMobs.SKIRMISHER, withoutSword::find).problems());
     }
 }

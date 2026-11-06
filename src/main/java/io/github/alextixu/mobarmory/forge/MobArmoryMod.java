@@ -49,11 +49,13 @@ public final class MobArmoryMod {
     public static final ServerWeaponAdmin WEAPON_ADMIN = new ServerWeaponAdmin(
         new WeaponEditor(EQUIPMENT_LIBRARY, WEAPON_FILES, WeaponStartup.loader(ModStats.CATALOG)), EQUIPMENT_STATS, WEAPON_SYNC);
     /**
-     * R4 mobs: one entity type and spawn egg per definition in content/ModMobs. They name their equipment by id and
-     * are checked against the weapons loaded at startup (decision O2).
+     * What a mob holds and wears when it spawns: the pieces its definition lists that exist right now. A piece that
+     * is missing or works in another slot is left out with a warning (R4 decision O2, changed to B on 11/07).
      */
+    public static final MobEquipmentSource MOB_EQUIPMENT = new MobEquipmentSource(EQUIPMENT_LIBRARY, EQUIPMENT::item);
+    /** R4 mobs: one entity type and spawn egg per definition in content/ModMobs. */
     public static final MobEntityFactory MOBS = new MobEntityFactory(
-        ModMobs.catalog(EQUIPMENT_LIBRARY.current()), STATS, BehaviorGoals.standard(), EQUIPMENT::item, MODID);
+        ModMobs.catalog(), STATS, BehaviorGoals.standard(), MOB_EQUIPMENT::stacksFor, MODID);
 
     private static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
@@ -95,6 +97,7 @@ public final class MobArmoryMod {
         FMLCommonSetupEvent.getBus(modBusGroup).addListener(event -> {
             STATS.verifyAll();
             WeaponStartup.verifyLooks(EQUIPMENT_LIBRARY, WEAPON_FILES);
+            MOB_EQUIPMENT.warnAll(MOBS.catalog().all());
             LOGGER.info("Mob Armory: {} stats, {} pieces of equipment from {}, {} mobs", ModStats.CATALOG.size(),
                 EQUIPMENT_LIBRARY.registered().size(), WEAPON_FILES.weaponsFolder(), MOBS.catalog().size());
         });

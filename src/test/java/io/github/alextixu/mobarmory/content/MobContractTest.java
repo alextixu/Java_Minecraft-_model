@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.alextixu.mobarmory.core.equipment.LoadoutCalculator;
 import io.github.alextixu.mobarmory.core.mob.MobDefinition;
+import io.github.alextixu.mobarmory.core.mob.MobEquipmentCheck;
 import io.github.alextixu.mobarmory.core.stat.StackingRules;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
 import io.github.alextixu.mobarmory.core.stat.StatId;
@@ -42,13 +43,16 @@ class MobContractTest {
         });
     }
 
+    /**
+     * In the game a missing piece is only a warning (O2 changed to B), so this contract is what still catches a typo
+     * in a definition: with the shipped weapons, every mob gets everything it lists.
+     */
     @ParameterizedTest(name = "{0}")
     @MethodSource("allMobs")
-    void equipsRegisteredPiecesInTheirOwnSlot(MobDefinition mob) {
-        mob.equipment().forEach((slot, id) -> {
-            var piece = MobTestCatalog.MOBS.equipment().find(id).orElseThrow(() -> new AssertionError(mob.id() + " equips unknown " + id));
-            assertEquals(piece.slot(), slot, mob.id() + " holds " + id + " in the wrong slot");
-        });
+    void getsAllItsEquipmentFromTheShippedWeapons(MobDefinition mob) {
+        var result = MobEquipmentCheck.check(mob, MobTestCatalog.SHIPPED_WEAPONS::find);
+        assertEquals(List.of(), result.problems(), mob.id() + " would spawn with a warning on a fresh install");
+        assertEquals(mob.equipment(), result.given());
     }
 
     @ParameterizedTest(name = "{0}")
@@ -65,7 +69,7 @@ class MobContractTest {
     @MethodSource("allMobs")
     void equipmentKeepsStatsWithinLimits(MobDefinition mob) {
         Map<StatId, Double> base = mob.spawnStats(ModStats.CATALOG);
-        List<StatModifier> active = new LoadoutCalculator(MobTestCatalog.MOBS.equipment()).activeModifiers(mob.equipment());
+        List<StatModifier> active = new LoadoutCalculator(MobTestCatalog.SHIPPED_WEAPONS).activeModifiers(mob.equipment());
         assertEquals(mob.equipment().size() > 0, !active.isEmpty(), mob.id() + ": equipment should be active");
         for (StatId id : base.keySet()) {
             List<StatModifier> forStat = active.stream().filter(modifier -> modifier.stat().equals(id)).toList();
