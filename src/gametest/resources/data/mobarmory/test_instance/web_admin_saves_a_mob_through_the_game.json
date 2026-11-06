@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:web_admin",
+  "function": "mobarmory:web_admin_saves_a_mob_through_the_game",
+  "max_ticks": 6000,
+  "required": true,
+  "structure": "minecraft:empty"
+}

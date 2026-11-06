@@ -6,6 +6,8 @@ import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.stats;
 import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.test;
 
 import io.github.alextixu.mobarmory.content.ModStats;
+import io.github.alextixu.mobarmory.data.DefaultMobs;
+import io.github.alextixu.mobarmory.forge.ArmoryMob;
 import io.github.alextixu.mobarmory.forge.MobArmoryMod;
 import io.github.alextixu.mobarmory.web.AdminHttpServer;
 import io.github.alextixu.mobarmory.web.WebSettings;
@@ -15,15 +17,19 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntitySpawnReason;
 
 /**
  * System test for the web admin inside the real game (R6, 08 section 2: the technical risk that Forge's module
  * layer might hide {@code jdk.httpserver}). A browser-like request goes through the HTTP server, hops to the server
- * thread, and changes the sword in a player's hand. Runs in its own batch ({@code mobarmory:web_admin}).
+ * thread, and changes the sword in a player's hand, or (R4b) a brute in the world. Runs in its own batch
+ * ({@code mobarmory:web_admin}).
  */
 final class WebAdminGameTests {
     private WebAdminGameTests() {
@@ -31,6 +37,7 @@ final class WebAdminGameTests {
 
     static void registerAll() {
         test("web_admin_saves_through_the_game", WebAdminGameTests::savesThroughTheGame);
+        test("web_admin_saves_a_mob_through_the_game", WebAdminGameTests::mobSavesThroughTheGame);
     }
 
     /**
@@ -75,5 +82,58 @@ final class WebAdminGameTests {
                     "then: attack right after the web save");
             })
             .thenSucceed();
+    }
+
+    /**
+     * review-05 S3, R4b H4 end to end (A7): PUT /api/v1/mobs/brute with attack 8 and max health 50 goes through the real
+     * HTTP server and the server thread, and a brute already in the world follows at once; the file holds the save.
+     * <p>
+     * Same timing rules as the weapon test above. It checks the brute's base attack and its max health, not its total
+     * attack: the weapon test runs in the same batch and changes the heavy sword this brute holds.
+     */
+    static void mobSavesThroughTheGame(GameTestHelper helper) {
+        AdminHttpServer server;
+        try {
+            server = AdminHttpServer.start(MobArmoryMod.WEAPON_ADMIN, MobArmoryMod.MOB_ADMIN, new WebSettings(true, "127.0.0.1", 0, ""));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        ArmoryMob brute = helper.spawn(MobArmoryMod.MOBS.type(DefaultMobs.BRUTE), BlockPos.ZERO, EntitySpawnReason.SPAWN_ITEM_USE);
+        helper.addCleanup(passed -> {
+            server.close();
+            brute.discard();
+            MobAdminGameTests.restore();
+        });
+        checkNear(helper, 4.0, baseAttack(brute), "given: the brute's base attack from brute.json");
+        checkNear(helper, 40.0, brute.getMaxHealth(), "given: the brute's max health from brute.json");
+        String body = DefaultMobs.text("brute")
+            .replace("\"attack_damage\": 4", "\"attack_damage\": 8")
+            .replace("\"max_health\": 40", "\"max_health\": 50");
+        CompletableFuture<HttpResponse<String>> response = HttpClient.newHttpClient().sendAsync(
+            HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + server.port() + "/api/v1/mobs/brute"))
+                .timeout(Duration.ofSeconds(15))
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(body)).build(),
+            HttpResponse.BodyHandlers.ofString());
+
+        helper.startSequence()
+            .thenWaitUntil(() -> check(helper, response.isDone(), "waiting for the web server to answer"))
+            .thenExecute(() -> {
+                HttpResponse<String> answer = response.join();
+                check(helper, answer.statusCode() == 200, "web save answered " + answer.statusCode() + ": " + answer.body());
+                checkNear(helper, 8.0, baseAttack(brute), "then: the brute in the world has base attack 8 at once");
+                checkNear(helper, 50.0, brute.getMaxHealth(), "then: and max health 50");
+                try {
+                    String file = Files.readString(MobArmoryMod.MOB_FILES.mobsFolder().resolve("brute.json"));
+                    check(helper, file.contains("\"attack_damage\": 8"), "then: brute.json holds the save: " + file);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            })
+            .thenSucceed();
+    }
+
+    private static double baseAttack(ArmoryMob mob) {
+        return mob.getAttributeBaseValue(stats().holder(ModStats.ATTACK_DAMAGE.id()));
     }
 }
