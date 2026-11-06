@@ -268,7 +268,7 @@ src/gametest/（測試用模組，不進正式 jar）
 
 ## 8. 合併到 main（2026-11-07）
 
-> 使用者 11/07 決定先把 R4 合進 main，之後用合併後的版本一次錄示範影片。照 [review-02](../../../reviews/review-02-d1-r4.md) 第 6 節，在 `mod-r4-mobs/` 執行 `git merge main`，把 main `40ee556`（R2b＋R6 最終版，單元 237、遊戲內 29）合進 `feature/r4-mobs`。沒有 rebase，沒有動 main，沒有 push。main 之後由架構師快轉到這個分支。
+> 使用者 11/07 決定先把 R4 合進 main，之後用合併後的版本一次錄示範影片。照 review-02（`java_minecraft_model/reviews/review-02-d1-r4.md`，不在 repo 裡）第 6 節，在 `mod-r4-mobs/` 執行 `git merge main`，把 main `40ee556`（R2b＋R6 最終版，單元 237、遊戲內 29）合進 `feature/r4-mobs`。沒有 rebase，沒有動 main，沒有 push。main 之後由架構師快轉到這個分支。
 
 ### commit
 
