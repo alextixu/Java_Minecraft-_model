@@ -155,3 +155,34 @@ forge/client/     GeneratedWeaponPack、ClientTextures、ClientResourceReload
 | 9 | 網頁上傳一張 PNG，把外觀換成它，儲存 | 幾秒的載入畫面後，手上的劍變成上傳的圖 |
 | 10 | 網頁「新增武器」：id、名稱、攻擊力、外觀（可上傳 PNG） | 清單顯示「待重開」；重開遊戲後 `/give @p mobarmory:<id>` |
 | 11 | 收尾 | 網頁改回 +6、外觀改回獄髓劍 |
+
+## 11. SOLID／Pattern 檢查
+
+這一節是 2026-11-07 補的，依長期規定第 3 點：每份行為報告都要有這一節。內容逐條對照 R4、D1 合併後 main 上的程式（`d2382b9`）。R2b＋R6 的程式在合併時沒有被改過。
+
+### SOLID
+
+| 原則 | 對照的程式 | 判斷 |
+|---|---|---|
+| S 單一職責 | `WeaponJson` 只管 JSON 格式；`WeaponLoader` 只管讀整個資料夾和檢查外觀；`WeaponEditor` 只管「先寫檔，再換定義」；`EquipmentLibrary` 只管目前的定義快照；`ServerWeaponAdmin` 只管切到伺服器執行緒，改完後重算數值、換外觀、送封包；`WeaponApi` 只管 HTTP 路由和 JSON；`AdminHttpServer` 只管安全檢查 | 符合 |
+| S（注意） | `MobArmoryMod` 是組裝根，R2b、R4、D1 都在這裡加欄位和註冊（現在有 10 個共用元件欄位，從 `STATS` 到 `HIT_FEEDBACK`）。它只負責組裝、沒有規則，所以不算違反；再加功能時可以考慮按功能拆成幾個註冊類別 | 注意，沒有違反 |
+| O 開放封閉 | 加一把武器：1 個 JSON，0 行 Java。加一張內建貼圖：PNG、2 個模型 JSON、`BuiltInTextures.NAMES` 一行。加一種數值：`ModStats` 一行，武器 JSON 和網頁表單會自動出現（R4 的 `max_health` 就是這樣） | 符合 |
+| O（注意） | 外觀種類是 sealed 的 `EquipmentLook`（原版物品、貼圖，Q5 決定的封閉集合）。`WeaponJson`、`WeaponLoader`、`WeaponAssets`、`WeaponLooks` 用窮舉的 `switch`，`WeaponAssets`、`WeaponSync`、`EquipmentItemFactory` 用 `instanceof`。加第三種外觀要改這 6 個檔案，但窮舉 `switch` 漏改時編譯器會報錯。外觀種類是使用者決定的封閉集合，所以這裡選 sealed 加 switch，不另外抽 Strategy | 刻意的取捨 |
+| L 替換 | `WeaponStore` 有兩個實作：`WeaponFolder`（正式）和 `InMemoryWeaponStore`（測試），用同一組參數化契約測試（`WeaponStoreContractTest`）。`WeaponAdmin` 有兩個實作：`ServerWeaponAdmin`（正式）和 `TestWeaponAdmin`（`WeaponApiTest` 用） | 符合 |
+| I 介面隔離 | `WeaponAdmin` 有 9 個方法，只有網頁一個使用者，而且每個方法都用到；`WeaponStore` 只有讀寫武器檔和貼圖；`EquipmentLook` 沒有方法，只是資料 | 符合 |
+| D 依賴反轉 | `web` 只認得 `WeaponAdmin`，不 import `forge` 或 Minecraft；`data`、`web`、`core` 不 import Minecraft，由 `CoreBoundaryTest` 守住；`WeaponEditor` 依賴 `WeaponStore` 介面；`LoadoutCalculator` 依賴 `Supplier<EquipmentCatalog>`，不依賴 library 本身 | 符合 |
+
+### Pattern
+
+| Pattern | 在哪裡 | 為什麼 |
+|---|---|---|
+| 不可變快照 | `EquipmentLibrary`：`current()`、`view()` 每次都是新的不可變物件，`update`、`replaceAll` 整份換掉 | 網頁執行緒、伺服器執行緒、R4 的怪物同時讀，不用鎖也不會讀到改到一半的定義 |
+| Adapter | `ServerWeaponAdmin`（`WeaponAdmin` → 伺服器執行緒＋Minecraft）、`GeneratedWeaponPack`（`WeaponAssets` 的輸出 → Minecraft 的 `PackResources`）、`WeaponSyncChannel`（`WeaponSync` → Forge 的封包） | 純 Java 的 `data`、`web` 不用知道 Minecraft |
+| Strategy（介面＋可替換實作） | `WeaponStore`：資料夾版、記憶體版 | 測試不碰使用者的設定資料夾（O14） |
+| Factory | `EquipmentItemFactory`：每個定義做一個物品 | 啟動時從 JSON 決定有哪些物品，Java 不寫死 |
+| Builder | 沿用 R1 的 `StatCatalog` builder（`ModStats`） | 本輪沒有新增 |
+| 沒用的 | Observer：改完後要做的三件事（重算數值、換外觀、送封包）直接寫在 `ServerWeaponAdmin.afterChange`。只有一個地方會改定義，用 Observer 只是多一層 | 刻意不抽象 |
+
+### 結論
+
+沒有發現違反。兩個「注意」是已知的取捨，不需要現在改：組裝根變大、外觀種類用 sealed switch。
