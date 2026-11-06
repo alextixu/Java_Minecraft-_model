@@ -3,6 +3,7 @@
 > boundary-first 第 6 步的產出。邊界在 [21](21-r4b-mob-admin-boundary-note.md)，行為在 [22](22-r4b-mob-admin-given-when-then.md)，決定在 [23](23-r4b-mob-admin-open-questions.md)，prompt 和每一步的 SOLID／Pattern 檢查在 [prompts/round-r4b-01-boundary.md](prompts/round-r4b-01-boundary.md)、[prompts/round-r4b-02-implementation.md](prompts/round-r4b-02-implementation.md)。
 > **決定的狀態**：主 session 依使用者夜間授權採用建議值（Q1～Q8 都是 A，O1～O21 照建議），**待使用者確認**。
 > 方向：使用者 11/07 的主軸「主軸在我們這個系統可以未來讓玩家新增東西而不是我們自己要開發出很厲害的怪物與武器」。
+> **合併到 main**：依 review-05 F1，把 combo（`3c4eb42`）合進來，merge commit `23246ed`。合併後單元 505/505、遊戲內 77/77（含原版 1 個），之後由架構師快轉 main，見[第 9 節](#9-合併到-main2026-11-07-夜間review-05-f1)。第 1～8 節是合併前的數字和內容。
 
 ## 1. 結果一覽
 
@@ -161,3 +162,43 @@ ReloadCommand ──▶ [Section：weapons(WeaponAdmin)、mobs(MobAdmin)]
 | `web/MobAdmin`、`web/MobJson` | 架構師（段落 A） | 擴充成可以存檔；清單欄位全部保留 | 唯讀清單的欄位不變 |
 | `mobarmory/web/*` | 架構師（R6、段落 A） | 怪物分頁、新增怪物分頁、標題改「Mob Armory 後台」；重新載入改送 `{}` | 武器分頁不變；修掉重新載入的 415 |
 | 測試：`WeaponApiTest`、`AdminHttpServerTest`、`WebAdminGameTests`、`ContentResourcesTest` | 架構師、R4 | 怪物的測試搬到 `MobApiTest`；唯讀的 405 測試改成「從網頁存狂戰士」；標題字串；接 `MOB_ADMIN`；怪物名稱改在 JSON | 武器的預期數字一個都沒改 |
+
+## 9. 合併到 main（2026-11-07 夜間，review-05 F1）
+
+依 review-05 第 5-2 節和 F1，把 combo 的分支頭 `3c4eb42` 合進 `feature/r4b-mob-admin`。這就是架構師正在快轉的 main（main `56423bd`＋combo）。prompt 和每一步的 SOLID／Pattern 檢查在 [prompts/round-r4b-03-merge.md](prompts/round-r4b-03-merge.md)。
+
+### commit
+
+| commit | 內容 | 測試 |
+|---|---|---|
+| `23246ed` | merge `3c4eb42`：解 3 個衝突、`MobFolder` 改用 `JsonFolder`、`DefaultMobs` 的 Javadoc、新增遊戲內測試 `reload_command_prints_weapons_combos_mobs` | 單元 505、遊戲內 77 |
+| 本節所在的 commit | 本節和 prompt 紀錄（只改文件） | — |
+
+### 衝突怎麼解
+
+| 檔案 | 衝突 | 怎麼解 |
+|---|---|---|
+| `forge/MobArmoryMod` | import 區 | 兩邊都留，拿掉 `ModMobs`（R4b 已刪） |
+| 同上 | 註冊 reload 指令 | `List.of(ReloadCommand.weapons(WEAPON_ADMIN), ReloadCommand.combos(COMBO_FILES), ReloadCommand.mobs(MOB_ADMIN))` |
+| 同上 | 啟動 log | 合成一行：`{} stats from {}, {} pieces of equipment from {}, {} mobs from {}, {} combos from {}`，數量用 `STATS.catalog().size()`、`MOB_LIBRARY.registered().size()` |
+| `forge/ReloadCommand` | 4 處 | 用 R4b 的 section 版本。combo 的 `reloadCombos` 改寫成 `static Section combos(ComboFiles)`，訊息鍵照 combo 原本的（`reload.combos`、`reload.combos_failed`、`reload.combos_io`），失敗回 `-1` |
+| `lang/en_us.json` | 1 處 | combo 的 3 行和怪物的 6 行都留 |
+| `data/MobFolder` | **git 抓不到的語意衝突**：combo 合併時刪了 `ConfigFiles` | 改成持有 `new JsonFolder(root.resolve("mobs"))`，讀用 `files()`，寫用 `write(id.value(), json)`，和 `StatFolder` 一樣 |
+
+自動合併、看過沒問題的：`FeedbackGameTests`、`MobArmoryGameTests`、`ComboGameTests`、`GeneratedWeaponPack`（和 review-05 的試算一樣）。
+
+### 完成的標準
+
+| 標準 | 結果 |
+|---|---|
+| `gradlew clean build runGameTestServer` 全過 | **單元 505/505、遊戲內 77/77**（76 個我們的加 `always_pass`），0 failure |
+| 預期是單元 504、遊戲內 76 | 單元多 1：combo 合進 main 後的實際數字是 450，不是 review-05 估的 449，所以 450＋55＝505。遊戲內多 1：新增的 `reload_command_prints_weapons_combos_mobs` |
+| `git grep -n "ConfigFiles\|content.ModMobs"` 沒有結果 | **`src/` 沒有結果**（Javadoc 已改）。全 repo 還有命中，都在文件裡：`README.md` 2 處是 F2（架構師）；其餘是 R4、R2b、R6、段落 E、combo 的歷史紀錄，寫的是當時怎麼做，沒改（combo 合併時也是這樣處理）。列表在 [round-r4b-03-merge.md](prompts/round-r4b-03-merge.md) 第 3 步 |
+| `/mobarmory reload` 依序印出武器、combo、怪物三段 | 遊戲內 `reload_command_prints_weapons_combos_mobs`：執行真的指令，收集輸出，訊息鍵的順序是 `reload.done` → `reload.combos` → `reload.mobs.done`。另外 combo 的 `combo_new_file_adds_a_combo` 也執行真的 `/mobarmory reload`，證明 combo 那段有接上 |
+| R4b 的行為不變 | 第 4 節的 H／B 測試全部照舊通過 |
+
+### 還沒做的
+
+- README 的怪物段落和多人規則（F2），交給架構師。
+- 網頁的「從檔案重新載入」只載入武器和怪物，**不包括 combo**（review-05 S5）；combo 只能用 `/mobarmory reload`。這次沒改，照「預設不做」。
+- `runClient` 走查（review-05 S1）還沒做。
