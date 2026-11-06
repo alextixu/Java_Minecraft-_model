@@ -10,15 +10,15 @@
 |---|---|---|
 | 武器、護甲 | 在 `config/mobarmory/weapons/` 放一個 JSON 檔，或在網頁後台用「新增武器」表單；外觀可以借用原版物品、用 7 張內建貼圖，或上傳自己的 PNG。見[加一把武器](#加一把武器不用寫-java) | **已完成** |
 | 數值（例如「跳躍力」「幸運」） | 在 `config/mobarmory/stats/` 放一個 JSON 檔，重開遊戲，所有生物和武器都能用。可以是純數值，也可以對應 Minecraft 的屬性（例如跳躍力）。有戰鬥規則的數值（像暴擊、迴避）還是要寫 Java。見[加一個數值](#加一個數值不用寫-java) | **已完成** |
-| 怪物 | 目前要改 Java（見[加一隻怪物](#加一隻怪物3-個檔案)）；之後改成 JSON 加網頁 | **進行中** |
+| 怪物 | 在 `config/mobarmory/mobs/` 放一個 JSON 檔，或在網頁後台用「新增怪物」表單，重開遊戲就能用生怪蛋或 `/summon` 生出來。身體從 4 種原版人形裡挑，可以放大縮小；數值、裝備、行為（閒晃、攻擊玩家、中立、撲擊）都寫在檔案裡。既有的怪物也能在網頁上改。見[加一隻怪物](#加一隻怪物1-個-json) | **已完成** |
 | combo | 在 `config/mobarmory/combos/` 放一個 JSON 檔，寫出招順序（走、跑）、時間窗、名稱和效果，打 `/mobarmory reload` 就生效。效果從已經寫好的種類裡挑（目前有傷害倍率）；新的效果種類才要寫 Java。見[加一個 combo](#加一個-combo不用寫-java) | **已完成** |
 
 ## 現在有什麼
 
 - 一套可以擴充的數值系統：攻擊力、移動速度、護甲、攻擊速度、最大生命、暴擊率、迴避率。
 - 用 JSON 設定的武器和護甲，可以換外觀，也可以上傳 PNG 貼圖。
-- 自訂怪物：狂戰士（brute）、遊擊兵（skirmisher）。
-- 網頁後台：在網頁上改武器的數值和外觀、新增武器、查看怪物。
+- 自訂怪物：狂戰士（brute）、遊擊兵（skirmisher），都是 JSON 檔。
+- 網頁後台：在網頁上改武器和怪物、新增武器和怪物、上傳武器貼圖。
 - 打中生物時，在 action bar 顯示傷害、暴擊（CRIT）和迴避（MISS）。
 - combo：走路揮擊、奔跑揮擊依順序打兩下會觸發 combo（內附 Lunge、Follow-up），名稱接在 action bar 那一行後面。
 
@@ -38,6 +38,8 @@
 3. 啟動遊戲。第一次啟動時，模組會建立這些檔案：
    - `config/mobarmory/weapons/`：4 件預設武器，每把一個 JSON 檔。
    - `config/mobarmory/stats/`：7 個內建數值，每個一個 JSON 檔。
+   - `config/mobarmory/mobs/`：2 種預設怪物，每種一個 JSON 檔。
+   - `config/mobarmory/combos/`：2 個預設 combo，每個一個 JSON 檔。
    - `config/mobarmory/web.json`：網頁後台的設定。
 
 要自己 build jar 的話：
@@ -70,26 +72,33 @@
 | 狂戰士 Brute | `mobarmory:brute_spawn_egg` | `/summon mobarmory:brute` | 生命 40、拿重劍、體型是殭屍的 1.2 倍 |
 | 遊擊兵 Skirmisher | `mobarmory:skirmisher_spawn_egg` | `/summon mobarmory:skirmisher` | 生命 16、拿短刀、暴擊率 25%、迴避率 30% |
 
-兩種怪物都會閒晃，看到生存模式的玩家就會追上去攻擊。
+兩種怪物都會閒晃，看到生存模式的玩家就會追上去攻擊。它們的設定是 `config/mobarmory/mobs/brute.json`、`skirmisher.json`，可以直接改檔案，也可以在網頁的「怪物」分頁改。
 
 ### 指令
 
 | 指令 | 用途 |
 |---|---|
 | `/mobarmory stats` | 看自己的數值，包括基礎值和加上裝備後的值。後面可以接一個目標，例如 `/mobarmory stats @e[type=mobarmory:brute,limit=1,sort=nearest]` |
-| `/mobarmory reload` | 改完 `config/mobarmory/weapons/` 或 `combos/` 裡的檔案後，不用重開遊戲就重新載入。武器和 combo 各自全有或全無；新增或刪除的 combo 檔立刻生效，新增的武器要重開。需要 OP |
+| `/mobarmory reload` | 改完 `config/mobarmory/weapons/`、`combos/` 或 `mobs/` 裡的檔案後，不用重開遊戲就重新載入。依序重新載入**武器、combo、怪物**，三種各自全有或全無，每一種印一段結果。新增或刪除的 combo 檔立刻生效；新增的武器和怪物要重開。數值檔不會重新載入（要重開）。需要 OP |
 
 ### 網頁後台
 
 - 網址：`http://127.0.0.1:8765/`。只有開遊戲的這台電腦連得到。
 - 用 OP 身分進世界時，聊天欄會出現可以點的連結。
-- 可以做的事：
+- 武器（「武器」「新增武器」分頁）：
   - 列出伺服器上的武器。
   - 修改名稱、數值和外觀，存檔後立刻套用到所有同種武器，並寫回 JSON。
   - 上傳 PNG 貼圖。
   - 新增武器：存檔後清單標「待重開」，重開遊戲才能用。
-  - 從檔案重新載入（只重新載入武器；combo 檔要用 `/mobarmory reload`）。
-- 「怪物」分頁：列出每隻怪物的外觀、數值、裝備和行為，只能看，不能改（`GET /api/v1/mobs`）。
+- 怪物（「怪物」「新增怪物」分頁）：
+  - 列出伺服器上的怪物：外觀、數值、裝備、行為。
+  - 修改怪物，存檔後寫回 `config/mobarmory/mobs/<id>.json`：
+    - 名稱、數值、大小：立刻套用到世界上的同種怪物。改最大生命不會補血。
+    - 行為、裝備：下一次生成的怪物才生效。
+    - 身體：要重開遊戲才能換。
+  - 新增怪物：存檔後清單標「待重開」，重開遊戲才能用生怪蛋或 `/summon` 生出來。
+- 「從檔案重新載入」按鈕：重新載入武器和怪物。**combo 檔要用 `/mobarmory reload`**，數值檔要重開遊戲。
+- 武器和怪物都沒有刪除按鈕，要刪就刪檔案，再重開遊戲。
 - 設定在 `config/mobarmory/web.json`：
 
   ```json
@@ -159,7 +168,7 @@
 
 存成 `jump.json`，在武器裡寫 `{ "stat": "jump", "percent": 50 }`，拿著那把武器的玩家就跳得比較高。其他可以用的屬性，例如 `minecraft:knockback_resistance`（擊退抗性）、`minecraft:scale`（體型）、`minecraft:step_height`（能走上去的高度）。
 
-這種數值的 `default` 只影響本模組的怪物（狂戰士、遊擊兵）。玩家和原版生物照樣用 Minecraft 自己的預設值，例如玩家的跳躍力一樣是 0.42。`min`、`max` 則限制武器加減之後的結果。
+這種數值的 `default` 只影響本模組的怪物（`config/mobarmory/mobs/` 裡的怪物）。玩家和原版生物照樣用 Minecraft 自己的預設值，例如玩家的跳躍力一樣是 0.42。`min`、`max` 則限制武器加減之後的結果。
 
 | 欄位 | 必填 | 說明 |
 |---|---|---|
@@ -172,7 +181,8 @@
 
 **規則**：
 
-- **新數值一定要重開遊戲**：Minecraft 只在啟動時建立屬性。`/mobarmory reload` 只重新載入武器和 combo，網頁只重新載入武器。
+- **新數值一定要重開遊戲**：Minecraft 只在啟動時建立屬性。`/mobarmory reload`（武器、combo、怪物）和網頁的重新載入（武器、怪物）都不會讀數值檔。
+- 新數值也可以寫在怪物檔的 `stats` 裡（見[加一隻怪物](#加一隻怪物1-個-json)）。
 - **7 個內建數值**（`attack_damage`、`movement_speed`、`armor`、`attack_speed`、`max_health`、`crit_chance`、`dodge_chance`）：
   - 可以改數字，例如把 `crit_chance.json` 的 `default` 改成 0.05，每隻生物就有 5% 暴擊率。
   - 不能改種類：純數值不能改成對應屬性，原版屬性也不能改指向別的屬性。改了遊戲不會啟動。
@@ -214,46 +224,77 @@ combo 是「依順序打兩下」。每一下是走路揮擊或奔跑揮擊：�
 - 檔案寫錯時：啟動時遊戲不會啟動，`/mobarmory reload` 時什麼都不改。兩種情況都會寫出檔名和欄位。
 - 新的效果種類（例如擊退、緩速）要寫 Java：在 `core/combo` 加一個 `ComboEffect`，在 `data/ComboEffectTypes` 登記一行。之後所有 combo 檔都能用。
 
-## 加一隻怪物（3 個檔案）
+## 加一隻怪物（1 個 JSON）
 
-怪物用 Java 寫成一筆定義。實體種類、數值、AI、渲染和生怪蛋，都會從這筆定義自動產生。commit `cbb38b5` 實際加過第 3 種怪物「哨兵」，只改了下面 3 個檔案（之後為了維持雛型的兩種怪物，又移除了）：
+在 `config/mobarmory/mobs/` 放一個 JSON 檔，然後**重開遊戲**；或者在網頁的「新增怪物」表單填寫，會寫出同一個檔。**檔名就是怪物的 id**，規則和武器一樣。
 
-1. `src/main/java/io/github/alextixu/mobarmory/content/ModMobs.java`：加一筆定義，並放進 `ALL`。
+重開之後，這種怪物就有自己的生物種類（`/summon mobarmory:<id>`）、生怪蛋（`mobarmory:<id>_spawn_egg`，在 Mob Armory 分頁）、名稱、數值、AI 和外觀，**不用改任何 Java，也不用 build**。下面這個例子就是內建的狂戰士 `brute.json`：
 
-   ```java
-   public static final MobDefinition SENTINEL = MobDefinition.builder("sentinel")
-       .look(MobLook.of(MobLook.Body.SKELETON))   // 借用的身體：ZOMBIE、HUSK、SKELETON、STRAY
-       .stat(ModStats.MAX_HEALTH, 24)
-       .stat(ModStats.ATTACK_DAMAGE, 3)
-       .stat(ModStats.MOVEMENT_SPEED, 0.23)
-       .equip(EquipmentSlotKind.MAINHAND, "dagger")       // 用武器的 id
-       .equip(EquipmentSlotKind.CHEST, "heavy_armor")
-       .behavior(new WanderBehavior(0.8))
-       .behavior(new AttackPlayersBehavior(1.2))
-       .build();
+```json
+{
+  "format": 1,
+  "name": "Brute",
+  "look": { "body": "zombie", "scale": 1.2 },
+  "stats": { "max_health": 40, "attack_damage": 4, "movement_speed": 0.25 },
+  "equipment": { "mainhand": "heavy_sword" },
+  "behaviors": [
+    { "type": "wander", "speed": 1 },
+    { "type": "attack_players", "speed": 1 }
+  ]
+}
+```
 
-   public static final List<MobDefinition> ALL = List.of(BRUTE, SKIRMISHER, SENTINEL);
-   ```
+| 欄位 | 必填 | 說明 |
+|---|---|---|
+| `format` | 否 | 固定是 `1` |
+| `name` | 是 | 遊戲裡顯示的名稱，1～64 字，照寫的顯示（不用語系檔）。生怪蛋顯示「`<名稱>` Spawn Egg」 |
+| `look.body` | 是 | 借用的原版身體：`zombie`（殭屍）、`husk`（屍殼）、`skeleton`（骷髏）、`stray`（流髑）。生怪蛋的圖示也借同一種身體的蛋 |
+| `look.scale` | 否 | 大小倍率，碰撞箱也跟著變，0.0625～16；預設 1 |
+| `stats` | 否 | 數值的 id → 基礎值，例如 `"max_health": 40`。可以用 7 個內建數值，也可以用 `config/mobarmory/stats/` 裡加的數值。沒寫的用預設值 |
+| `equipment` | 否 | 欄位 → 武器的 id，例如 `"mainhand": "heavy_sword"`、`"chest": "heavy_armor"`。欄位和武器檔的 `slot` 一樣 |
+| `behaviors` | 否 | 行為清單，見下表。沒寫就站著不動 |
 
-2. `src/main/resources/assets/mobarmory/lang/en_us.json`：加怪物的名稱，`"entity.mobarmory.sentinel": "Sentinel"`。
-3. `src/main/resources/assets/mobarmory/items/sentinel_spawn_egg.json`：生怪蛋的圖示。
+**行為（`behaviors`）有四種**：
 
-   ```json
-   { "model": { "type": "minecraft:model", "model": "minecraft:item/skeleton_spawn_egg" } }
-   ```
+| `type` | 做什麼 | 參數 |
+|---|---|---|
+| `wander` | 沒事時到處閒晃 | `speed`：速度倍率，乘在移動速度上 |
+| `attack_players` | 看到生存模式的玩家就追上去打 | `speed`：追擊時的速度倍率，大於 1 就是「奔跑」 |
+| `neutral` | 平常不理人，被打了才反擊 | `speed`：反擊時的速度倍率 |
+| `leap` | 追到附近時撲向目標（衝刺） | 沒有參數 |
 
-改完後 build、重開遊戲。如果怪物用到的武器檔不存在，或欄位對不上，怪物照常生成，只是不拿那件，log 會寫一行警告。
+- `speed` 要大於 0、最多 3，不寫就是 1。
+- `attack_players` 和 `neutral` 最多只能有一個。
+- `leap` 要搭配 `attack_players` 或 `neutral` 其中一個，沒有目標就撲不了。
+
+**生效的時機**：
+
+| 改了什麼 | 什麼時候生效 |
+|---|---|
+| 新的怪物檔（新的 id） | 重開遊戲。Minecraft 只在啟動時建立生物種類 |
+| 名稱、數值、大小 | 網頁存檔或 `/mobarmory reload` 後，世界上的同種怪物**立刻**變。改最大生命不會補血 |
+| 行為、裝備 | 下一次生成的怪物，或從存檔載入的怪物 |
+| 身體 | 重開遊戲。網頁會擋下來並說明；改檔案再 reload 的話，會列在「重開後生效」 |
+| 刪掉怪物檔 | 撐到重開為止；重開後，世界上那種怪物會消失 |
+
+**其他規則**：
+
+- 怪物用到的武器檔不存在，或武器的欄位對不上時，怪物照常生成，只是不拿那件，log 會寫一行警告。
+- 怪物檔寫錯（格式、身體、數值、行為的組合），遊戲不會啟動，log 會寫出檔名和欄位。在網頁或用 reload 改錯時，什麼都不會改。
+- 第一次啟動會寫出 `brute.json`、`skirmisher.json`。資料夾已經存在就不會補回來。
+- 新的行為種類（第五種）要寫 Java：`core/mob` 一個行為、一個 goal binder，再各登記一行。28 號報告第 6 節實測過，共 5 個檔案。
+- 新的身體種類也要寫 Java（渲染器）。怪物不能像武器那樣上傳自己的貼圖。
 
 ## 多人遊戲的規則
 
 伺服器說了算。下面這些內容，伺服器會在玩家登入時、以及每次修改之後，同步給每位玩家：
 
 - 數值：由原版的屬性同步。
-- 名稱和 tooltip：由模組的封包同步。
+- 武器的名稱和 tooltip、怪物的名稱：由模組的封包同步。
 - 上傳的 PNG：用封包送給玩家，客戶端會自動重新載入資源。
 - 外觀：武器帶著目前外觀的 `item_model`，由原版同步。
 
-但是**有三樣東西每位玩家都要自己準備**，否則連不上或開不起來：
+但是**有四樣東西每位玩家都要自己準備**，否則連不上或開不起來：
 
 1. **同一組武器檔**：每位玩家的 `config/mobarmory/weapons/` 要和伺服器有同一組檔名，也就是同一組 id。Minecraft 規定客戶端和伺服器的物品清單必須相同，少一把或多一把都會連不上。檔案裡的數值、名稱、外觀可以不同，連上後一律照伺服器的。
 2. **這些武器用到的上傳 PNG**：如果某把武器的外觀是上傳的貼圖，每位玩家的 `config/mobarmory/textures/` 也要有同名的 PNG。客戶端啟動時會檢查武器用到的貼圖在不在，不在就開不起來。圖片內容可以不同，連上後會換成伺服器的。
@@ -261,23 +302,29 @@ combo 是「依順序打兩下」。每一下是走路揮擊或奔跑揮擊：�
    - 純數值是新的屬性，客戶端和伺服器的屬性清單不同就連不上。
    - 少的是對應原版屬性的數值檔時，還是連得上，因為屬性是 Minecraft 本來就有的。但伺服器送來的武器定義裡用到了客戶端不認得的數值，客戶端會整份不套用。所以這時所有武器的名稱和 tooltip 都是玩家本機的版本，數值本身還是照伺服器。
    - 內容也最好一樣：上下限不同時，客戶端顯示的數字可能和伺服器不同。
+4. **同一組怪物檔**：每位玩家的 `config/mobarmory/mobs/` 要和伺服器有同一組檔名。
+   - 每種怪物都是一個生物種類，和物品一樣，客戶端和伺服器的清單不同就連不上。這是推論，還沒有實測。
+   - **身體以每台電腦自己的檔案為準**：伺服器把狂戰士換成骷髏的身體，玩家沒有換檔案的話，看到的還是殭屍。
+   - 名稱由伺服器同步；數值、大小由原版同步；行為只在伺服器跑。這幾樣的檔案內容可以不同。
 
 **combo 不用準備**：combo 檔只有伺服器需要。出招狀態和傷害都在伺服器算，combo 名稱用語系鍵加上文字送給玩家，玩家的 `config/mobarmory/combos/` 有什麼都不影響。
 
-所以在網頁新增武器之後，要照這個順序：
+所以在網頁新增武器或怪物之後，要照這個順序：
 
 1. 重開伺服器。
-2. 把 `weapons/<id>.json` 複製給每位玩家。如果這把武器用上傳的貼圖，連 `textures/<名稱>.png` 也要複製。
+2. 把 `weapons/<id>.json` 或 `mobs/<id>.json` 複製給每位玩家。如果新武器用上傳的貼圖，連 `textures/<名稱>.png` 也要複製。
 3. 玩家重開遊戲，再連線。
 
 另一種做法：玩家把自己那份 JSON 的外觀改成原版物品，就不需要那張 PNG。
 
-玩家離開伺服器（中斷連線或登出）時，客戶端會丟掉那台伺服器送來的定義和貼圖，改回讀自己的 `config/mobarmory/weapons/`，所以之後開單人世界或連另一台伺服器，都從自己的設定開始。伺服器送貼圖前會再檢查一次 PNG 的規則，不合格的圖不會送出，以免玩家連線時被斷線。
+玩家離開伺服器（中斷連線或登出）時，客戶端會丟掉那台伺服器送來的武器定義、貼圖和怪物名稱，改回讀自己的檔案，所以之後開單人世界或連另一台伺服器，都從自己的設定開始。伺服器送貼圖前會再檢查一次 PNG 的規則，不合格的圖不會送出，以免玩家連線時被斷線。
 
 ## 已知限制
 
 - **combo 不能在網頁新增或修改**：要改 `config/mobarmory/combos/` 裡的檔案，再打 `/mobarmory reload`。
-- **網頁上的怪物只能看，不能改**：怪物是 Java 定義，要改怪物就得改 `content/ModMobs.java` 再重開。
+- **怪物的外觀只能從 4 種原版身體裡挑**，可以縮放，但不能上傳自己的貼圖；換身體要重開。
+- **怪物的行為只有 4 種**（閒晃、攻擊玩家、中立、撲擊），新的行為要寫 Java。
+- **網頁沒有刪除按鈕**（武器和怪物都是），要刪就刪檔案再重開。
 - **數值不能在網頁新增或修改**，也不能在執行中改；改了數值檔要重開遊戲。網頁的武器表單會列出新數值，但顯示的是它的 id（中文名稱只有內建的 7 個有）。
 - **從 JSON 加的純數值沒有戰鬥效果**：只會被記錄、顯示，也能被武器加減。要有效果就對應 Minecraft 的屬性，或寫 Java 的 `StatEffect`。
 - **多人還沒用兩台客戶端實測**：獨立伺服器（`runServer`）也還沒跑過。目前的證據是伺服器端和封包編碼解碼的自動測試。手動測試步驟在 [15 號報告第 3 節](docs/boundary/15-weapon-data-web-behavior-report.md)。
@@ -296,8 +343,8 @@ combo 是「依順序打兩下」。每一下是走路揮擊或奔跑揮擊：�
 - `build`：跑單元測試，不用開遊戲。結果在 `build/test-results/test/`。
 - `runGameTestServer`：開一個沒有畫面的遊戲伺服器跑系統測試。結果在 `run-gametest/gametest-report.xml`，有測試失敗時指令會失敗。
 - 遊戲內測試在獨立的 `run-gametest/` 資料夾跑，每次先清空，所以不受 `run/config/` 裡改過的設定影響。
-- 2026-11-07 combo（R3）合進來之後：單元 450/450，遊戲內 68/68。遊戲內的 68 個是我們的 67 個，加上 Minecraft 自帶的 `always_pass`。
-- 遊戲內測試開始前，`src/gametest/config/` 的兩個數值檔會被複製進 `run-gametest/config/`，用來測試玩家加的數值。
+- 2026-11-07 combo（R3）和怪物 JSON（R4b）都合進來之後：單元 505/505，遊戲內 77/77。遊戲內的 77 個是我們的 76 個，加上 Minecraft 自帶的 `always_pass`。
+- 遊戲內測試開始前，`src/gametest/config/` 會被複製進 `run-gametest/config/`。裡面放的是玩家可能會寫的檔案，用來測試「只靠 JSON 就能加」：兩個數值檔（`gametest_luck`、`gametest_jump`），以及一隻只有 JSON 的怪物 `goblin`（T2）。
 
 ## 文件索引
 
@@ -311,6 +358,7 @@ combo 是「依順序打兩下」。每一下是走路揮擊或奔跑揮擊：�
 | 段落 E 數值改成 JSON | [24](docs/boundary/24-stat-files-boundary-note.md) | [25](docs/boundary/25-stat-files-given-when-then.md) | [26](docs/boundary/26-stat-files-open-questions.md) | [round-08](docs/boundary/prompts/round-08-stat-files.md) | [27](docs/boundary/27-stat-files-behavior-report.md) |
 | D1 傷害顯示 | [11](docs/boundary/11-damage-display-boundary-note.md) | [12](docs/boundary/12-damage-display-given-when-then.md) | [13](docs/boundary/13-damage-display-open-questions.md) | [damage-display-round-01～03](docs/boundary/prompts/) | [16](docs/boundary/16-damage-display-behavior-report.md) |
 | 合併到 main | — | — | — | [round-06-merge](docs/boundary/prompts/round-06-merge.md) | 總索引的「合併到 main」一節 |
+| R4b 怪物改成 JSON、網頁改怪物（A6、A7、T2） | [21](docs/boundary/21-r4b-mob-admin-boundary-note.md) | [22](docs/boundary/22-r4b-mob-admin-given-when-then.md) | [23](docs/boundary/23-r4b-mob-admin-open-questions.md) | [round-r4b-01～03](docs/boundary/prompts/)、[round-09](docs/boundary/prompts/round-09-r4b-main.md) | [28](docs/boundary/28-r4b-mob-admin-behavior-report.md) |
 | R3 combo | [17](docs/boundary/17-r3-combo-boundary-note.md) | [18](docs/boundary/18-r3-combo-given-when-then.md) | [19](docs/boundary/19-r3-combo-open-questions.md) | [r3-combo-round-01～03](docs/boundary/prompts/) | [20](docs/boundary/20-r3-combo-behavior-report.md) |
 
 ## 素材來源

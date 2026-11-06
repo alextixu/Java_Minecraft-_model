@@ -59,6 +59,23 @@ R3 由連招小弟在 `feature/r3-combo` 分支做。2026-11-07 夜間依使用�
 | [20-r3-combo-behavior-report.md](20-r3-combo-behavior-report.md) | 行為報告：實作時的假設 C1～C11、結構摘要、各層測試數量、Given / When / Then 對照、SOLID／Pattern 檢查（第 5 節）、之後（第 7 節）、合併到 main（第 8 節） | 已產出（合併 main 後：單元 450/450、遊戲內 68/68，含原版 1 個） |
 | [prompts/r3-combo-round-01～03](prompts/) | 邊界草案、實作（每一步的 SOLID／Pattern）、合併 main | 2026-11-07 |
 
+## R4b：怪物改成 JSON、網頁可以設定和新增怪物（A6、A7、T2）
+
+R4b 由怪物小弟在 `feature/r4b-mob-admin` 分支做。2026-11-07 夜間，依使用者的主軸，怪物從 Java（`content/ModMobs`，已刪除）改成 `config/mobarmory/mobs/<id>.json`：
+- 玩家放一個檔、重開遊戲，就多一種怪物。
+- 網頁可以改怪物的名稱、數值、大小、行為、裝備，也可以新增怪物。
+
+分支先合了 main `3c4eb42`（含 combo，合併 commit `23246ed`），再由架構師把 main 快轉到 `ce7beaa`，README 照 review-05 F2 改寫。主 session 依夜間授權採用建議值，**待使用者確認**。
+
+| 檔案 | 內容 | 狀態 |
+|---|---|---|
+| [21-r4b-mob-admin-boundary-note.md](21-r4b-mob-admin-boundary-note.md) | 需求翻譯、平台限制、怪物檔格式、變更邊界、SOLID、Pattern | 依夜間授權採用建議值 |
+| [22-r4b-mob-admin-given-when-then.md](22-r4b-mob-admin-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 同上 |
+| [23-r4b-mob-admin-open-questions.md](23-r4b-mob-admin-open-questions.md) | Q1～Q8、O1～O21，以及合併時的調整 | 待使用者確認 |
+| [28-r4b-mob-admin-behavior-report.md](28-r4b-mob-admin-behavior-report.md) | 行為報告：改了什麼、結構、Given / When / Then 對照、SOLID／Pattern 檢查（第 5 節）、加一種行為實測（第 6 節）、沒有覆蓋的範圍、合併到 main（第 9 節） | 已產出（合併到 main 後：單元 505/505、遊戲內 77/77，含原版 1 個） |
+| [prompts/round-r4b-01～03](prompts/) | 邊界、實作、合併 main | 2026-11-07 |
+| [prompts/round-09-r4b-main.md](prompts/round-09-r4b-main.md) | 架構師：快轉 main 的 SOLID／Pattern 檢查、README（F2）、網頁重新載入按鈕（F3）、完整測試 | 2026-11-07 |
+
 ## R2b ＋ R6：武器改成資料驅動、網頁後台
 
 | 檔案 | 內容 | 狀態 |
@@ -111,14 +128,16 @@ R3 由連招小弟在 `feature/r3-combo` 分支做。2026-11-07 夜間依使用�
 | 08～10、15 | R2b＋R6（邊界、行為報告） | 架構師（原 `mc-dev`） |
 | 11～13、16 | D1 砍怪傷害顯示（邊界、行為報告） | `damage-hud` |
 | 17～19、20 | R3 combo（邊界、行為報告） | 連招小弟 |
-| 21～23 | （保留） | — |
+| 21～23、28 | R4b 怪物改成 JSON、網頁設定和新增怪物（邊界、行為報告） | 怪物小弟 |
 | 24～26、27 | 段落 E：數值改成 JSON（邊界、行為報告） | 架構師 |
 
 本索引由架構師維護。
 
 ## 之後的功能
 
-R5 多人同步，跑同樣的流程。
+R5 多人同步：還沒用兩台客戶端實測，之後跑同樣的流程。
+
+目前 main（`ce7beaa` 之後）：`gradlew clean build runGameTestServer` 單元 **505/505**、遊戲內 **77/77**（76 個我們的加原版 1 個）。
 
 ## 怎麼跑測試
 
