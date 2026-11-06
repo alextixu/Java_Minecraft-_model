@@ -32,6 +32,9 @@ import net.minecraftforge.event.entity.player.CriticalHitEvent;
  *   <li>Offensive effects for everything else (mob melee, any projectile) run on {@link LivingHurtEvent}.</li>
  * </ul>
  * Everything runs on the server only; the server is the authority on damage.
+ * <p>
+ * What it decides is also told to a {@link CombatObserver} (D1, the damage display). The observer only hears;
+ * it cannot change the outcome, so the rules above are the same with or without one.
  */
 public final class CombatEffectListener {
     /** Same threshold Minecraft uses for a "full strength" swing. */
@@ -39,6 +42,7 @@ public final class CombatEffectListener {
 
     private final CombatEffects effects;
     private final StatAttributeBridge stats;
+    private final CombatObserver observer;
     /**
      * How charged each player's current swing is. Minecraft resets the charge before it fires
      * {@link CriticalHitEvent}, so it is recorded on {@link AttackEntityEvent}, which fires first (N2).
@@ -47,8 +51,13 @@ public final class CombatEffectListener {
     private final Map<Player, Float> swingCharge = new WeakHashMap<>();
 
     public CombatEffectListener(CombatEffects effects, StatAttributeBridge stats) {
+        this(effects, stats, CombatObserver.NONE);
+    }
+
+    public CombatEffectListener(CombatEffects effects, StatAttributeBridge stats, CombatObserver observer) {
         this.effects = effects;
         this.stats = stats;
+        this.observer = observer;
     }
 
     public void register() {
@@ -74,7 +83,11 @@ public final class CombatEffectListener {
         DamageSource source = event.getSource();
         CombatContext ctx = new CombatContext(
             attackerOf(source), reader(defender), Math.max(0, event.getAmount()), kindOf(source), false);
-        return CombatResolver.resolve(effects.defensive(), ctx, rng(defender)).cancelled();
+        boolean cancelled = CombatResolver.resolve(effects.defensive(), ctx, rng(defender)).cancelled();
+        if (cancelled) {
+            observer.hitCancelled(defender, source);
+        }
+        return cancelled;
     }
 
     private void onCriticalHit(CriticalHitEvent event) {
@@ -93,6 +106,7 @@ public final class CombatEffectListener {
             event.setResult(Result.ALLOW);
             event.setDamageModifier((float) outcome.damage());
         }
+        observer.attackResolved(event.getTarget(), attacker, outcome);
     }
 
     private void onHurt(LivingHurtEvent event) {
@@ -109,10 +123,11 @@ public final class CombatEffectListener {
         CombatContext ctx = new CombatContext(reader(attacker), reader(defender), Math.max(0, event.getAmount()), kind, false);
         CombatOutcome outcome = CombatResolver.resolve(effects.offensive(), ctx, rng(attacker));
         event.setAmount((float) outcome.damage());
+        observer.attackResolved(defender, attacker, outcome);
     }
 
     /** Melee if a living attacker hit directly, projectile if it shot or threw something, otherwise environment (O3). */
-    static DamageKind kindOf(DamageSource source) {
+    public static DamageKind kindOf(DamageSource source) {
         Entity cause = source.getEntity();
         if (!(cause instanceof LivingEntity)) {
             return DamageKind.ENVIRONMENT;

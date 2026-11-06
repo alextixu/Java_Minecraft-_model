@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:hud_reads_damage_after_other_mods",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

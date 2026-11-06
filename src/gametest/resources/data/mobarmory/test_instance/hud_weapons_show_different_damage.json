@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:hud_weapons_show_different_damage",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

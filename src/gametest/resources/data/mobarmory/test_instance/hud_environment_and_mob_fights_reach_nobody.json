@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:hud_environment_and_mob_fights_reach_nobody",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

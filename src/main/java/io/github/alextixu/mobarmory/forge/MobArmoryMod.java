@@ -3,6 +3,9 @@ package io.github.alextixu.mobarmory.forge;
 import com.mojang.logging.LogUtils;
 import io.github.alextixu.mobarmory.content.ModEquipment;
 import io.github.alextixu.mobarmory.content.ModStats;
+import io.github.alextixu.mobarmory.forge.feedback.ActionBarDisplay;
+import io.github.alextixu.mobarmory.forge.feedback.HitFeedbackListener;
+import java.util.List;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -26,6 +29,8 @@ public final class MobArmoryMod {
     public static final StatAttributeBridge STATS = new StatAttributeBridge(ModStats.CATALOG, MODID);
     public static final EquipmentItemFactory EQUIPMENT = new EquipmentItemFactory(ModEquipment.CATALOG, STATS, MODID);
     public static final EquipmentStatApplier EQUIPMENT_STATS = new EquipmentStatApplier(ModEquipment.CATALOG, STATS);
+    // D1: each hit's result on the action bar of the players taking part.
+    public static final HitFeedbackListener HIT_FEEDBACK = new HitFeedbackListener(List.of(new ActionBarDisplay()));
 
     private static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
@@ -50,7 +55,8 @@ public final class MobArmoryMod {
         new EntityStatBinder(STATS).register();
         EQUIPMENT_STATS.register();
         new StatsCommand(STATS).register();
-        new CombatEffectListener(ModStats.COMBAT_EFFECTS, STATS).register();
+        new CombatEffectListener(ModStats.COMBAT_EFFECTS, STATS, HIT_FEEDBACK).register();
+        HIT_FEEDBACK.register();
 
         FMLCommonSetupEvent.getBus(modBusGroup).addListener(event -> {
             STATS.verifyAll();

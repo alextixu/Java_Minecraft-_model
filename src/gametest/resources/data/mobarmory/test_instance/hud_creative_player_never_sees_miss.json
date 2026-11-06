@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:hud_creative_player_never_sees_miss",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

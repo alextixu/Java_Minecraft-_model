@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:hud_damage_is_after_armor",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

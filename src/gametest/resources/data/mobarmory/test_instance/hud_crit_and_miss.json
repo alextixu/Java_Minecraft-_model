@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:hud_crit_and_miss",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

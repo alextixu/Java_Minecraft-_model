@@ -8,5 +8,11 @@
   "attribute.name.mobarmory.dodge_chance": "Dodge Chance",
   "commands.mobarmory.stats.header": "Stats of %s:",
   "commands.mobarmory.stats.line": "  %s: %s (base %s)",
-  "commands.mobarmory.stats.not_living": "%s has no stats"
+  "commands.mobarmory.stats.not_living": "%s has no stats",
+  "mobarmory.hit.dealt": "%1$s -%2$s ❤ %3$s/%4$s",
+  "mobarmory.hit.dealt.crit": "%1$s -%2$s CRIT ❤ %3$s/%4$s",
+  "mobarmory.hit.dealt.miss": "%1$s MISS ❤ %3$s/%4$s",
+  "mobarmory.hit.taken": "%1$s hit you -%2$s ❤ %3$s/%4$s",
+  "mobarmory.hit.taken.crit": "%1$s hit you -%2$s CRIT ❤ %3$s/%4$s",
+  "mobarmory.hit.taken.miss": "Dodged %1$s ❤ %3$s/%4$s"
 }

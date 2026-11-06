@@ -44,6 +44,7 @@ public final class MobArmoryGameTests {
         EquipmentGameTests.registerAll();
         CombatGameTests.registerAll();
         PlayerGameTests.registerAll();
+        FeedbackGameTests.registerAll();
     }
 
     private MobArmoryGameTests() {
