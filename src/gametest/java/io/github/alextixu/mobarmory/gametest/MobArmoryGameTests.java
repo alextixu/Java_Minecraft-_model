@@ -1,4 +1,4 @@
-package io.github.alextixu.mobarmory.forge.gametest;
+package io.github.alextixu.mobarmory.gametest;
 
 import io.github.alextixu.mobarmory.content.ModStats;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
@@ -14,8 +14,12 @@ import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.level.GameType;
-import net.minecraftforge.eventbus.api.bus.BusGroup;
-import net.minecraftforge.registries.DeferredRegister;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import net.minecraft.resources.Identifier;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.RegisterEvent;
 
 /**
  * System tests that run inside a real game server ({@code gradlew runGameTestServer}).
@@ -23,10 +27,15 @@ import net.minecraftforge.registries.DeferredRegister;
  * Forge 66 ships the {@code @GameTest} annotation but nothing collects it, so tests are wired the way
  * Minecraft 26.x does it: each function is registered in {@code Registries.TEST_FUNCTION} here, and each has a
  * test instance in {@code data/mobarmory/test_instance/<name>.json}. The two names must match.
+ * <p>
+ * This whole source set ({@code src/gametest}) is a separate test-only mod that only the {@code gameTestServer} run
+ * loads; it is never packed into the mod jar. Test instances are data-pack registry entries, and Minecraft marks any such
+ * entry from a non-vanilla pack as experimental, which would make every world show an "experimental settings"
+ * warning (N5). The tests register themselves through this event subscriber, so Mob Armory never references them.
  */
+@Mod.EventBusSubscriber(modid = MobArmoryGameTestMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class MobArmoryGameTests {
-    private static final DeferredRegister<Consumer<GameTestHelper>> FUNCTIONS =
-        DeferredRegister.create(Registries.TEST_FUNCTION, MobArmoryMod.MODID);
+    private static final Map<String, Consumer<GameTestHelper>> TESTS = new LinkedHashMap<>();
     private static final double EPS = 1e-6;
 
     static {
@@ -40,12 +49,16 @@ public final class MobArmoryGameTests {
     private MobArmoryGameTests() {
     }
 
-    public static void register(BusGroup modBusGroup) {
-        FUNCTIONS.register(modBusGroup);
+    @SubscribeEvent
+    public static void onRegister(RegisterEvent event) {
+        event.register(Registries.TEST_FUNCTION, helper -> TESTS.forEach(
+            (name, function) -> helper.register(Identifier.fromNamespaceAndPath(MobArmoryMod.MODID, name), function)));
     }
 
     static void test(String name, Consumer<GameTestHelper> function) {
-        FUNCTIONS.register(name, () -> function);
+        if (TESTS.putIfAbsent(name, function) != null) {
+            throw new IllegalStateException("Game test '" + name + "' is registered twice");
+        }
     }
 
     static StatAttributeBridge stats() {

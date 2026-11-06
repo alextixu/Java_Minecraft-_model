@@ -18,6 +18,22 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 // Include generated resources
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
+// System tests (GameTest) live in their own source set so they never ship in the mod jar.
+// Their test instances are data-pack registry entries, and Minecraft marks any such entry from a
+// non-vanilla pack as experimental, which made every world show an "experimental settings" warning.
+// The source set is a separate test-only mod (src/gametest/resources/META-INF/mods.toml) that only the
+// gameTestServer run puts on the classpath; the jar task packs main only.
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+configurations {
+    gametestImplementation.extendsFrom implementation
+    gametestAnnotationProcessor.extendsFrom annotationProcessor
+}
+
 minecraft {
     runs {
         configureEach {
@@ -69,6 +85,25 @@ tasks.named('test', Test) {
         events 'passed', 'skipped', 'failed'
     }
 }
+
+// ForgeGradle makes one set of run tasks per source set. The game tests need the gametest source set's run
+// (runGametestGameTestServer: Mob Armory plus the test-only mod), so `gradlew runGameTestServer` forwards there
+// instead of starting a server without the tests.
+tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+    dependsOn 'runGametestGameTestServer'
+    enabled = false
+}
+
+// `build` also compiles the game tests, so a broken test is caught even without running the test server.
+tasks.named('check') {
+    dependsOn tasks.named('gametestClasses')
+}
+
+// With merge-source-sets, classes and resources share one output folder per source set. When compileJava was
+// restored from the build cache in a clean build, that folder ended up without any classes (2026-11-06), which
+// would also produce an empty mod jar. These tasks are fast, so they always run instead of using the cache.
+tasks.withType(JavaCompile).configureEach { outputs.cacheIf { false } }
+tasks.withType(ProcessResources).configureEach { outputs.cacheIf { false } }
 
 tasks.withType(JavaCompile).configureEach {
     // Use the UTF-8 charset for Java compilation

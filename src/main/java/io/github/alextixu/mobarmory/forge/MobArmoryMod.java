@@ -3,7 +3,6 @@ package io.github.alextixu.mobarmory.forge;
 import com.mojang.logging.LogUtils;
 import io.github.alextixu.mobarmory.content.ModEquipment;
 import io.github.alextixu.mobarmory.content.ModStats;
-import io.github.alextixu.mobarmory.forge.gametest.MobArmoryGameTests;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -23,7 +22,7 @@ public final class MobArmoryMod {
     public static final String MODID = "mobarmory";
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    // Shared with the game tests, which must exercise the same objects the game uses.
+    // Public so the game tests (src/gametest) exercise the same objects the game uses.
     public static final StatAttributeBridge STATS = new StatAttributeBridge(ModStats.CATALOG, MODID);
     public static final EquipmentItemFactory EQUIPMENT = new EquipmentItemFactory(ModEquipment.CATALOG, STATS, MODID);
     public static final EquipmentStatApplier EQUIPMENT_STATS = new EquipmentStatApplier(ModEquipment.CATALOG, STATS);
@@ -46,7 +45,7 @@ public final class MobArmoryMod {
         STATS.register(modBusGroup);
         EQUIPMENT.register(modBusGroup);
         TABS.register(modBusGroup);
-        MobArmoryGameTests.register(modBusGroup);
+        // Game tests live in the separate src/gametest source set and register themselves (see build.gradle).
 
         new EntityStatBinder(STATS).register();
         EQUIPMENT_STATS.register();

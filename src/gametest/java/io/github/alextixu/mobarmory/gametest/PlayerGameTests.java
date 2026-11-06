@@ -1,9 +1,9 @@
-package io.github.alextixu.mobarmory.forge.gametest;
+package io.github.alextixu.mobarmory.gametest;
 
-import static io.github.alextixu.mobarmory.forge.gametest.MobArmoryGameTests.check;
-import static io.github.alextixu.mobarmory.forge.gametest.MobArmoryGameTests.checkNear;
-import static io.github.alextixu.mobarmory.forge.gametest.MobArmoryGameTests.stats;
-import static io.github.alextixu.mobarmory.forge.gametest.MobArmoryGameTests.test;
+import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.check;
+import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.checkNear;
+import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.stats;
+import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.test;
 
 import io.github.alextixu.mobarmory.content.ModEquipment;
 import io.github.alextixu.mobarmory.content.ModStats;
