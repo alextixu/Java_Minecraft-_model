@@ -23,9 +23,17 @@
 | [screenshots/](screenshots/) | 遊戲內手動走查的截圖（行為報告第 6 節） | 2026-11-06 |
 | [04-behavior-report.md](04-behavior-report.md) | 行為報告：結構摘要、各層測試數量、Given / When / Then 對照、沒有覆蓋的範圍、待決定的新問題 | 已產出（第 3 輪更新：單元 106/106、遊戲內 18/18） |
 
+## R4：自訂怪物（驗收 T2）
+
+| 檔案 | 內容 | 狀態 |
+|---|---|---|
+| [05-r4-boundary-note.md](05-r4-boundary-note.md) | 需求翻譯、平台限制、變更邊界、實作順序、測試計畫 | 草案 |
+| [06-r4-given-when-then.md](06-r4-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 草案 |
+| [07-r4-open-questions.md](07-r4-open-questions.md) | 待使用者決定的問題（設計 3 題、商業規則 4 題、其他 10 項） | 等待回覆 |
+
 ## 之後的功能
 
-R4 自訂怪物 → R3 combo → R5 多人同步 → R6 網頁與伺服器 API，每一項各跑一次同樣的流程。
+R3 combo → R5 多人同步 → R6 網頁與伺服器 API，每一項各跑一次同樣的流程。
 
 ## 怎麼跑測試
 

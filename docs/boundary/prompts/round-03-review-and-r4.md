@@ -49,3 +49,13 @@
 > - 原版已有翻譯「Attack Speed」，tooltip 和 `/mobarmory stats` 用的是 Attribute 本身的名稱，所以語系檔不用改。
 > - 不准動：`core/`、`forge/`。新增數值不應該需要改任何事件處理器或轉接層。
 > - 測試：Module（重劍：4.0 × 0.6 = 2.4）、契約（自動涵蓋）、System（玩家拿重劍攻速 2.4，放下回 4.0）。
+
+### R4：自訂怪物的邊界草案（boundary-first 第 1～3 步）
+
+> 呼叫 `boundary-first`，參數：
+>
+> R4 自訂怪物（Forge 26.3 模組 mobarmory）：外觀、數值可設定；行為先做閒晃和攻擊玩家；之後網頁（R6）要能設定行為（能不能奔跑、衝刺、攻擊玩家、是否中立）。驗收 T2：能把不同的生物或怪物加進系統。沿用 R1／R2 已確認的架構（core/content/forge 分層、數值登記表、StatEffect、LoadoutCalculator）。產出 05 邊界草案、06 Given/When/Then、07 待決定問題清單（每題附建議）。使用者回答前不寫功能程式。
+>
+> - 需求來源：會議重點第 3 節（自訂怪物：外觀和行為可設定，先做閒晃和攻擊；網頁要能設定奔跑、衝刺、攻擊玩家、中立）＋ 驗收 T2。
+> - 先讀 Forge 26.3 原始碼確認平台能力：生物種類註冊（啟動後凍結）、`EntityAttributeCreationEvent`、原版 AI goal、人形渲染器、26.x 生怪蛋、對玩家傷害的難度縮放。
+> - 產出：[05](../05-r4-boundary-note.md)、[06](../06-r4-given-when-then.md)、[07](../07-r4-open-questions.md)。**沒有寫任何 R4 功能程式**。
