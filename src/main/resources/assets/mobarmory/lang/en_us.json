@@ -1,9 +1,5 @@
 {
   "itemGroup.mobarmory": "Mob Armory",
-  "item.mobarmory.heavy_sword": "Heavy Sword",
-  "item.mobarmory.dagger": "Dagger",
-  "item.mobarmory.evasion_chestplate": "Evasion Chestplate",
-  "item.mobarmory.heavy_armor": "Heavy Armor",
   "entity.mobarmory.brute": "Brute",
   "entity.mobarmory.skirmisher": "Skirmisher",
   "item.mobarmory.spawn_egg": "%s Spawn Egg",
@@ -11,5 +7,13 @@
   "attribute.name.mobarmory.dodge_chance": "Dodge Chance",
   "commands.mobarmory.stats.header": "Stats of %s:",
   "commands.mobarmory.stats.line": "  %s: %s (base %s)",
-  "commands.mobarmory.stats.not_living": "%s has no stats"
+  "commands.mobarmory.stats.not_living": "%s has no stats",
+  "commands.mobarmory.reload.done": "Weapon files reloaded: %s changed (%s)",
+  "commands.mobarmory.reload.pending": "New weapons, usable after a restart: %s",
+  "commands.mobarmory.reload.missing": "Files missing; kept until a restart, then removed from every world: %s",
+  "commands.mobarmory.reload.slot": "Slot changes apply after a restart: %s",
+  "commands.mobarmory.reload.failed": "Nothing changed. Fix these problems in config/mobarmory/weapons first:",
+  "commands.mobarmory.reload.io": "Could not read the weapon files: %s",
+  "mobarmory.web.ready": "Mob Armory weapon admin: %s",
+  "mobarmory.web.failed": "Mob Armory weapon admin did not start: %s"
 }

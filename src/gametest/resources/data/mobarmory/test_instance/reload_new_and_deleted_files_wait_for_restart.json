@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:live_edit",
+  "function": "mobarmory:reload_new_and_deleted_files_wait_for_restart",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

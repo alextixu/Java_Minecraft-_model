@@ -1,7 +1,7 @@
 package io.github.alextixu.mobarmory.forge;
 
-import io.github.alextixu.mobarmory.core.equipment.EquipmentCatalog;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
+import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentSlotKind;
 import io.github.alextixu.mobarmory.core.equipment.LoadoutCalculator;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
@@ -9,6 +9,9 @@ import io.github.alextixu.mobarmory.core.stat.StatId;
 import java.util.EnumMap;
 import java.util.Map;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -28,8 +31,9 @@ public final class EquipmentStatApplier {
     private final LoadoutCalculator calculator;
     private final StatAttributeBridge stats;
 
-    public EquipmentStatApplier(EquipmentCatalog catalog, StatAttributeBridge stats) {
-        this.calculator = new LoadoutCalculator(catalog);
+    /** Reads the definitions in effect at each recomputation, so a changed definition applies on the next one. */
+    public EquipmentStatApplier(EquipmentLibrary library, StatAttributeBridge stats) {
+        this.calculator = new LoadoutCalculator(library::current);
         this.stats = stats;
     }
 
@@ -55,6 +59,25 @@ public final class EquipmentStatApplier {
                     new AttributeModifier(MODIFIER_ID, delta, AttributeModifier.Operation.ADD_VALUE));
             }
         }
+    }
+
+    /**
+     * After a definition changed (reload command, web page): recomputes every loaded entity that holds or wears
+     * one of our pieces, so a sword already in someone's hand changes at once (R2 decision Q6, R2b H3, H5, H6).
+     *
+     * @return how many entities were recomputed
+     */
+    public int refreshHolders(MinecraftServer server) {
+        int count = 0;
+        for (ServerLevel level : server.getAllLevels()) {
+            for (Entity entity : level.getAllEntities()) {
+                if (entity instanceof LivingEntity living && !loadoutOf(living).isEmpty()) {
+                    refresh(living);
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     /** Which of our pieces sits in each slot. Empty slots and vanilla items are left out (B13). */

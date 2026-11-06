@@ -120,11 +120,14 @@ final class MobGameTests {
         return MobArmoryMod.EQUIPMENT.item(EquipmentId.of(id));
     }
 
-    /** Every stat the definition says the mob should end up with: its own value, then its equipment through R2. */
+    /**
+     * Every stat the definition says the mob should end up with: its own value, then its equipment through R2, using
+     * the weapon definitions in effect now (they can change while the game runs, R2b).
+     */
     private static Map<StatId, Double> expectedStats(MobDefinition mob) {
         Map<StatId, Double> base = mob.spawnStats(ModStats.CATALOG);
         Map<StatId, Double> expected = new LinkedHashMap<>(base);
-        expected.putAll(new LoadoutCalculator(MOBS.catalog().equipment()).compute(mob.equipment(), base::get));
+        expected.putAll(new LoadoutCalculator(MobArmoryMod.EQUIPMENT_LIBRARY.current()).compute(mob.equipment(), base::get));
         return expected;
     }
 

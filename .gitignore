@@ -21,6 +21,7 @@ build
 eclipse
 run
 run-data
+run-gametest
 
 # Files from Forge MDK
 forge_README.txt

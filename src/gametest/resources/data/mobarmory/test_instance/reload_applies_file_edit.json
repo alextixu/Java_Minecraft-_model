@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:live_edit",
+  "function": "mobarmory:reload_applies_file_edit",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}
