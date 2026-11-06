@@ -101,3 +101,5 @@
 > - 產出 `docs/boundary/04-behavior-report.md`：照 boundary-first 的最後回覆格式（邊界說明、商業決策、結構摘要、測試報告、沒有覆蓋的範圍）。
 >
 > **執行時的調整**：啟動 `runClient` 後發現使用者正在這台電腦上使用其他全螢幕程式，所以沒有送滑鼠鍵盤輸入，只用不搶焦點的方式擷取了主選單畫面，就把 client 關掉了。手動走查改成兩件事：(1) 補兩個遊戲內系統測試，用真的伺服器端玩家（`makeMockServerPlayerInLevel`）走換裝事件，並以玩家身分執行 `/mobarmory stats`；(2) 把手動劇本寫進行為報告第 6 節，等電腦空出來再走。
+>
+> **補做手動走查（2026-11-06 下午）**：使用者要求「操控我電腦給我目前的 demo」並「使用影片展示」。開發 session 開 `runClient`、建立創造模式超平坦世界，用 NVIDIA 錄影（使用者說 Alt+R，實測 Alt+R 是開關效能統計，改用 NVIDIA 預設的 Alt+F9 錄影），照行為報告第 6 節的劇本走完，截圖存到 `docs/boundary/screenshots/`。

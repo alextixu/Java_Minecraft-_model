@@ -2,7 +2,8 @@
 
 > boundary-first 第 6 步。日期：2026-11-06。
 > 結果：**單元測試 101/101、遊戲內系統測試 16/16 通過**；驗收測試 **T1 的自動化系統測試通過**。
-> 尚未完成：在 `runClient` 裡由真人操作走一遍 T1（原因和補救方式見第 6 節）。
+> 遊戲內手動走查（`runClient`）也已完成並錄影，T1 和 B1、B2、B10、B12、H3 在畫面上都符合預期（見第 6 節）。
+> 走查時發現一個問題：建立和載入世界時會跳出「實驗性設定」警告（見第 7 節 N5）。
 
 ## 1. 邊界說明（已確認的版本）
 
@@ -148,29 +149,34 @@ io.github.alextixu.mobarmory
 
 測試只證明已定義、已覆蓋的行為。以下沒有被自動測試證明：
 
-- **客戶端畫面**：tooltip 的實際樣子、物品圖示、護甲穿在身上的外觀、暴擊粒子。
+- **客戶端畫面**：tooltip、物品圖示、護甲穿在身上的外觀沒有自動測試，改由第 6 節的手動走查截圖確認；暴擊粒子沒有確認。
 - **玩家實際移動**：測試證明的是 Attribute 數值；玩家在客戶端走得多快由原版依這個數值計算，沒有量測實際位移。
 - **玩家真的揮劍**：玩家暴擊是直接呼叫 Forge 的暴擊 hook 測的，沒有跑完整的 `Player.attack` 流程。
-- **真正的死亡重生、存檔重登、按 Q 丟出物品**：用等效情境模擬（見上表 \*）。
+- **真正的死亡重生**：用等效情境模擬（見上表 \*）。存檔重登和按 Q 丟出物品已在第 6 節手動確認。
 - **啟動失敗的畫面**：B5～B7、B14 在單元測試證明會丟出寫明原因的例外；沒有實際開一個寫錯定義的遊戲看錯誤畫面。
 - **多人同步（R5）**：自訂數值設定為同步，但沒有測兩個客戶端。
 - **效能**：每次換裝重算 5 個數值，沒有量測。
 
 ## 6. 遊戲內手動驗證（runClient）
 
-**已做**：`gradlew runClient` 能啟動，主選單左下角顯示「Forge 66.1.0 (3 mods loaded)」（minecraft、forge、mobarmory），log 有「Mob Armory: 5 stats, 4 pieces of equipment」，沒有模組相關錯誤。
+2026-11-06 由開發 session 在使用者同意下操作 `gradlew runClient`：建立創造模式、超平坦的單人世界「Mob Armory Demo」，用 NVIDIA 錄下整段走查（約 5 分鐘，存在使用者電腦上，沒有放進 repo）。截圖在 [screenshots/](screenshots/)。
 
-**沒做**：進世界由人操作走一遍 T1。原因：啟動 client 時，使用者正在這台電腦上使用其他全螢幕程式，開發 session 不應該搶走滑鼠鍵盤，所以沒有送任何輸入就把 client 關掉了。改用上面的 `t1_real_player_and_stats_command` 等遊戲內自動測試補強。
+| # | 操作 | 預期 | 畫面上的結果 | 截圖 |
+|---|---|---|---|---|
+| 1 | 空手，`/mobarmory stats` | 速度 0.1 | `Speed: 0.1000 (base 0.1000)`，另外列出暴擊率、迴避率 | [01](screenshots/01-empty-hand.png) |
+| 2 | `/give @s mobarmory:heavy_sword`（在主手） | 速度 0.07（T1、H1） | `Speed: 0.0700`、`Attack Damage: 7.0000`；手上是下界合金劍外觀 | [02](screenshots/02-heavy-sword-t1.png) |
+| 3 | 開物品欄，Mob Armory 分頁，滑鼠停在每件裝備上 | 4 件都在；tooltip 和定義一致（Q6、O6、O9） | 重劍「+6 Attack Damage／−30% Speed」、短刀「+2／+25% Crit Chance／+10% Speed」、迴避胸甲「+15% Dodge Chance」、重甲「+8 Armor／−15% Speed」 | [03](screenshots/03-tooltip-heavy-sword.png)～[06](screenshots/06-tooltip-heavy-armor.png) |
+| 4 | 按 F 把重劍換到副手 | 速度 0.1（B1） | `Speed: 0.1000` | [07](screenshots/07-offhand-b1.png) |
+| 5 | 換回主手，`/item replace entity @s armor.chest with mobarmory:heavy_armor` | 速度 0.0595（B2） | `Speed: 0.0595`、`Armor: 8.0000` | [08](screenshots/08-sword-and-armor-b2.png) |
+| 6 | 切第三人稱 | 穿著原版鐵胸甲外觀（O8） | 身上是鐵胸甲、手拿重劍 | [09](screenshots/09-third-person.png) |
+| 7 | 按 Q 丟掉重劍 | 只剩重甲：0.1 × 0.85 = 0.085（B10） | `Speed: 0.0850`、`Attack Damage: 1.0000` | [10](screenshots/10-dropped-sword-b10.png) |
+| 8 | `/summon husk ^ ^ ^3 {NoAI:1b}`，查屍殼的數值 | 怪物也有暴擊率、迴避率（H3） | `Speed: 0.2300`、`Crit Chance`、`Dodge Chance` 都在 | [11](screenshots/11-husk-stats-h3.png) |
+| 9 | 給屍殼重劍 | 0.23 × 0.7 = 0.161 | `Speed: 0.1610`、`Attack Damage: 9.0000`（3 ＋ 6） | [12](screenshots/12-husk-heavy-sword.png) |
+| 10 | 重劍＋重甲，Save and Quit to Title，再進同一個世界 | 仍是 0.0595，不是更低（B12） | 離開前 `0.0595`，重新進入後 `0.0595` | [13](screenshots/13-before-relog.png)、[14](screenshots/14-after-relog-b12.png) |
 
-**補做方式**：電腦空出來時，由使用者或開發 session 在 `gradlew runClient` 開創造模式單人世界，在聊天欄依序輸入：
+全部符合預期。屍殼用的是白天不會燒起來的殭屍變種，`NoAI` 只是讓它站著不動；它的換裝事件照樣會觸發。
 
-1. `/mobarmory stats` → 移動速度 `0.1000`
-2. `/give @s mobarmory:heavy_sword`，拿在主手 → `/mobarmory stats` 顯示 `0.0700`；滑鼠移到物品上，tooltip 顯示「When in Main Hand: +6 Attack Damage、−30% Speed」
-3. 按 F 換到副手 → `0.1000`（B1）
-4. `/give @s mobarmory:heavy_armor` 右鍵穿上，重劍換回主手 → `0.0595`（B2）
-5. 按 Q 丟掉重劍 → `0.0850`（只剩重甲，B10）
-6. 撿回重劍拿在主手，Esc → Save and Quit，再進世界 → 仍是 `0.0595`（B12）
-7. `/summon zombie ~ ~ ~3`，`/mobarmory stats @e[type=zombie,limit=1,sort=nearest]` → 殭屍有暴擊率、迴避率（H3）
+**發現的問題**：建立世界時跳出「These settings are using experimental features」，載入既有世界時跳出「Worlds using Experimental Settings are not supported」（[15](screenshots/15-experimental-warning.png)）。這是給玩家看的畫面，演示前要處理，見第 7 節 N5。
 
 ## 7. 待使用者決定的新問題（不影響目前功能）
 
@@ -180,3 +186,4 @@ io.github.alextixu.mobarmory
 | N2 | 暴擊機率判定要不要像原版跳劈一樣，要求蓄力滿格（A3）？ | **要**，避免連點刷暴擊；改動只在 `CombatEffectListener` |
 | N3 | 「重武器」要不要也揮得比較慢？需要新增一個對應原版的「攻擊速度」數值 | **要**，重劍 −40% 攻速；剛好示範 R1「加一個數值只改 2 個檔案」 |
 | N4 | 移動速度 30% 下限要不要也擋住緩速藥水等原版效果（A1）？ | **不要**，維持原版規則，只限制裝備 |
+| N5 | 建立／載入世界時出現「實驗性設定」警告。**原因還沒確認**；推測是模組資料包裡的 16 個 `test_instance` JSON（GameTest 用）被當成實驗性的註冊表內容，也可能是 Forge 開發環境本身就會跳 | **先查證原因**；如果是 GameTest JSON 造成的，就把它們移到只在 `runGameTestServer` 才載入的資料包，正式遊戲不帶 |
