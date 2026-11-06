@@ -28,7 +28,8 @@
   - 做法是常數、型別、`CATALOG`、`COMBAT_EFFECTS` 全部保留，只改說明文字，所以引用它的程式都不用改。
 - **其他分支的介面**：
   - `feature/r3-combo` 用 `ModStats.MOVEMENT_SPEED.id()`，也用 `StatAttributeBridge(StatCatalog, String)`、`WeaponStartup.load(..., ModStats.CATALOG)`。
-  - 這些全部保留可用。合併時，只有 `MobArmoryMod` 開頭幾行會有文字上的衝突，24 號第 3 節已寫明。
+  - 這些全部保留可用。
+  - 當時寫「合併時只有 `MobArmoryMod` 開頭幾行會有文字衝突」，後來 review-04 試算出實際是 3 個檔案，已更正（見文末）。
 - **`core/stat` 的公開介面**：不改。名稱和同步這兩個 `StatDefinition` 沒有的欄位，放在 `data/StatEntry`，不加進 core。
 - **結論**：沒有需要停下來的衝突。
 
@@ -105,3 +106,18 @@
   - 沒有進世界、沒有操作遊戲，看完 log 就關掉。
 - 新數值的名稱是否真的顯示在 tooltip，沒有在畫面上確認，手動步驟寫在 27 號第 6 節。
 - 最後在 commit 前跑一次 `clean build runGameTestServer`，數字見 27 號第 1 節。
+- commit `6a3e1fc`。
+
+## 依 review-04 修正（2026-11-07）
+
+主 session 轉達審查員 review-04（`java_minecraft_model/reviews/review-04-overnight.md`）第 5、6 節，依使用者的夜間授權直接修，只改文件：
+
+- **E1**：README 的多人規則寫「有兩樣東西」，下面其實列了三項，改成「三樣」。武器欄位表的 `modifiers.stat` 補上「以及 `config/mobarmory/stats/` 裡任何數值的 id」。
+- **E2**：27 號手動步驟的預期改成「+50% Luck」。上限 ≤ 1 的純數值會被 `EquipmentItem.isChance` 當成機率，用百分比顯示。README「加一個數值」也補上這條規則。
+- **E3**：
+  - 24 號「可以改的模組」補上 `data/WeaponFolder`，實作時抽出 `ConfigFiles`。
+  - 24、27 號和本檔的衝突範圍，改成實際的 3 個檔案，並指向 review-04 第 3 節。
+- **S1**：README 補充：對應原版屬性的數值，`default` 只影響本模組的怪物，玩家和原版生物用 Minecraft 自己的預設值。依據是 `MobDefinition.spawnStats` 只用在 `MobEntityFactory` 建立怪物的屬性；`EntityStatBinder` 只掛自訂屬性。
+- **S2**：README 多人規則 3 補充：少了對應原版屬性的數值檔時連得上，但伺服器的武器定義會整份不套用，所以所有武器的名稱和 tooltip 是本機的版本。依據是 `WeaponSyncChannel.receiveDefinitions` 遇到 `WeaponFormatException` 時整份忽略。
+- **SOLID／Pattern**：只改文件，不適用。
+- **變更邊界**：README、24、27 號和本檔。

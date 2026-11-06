@@ -119,7 +119,7 @@
 |---|---|
 | `slot` | `mainhand`、`offhand`、`head`、`chest`、`legs`、`feet` |
 | `look` | 下面三種外觀選一種：<br>• 借用原版物品：`{ "item": "minecraft:iron_sword" }`<br>• 7 張內建貼圖：`{ "texture": "scythe_blood" }`。可用的名稱有 `dagger_iron`、`dagger_ruby`、`spear_iron`、`pitchfork_gold`、`halberd_netherite`、`halberd_wooden`、`scythe_blood`<br>• 自己的 PNG：`{ "texture": "my_blade" }`，圖片放在 `config/mobarmory/textures/my_blade.png` |
-| `modifiers` 的 `stat` | `attack_damage`、`movement_speed`、`armor`、`attack_speed`、`max_health`、`crit_chance`、`dodge_chance` |
+| `modifiers` 的 `stat` | `attack_damage`、`movement_speed`、`armor`、`attack_speed`、`max_health`、`crit_chance`、`dodge_chance`，以及 `config/mobarmory/stats/` 裡任何數值的 id（見[加一個數值](#加一個數值不用寫-java)） |
 | `add`／`percent` | `add` 加固定值；`percent` 加百分比，`-30` 就是 −30%。暴擊率、迴避率用 `add`，`0.25` 就是 25% |
 
 **生效的時機**：
@@ -144,6 +144,8 @@
 
 **1. 純數值**（不寫 `attribute`）：一個新的數字，例如「幸運」。它會掛在每一隻生物身上，可以被武器加減，也會出現在 tooltip 和 `/mobarmory stats`。但它**本身不會造成任何效果**，要有戰鬥規則就要寫 Java（見下）。
 
+上限（`max`）≤ 1 的純數值會被當成機率，tooltip 用百分比顯示。例如上限是 1 的 `luck`，武器加 0.5 時，tooltip 顯示「+50% Luck」；暴擊率、迴避率也是這樣。
+
 ```json
 { "format": 1, "name": "Luck", "default": 0, "min": 0, "max": 1 }
 ```
@@ -155,6 +157,8 @@
 ```
 
 存成 `jump.json`，在武器裡寫 `{ "stat": "jump", "percent": 50 }`，拿著那把武器的玩家就跳得比較高。其他可以用的屬性，例如 `minecraft:knockback_resistance`（擊退抗性）、`minecraft:scale`（體型）、`minecraft:step_height`（能走上去的高度）。
+
+這種數值的 `default` 只影響本模組的怪物（狂戰士、遊擊兵）。玩家和原版生物照樣用 Minecraft 自己的預設值，例如玩家的跳躍力一樣是 0.42。`min`、`max` 則限制武器加減之後的結果。
 
 | 欄位 | 必填 | 說明 |
 |---|---|---|
@@ -214,11 +218,14 @@
 - 上傳的 PNG：用封包送給玩家，客戶端會自動重新載入資源。
 - 外觀：武器帶著目前外觀的 `item_model`，由原版同步。
 
-但是**有兩樣東西每位玩家都要自己準備**，否則連不上或開不起來：
+但是**有三樣東西每位玩家都要自己準備**，否則連不上或開不起來：
 
 1. **同一組武器檔**：每位玩家的 `config/mobarmory/weapons/` 要和伺服器有同一組檔名，也就是同一組 id。Minecraft 規定客戶端和伺服器的物品清單必須相同，少一把或多一把都會連不上。檔案裡的數值、名稱、外觀可以不同，連上後一律照伺服器的。
 2. **這些武器用到的上傳 PNG**：如果某把武器的外觀是上傳的貼圖，每位玩家的 `config/mobarmory/textures/` 也要有同名的 PNG。客戶端啟動時會檢查武器用到的貼圖在不在，不在就開不起來。圖片內容可以不同，連上後會換成伺服器的。
-3. **同一組數值檔**：每位玩家的 `config/mobarmory/stats/` 要和伺服器有同一組檔名。純數值是新的屬性，客戶端和伺服器的屬性清單不同就連不上。內容也最好一樣：上下限不同時，客戶端顯示的數字可能和伺服器不同。
+3. **同一組數值檔**：每位玩家的 `config/mobarmory/stats/` 要和伺服器有同一組檔名。
+   - 純數值是新的屬性，客戶端和伺服器的屬性清單不同就連不上。
+   - 少的是對應原版屬性的數值檔時，還是連得上，因為屬性是 Minecraft 本來就有的。但伺服器送來的武器定義裡用到了客戶端不認得的數值，客戶端會整份不套用。所以這時所有武器的名稱和 tooltip 都是玩家本機的版本，數值本身還是照伺服器。
+   - 內容也最好一樣：上下限不同時，客戶端顯示的數字可能和伺服器不同。
 
 所以在網頁新增武器之後，要照這個順序：
 

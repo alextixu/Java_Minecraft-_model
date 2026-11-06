@@ -39,7 +39,12 @@
 - 遊戲裡**所有的**數值，包括玩家加的：`MobArmoryMod.STATS.catalog()`。`ModStats.CATALOG` 只有 7 個內建數值。
   - 怪物 JSON 驗證數值時，請用 `STATS.catalog()`，玩家加的數值才能用在怪物身上。
 - `StatAttributeBridge(StatCatalog, String)`、`WeaponStartup.load(store, catalog)` 都還在。
-- 合併時，`MobArmoryMod` 開頭（`STATS`、`EQUIPMENT_LIBRARY`、`WEAPON_SYNC`、`WEAPON_ADMIN` 那幾行）會有文字上的衝突。解法是：保留 main 的寫法（`STAT_SETUP`、`STATS.catalog()`），再加上分支自己新增的欄位。
+- 合併 combo 分支時的文字衝突，實際是 **3 個檔案、5 處**（2026-11-07 依 review-04 E3 更正；原本只寫了 `MobArmoryMod` 開頭，不正確）：
+  - `MobArmoryGameTests` 的註冊：兩行都留。
+  - `MobArmoryMod`：import 區全部留；common setup 的啟動 log 合成一行，數值數量用 `STATS.catalog().size()`。
+  - `WeaponFolder`：import 和檔案結尾兩處，用分支的 `JsonFolder` 版本，再收掉 `ConfigFiles`。
+  - 細節和語意上的衝突（兩份一樣的寫檔程式），見 review-04（`java_minecraft_model/reviews/review-04-overnight.md`，不在 repo 裡）第 3 節。
+  - `STATS`、`EQUIPMENT_LIBRARY` 那幾行分支沒有動，保留 main 的寫法。
 
 ## 4. 現有數值的預設值能不能在執行中改（指令要求說明）
 
@@ -89,7 +94,7 @@
 - **H6 名稱顯示在畫面上**：
   1. 在 `run/config/mobarmory/stats/` 放 `luck.json`：`{ "format": 1, "name": "Luck", "default": 0, "min": 0, "max": 1 }`。
   2. 在 `weapons/heavy_sword.json` 的 `modifiers` 加 `{ "stat": "luck", "add": 0.5 }`。
-  3. 開 `runClient`，`/give @p mobarmory:heavy_sword`，tooltip 應該顯示「+0.5 Luck」；`/mobarmory stats` 也列出 Luck。
+  3. 開 `runClient`，`/give @p mobarmory:heavy_sword`，tooltip 應該顯示「+50% Luck」。`luck` 是純數值，上限 ≤ 1，`EquipmentItem` 會當成機率，用百分比顯示（2026-11-07 依 review-04 E2 更正，原本誤寫成「+0.5 Luck」）。`/mobarmory stats` 也列出 Luck，值是 0.5000。
   4. 做完把兩個檔還原。這會在世界存檔留下 `mobarmory:luck` 屬性，所以要用測試世界做。
 - **B11 `sync: false`**：只能用兩台客戶端看，和 R5 一起驗。
 - **B10 數值檔不同時連不上**：平台限制，和 R5 一起驗。
