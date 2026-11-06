@@ -48,10 +48,9 @@
     </section>
 
     <section id="tab-mobs" class="panel hidden">
-      <h2>怪物</h2>
-      <p class="hint">怪物的外觀、數值和行為要等 R4（自訂怪物）完成才能在這裡設定。API 位置 <code>/api/v1/mobs</code> 已經保留。</p>
-      <button type="button" id="mobs-check" class="ghost">查詢怪物 API</button>
-      <pre id="mobs-result" class="result hidden"></pre>
+      <h2>伺服器上的怪物</h2>
+      <p class="hint">這裡只能查看。怪物定義在模組的程式裡（<code>content/ModMobs.java</code>），要新增或修改怪物，請照 README 的「加一隻怪物」改程式，再重開遊戲。裝備欄寫的是武器的 id，武器本身可以在「武器」分頁修改。</p>
+      <ul id="mob-list" class="mob-list"></ul>
     </section>
   </main>
 

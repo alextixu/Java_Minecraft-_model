@@ -367,3 +367,33 @@ Mob 'skirmisher' spawns without 'dagger' in mainhand: there is no such weapon no
 - `runClient`／`runServer` 走查和截圖（和示範影片一起做）。第 6 節的劇本再加一步：刪掉 `heavy_sword.json`，`/mobarmory reload`，用蛋生狂戰士 → 空手，log 有警告。
 - `docs/boundary/README.md` 的索引（依指示不改，由 mc-dev 或主 session 補）。
 - D1（`feature/damage-hud`）的合併，不在這次範圍（review-02 6-4 第 2 步）。
+
+## 9. SOLID／Pattern 檢查
+
+這一節是 2026-11-07 由架構師補的，依長期規定第 3 點：每份行為報告都要有這一節（review-03 P3-9）。上面各節是怪物小弟寫的，沒有改動。內容逐條對照當天 main 上的 R4 程式。合併時每一步的檢查在 [prompts/round-r4-03-merge.md](prompts/round-r4-03-merge.md)。
+
+### SOLID
+
+| 原則 | 對照的程式 | 判斷 |
+|---|---|---|
+| S 單一職責 | `MobDefinition`：一種怪物的資料。`MobCatalog`：啟動時檢查數值。`MobEquipmentCheck`：哪些裝備真的拿得到。`BehaviorGoals`：行為對到 binder 的表。每個 `GoalBinder`：一種行為變成 AI goal。`MobEntityFactory`：生物種類、基礎屬性、生怪蛋。`ArmoryMob`：所有怪物共用的一個類別，沒有任何怪物專屬的程式。`MobEquipmentSource`：把目前生效的武器變成物品堆疊。`ArmoryMobRenderer`：畫出借用的身體 | 符合 |
+| O 開放封閉 | 加一隻怪物：`ModMobs` 一筆定義、語系檔一行、生怪蛋模型一個檔，共 3 個檔案（`cbb38b5` 實測，第 1 節）。加一種行為：一個 record、一個 binder、`BehaviorGoals.standard()` 一行，既有怪物不用改 | 符合 |
+| O（注意） | `ArmoryMobRenderer` 用 `switch` 判斷 `MobLook.Body`（殭屍、屍殼、骷髏、流髑）。身體種類是 Q4 A 決定的封閉集合，加一種身體要改 enum 和 renderer | 刻意的取捨 |
+| O（注意） | 怪物定義寫在 Java（`content/ModMobs`），加怪物或改怪物都要重新 build、重開。生物種類只能在啟動時註冊是平台限制；網頁只能看（2026-11-07 起的 `/api/v1/mobs`） | 已知限制 |
+| L 替換 | 每個 `GoalBinder<B>` 只處理自己那種行為，由 `register` 的型別配對保證；啟動時 `verify` 確認每個行為都有 binder（B4）。`binderFor` 裡有一個 unchecked 轉型，安全性就靠這個配對。每隻怪物跑同一組契約測試（`MobContractTest`） | 符合 |
+| I 介面隔離 | `Behavior` 只有 `name()`；`GoalBinder` 只有 `bind` | 符合 |
+| D 依賴反轉 | `core/mob` 只 import `core/stat`、`core/equipment` 和 JDK（`CoreBoundaryTest`）。`MobEntityFactory` 透過一個函式拿裝備（`MOB_EQUIPMENT::stacksFor`），不知道武器從哪裡來。武器只用 R2b 的穩定介面查（`EquipmentLibrary.view()`、`EQUIPMENT::item`、`WeaponLooks.stackOf`）。網頁透過 `web/MobAdmin` 讀怪物 | 符合 |
+
+### Pattern
+
+| Pattern | 在哪裡 | 為什麼 |
+|---|---|---|
+| Strategy | `Behavior`（做什麼，資料）＋`GoalBinder`（怎麼做，Minecraft AI goal），由 `BehaviorGoals` 對照表選 | 之後 R6 的奔跑、衝刺、中立都是新的行為，不改既有怪物（Q1／Q2 A） |
+| Factory | `MobEntityFactory`，和 `EquipmentItemFactory` 同一個形狀 | 新怪物不用新的類別 |
+| Builder | `MobDefinition.builder(...)` | `ModMobs` 讀起來像一張屬性清單 |
+| Adapter | `MobEquipmentSource`：把 core 的 `MobEquipmentCheck` 結果轉成 `ItemStack` | 規則留在純 Java，可以單元測試 |
+| 不可變快照 | 生怪時讀 `EquipmentLibrary.View` | 網頁剛改的武器，下一隻生出來的怪物就會拿到；不會讀到改到一半的定義 |
+
+### 結論
+
+沒有發現違反。兩個「注意」是已知的取捨或平台限制：身體種類用 `switch`、怪物定義在 Java。

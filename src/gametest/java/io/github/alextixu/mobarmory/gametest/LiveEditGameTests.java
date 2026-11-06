@@ -18,9 +18,12 @@ import io.github.alextixu.mobarmory.data.WeaponJson;
 import io.github.alextixu.mobarmory.data.WeaponLoadException;
 import io.github.alextixu.mobarmory.data.WeaponSync;
 import io.github.alextixu.mobarmory.forge.MobArmoryMod;
+import io.github.alextixu.mobarmory.forge.client.ClientTextures;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -54,6 +57,7 @@ final class LiveEditGameTests {
         test("reload_new_and_deleted_files_wait_for_restart", LiveEditGameTests::newAndDeletedFilesWait);
         test("look_change_updates_held_sword", LiveEditGameTests::lookChangeUpdatesHeldSword);
         test("uploaded_texture_reaches_players", LiveEditGameTests::uploadedTextureReachesPlayers);
+        test("left_server_restores_local_weapons", LiveEditGameTests::leftServerRestoresLocalWeapons);
     }
 
     private static EquipmentDefinition shipped() {
@@ -217,6 +221,29 @@ final class LiveEditGameTests {
             check(helper, MobArmoryMod.WEAPON_SYNC.uploadedTextures().containsKey("gametest_blade"), "players should be sent the uploaded PNG");
             check(helper, WeaponSync.digest(png).equals(MobArmoryMod.WEAPON_SYNC.current().textureDigests().get("gametest_blade")),
                 "the definitions packet should carry the PNG's digest");
+        });
+    }
+
+    /**
+     * Review-03 P2-8, through the game's own wiring: acting as a remote client, take a server's renamed sword and one
+     * of its PNGs, then leave. The sword is this game's again (read from its weapon files) and the PNG is forgotten.
+     */
+    static void leftServerRestoresLocalWeapons(GameTestHelper helper) {
+        inBatch(helper, () -> {
+            EquipmentDefinition sword = shipped();
+            Map<String, String> fromServer = new LinkedHashMap<>(WeaponSync.snapshot(MobArmoryMod.EQUIPMENT_LIBRARY));
+            fromServer.put(SWORD.value(), WeaponJson.write(
+                new EquipmentDefinition(SWORD, "Server Sword", sword.slot(), sword.modifiers(), sword.look())));
+            ClientTextures.put("server_blade", BuiltInTextures.png("scythe_blood").orElseThrow());
+            MobArmoryMod.WEAPON_SYNC.client().applyFromServer(fromServer);
+            check(helper, "Server Sword".equals(MobArmoryMod.EQUIPMENT_LIBRARY.current().get(SWORD).name()), "given: the server's name");
+
+            MobArmoryMod.WEAPON_SYNC.leftServer();
+
+            check(helper, sword.name().equals(MobArmoryMod.EQUIPMENT_LIBRARY.current().get(SWORD).name()),
+                "then: this game's own name again, got " + MobArmoryMod.EQUIPMENT_LIBRARY.current().get(SWORD).name());
+            check(helper, !MobArmoryMod.WEAPON_SYNC.client().holdsServerDefinitions(), "then: no server definitions left");
+            check(helper, ClientTextures.get("server_blade").isEmpty(), "then: the server's PNG is forgotten");
         });
     }
 

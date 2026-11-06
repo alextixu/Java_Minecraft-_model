@@ -8,10 +8,19 @@ import io.github.alextixu.mobarmory.core.stat.StatDefinition;
 import java.util.List;
 
 /**
- * Every stat in the game (decision Q5 A: add a line here and restart the game).
- * Custom stats are attached to every living entity automatically; vanilla-backed ones reuse
- * Minecraft's own attribute, so their effect (walking speed, melee damage, armor) is Minecraft's.
- * A new stat also needs one line in {@code assets/mobarmory/lang/en_us.json}.
+ * The built-in stats: the ones Java code relies on (the combat effects below, the mobs in {@link ModMobs}), and what
+ * the first start writes to {@code config/mobarmory/stats/}.
+ * <p>
+ * Since section E (24-stat-files-boundary-note.md) this is no longer every stat in the game: players add stats with a
+ * JSON file in {@code config/mobarmory/stats/} and a restart, and the game's full list is
+ * {@code MobArmoryMod.STATS.catalog()}. Those files may change a built-in stat's numbers but not its kind.
+ * The constants, {@link #CATALOG} and {@link #COMBAT_EFFECTS} stay as they were, so code that uses them (and unit
+ * tests, which run without files) is unchanged.
+ * <p>
+ * Custom stats are attached to every living entity automatically; vanilla-backed ones reuse Minecraft's own attribute,
+ * so their effect (walking speed, melee damage, armor) is Minecraft's. A stat with a combat effect still needs Java:
+ * a {@code StatEffect} and a line in {@link #COMBAT_EFFECTS}. A built-in custom stat's name is in
+ * {@code assets/mobarmory/lang/en_us.json}.
  */
 public final class ModStats {
     public static final StatDefinition ATTACK_DAMAGE =

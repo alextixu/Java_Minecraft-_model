@@ -69,7 +69,7 @@ public final class AdminHttpServer implements AutoCloseable {
      * @throws IllegalStateException if the address is open to other computers without a token
      * @throws IOException           if the port is taken (B14)
      */
-    public static AdminHttpServer start(WeaponAdmin admin, WebSettings settings) throws IOException {
+    public static AdminHttpServer start(WeaponAdmin admin, MobAdmin mobs, WebSettings settings) throws IOException {
         settings.checkSafe();
         HttpServer server = HttpServer.create(new InetSocketAddress(settings.host(), settings.port()), 0);
         AtomicInteger threads = new AtomicInteger();
@@ -78,7 +78,7 @@ public final class AdminHttpServer implements AutoCloseable {
             thread.setDaemon(true);
             return thread;
         });
-        AdminHttpServer instance = new AdminHttpServer(server, executor, new WeaponApi(admin), settings);
+        AdminHttpServer instance = new AdminHttpServer(server, executor, new WeaponApi(admin, mobs), settings);
         server.createContext("/", instance::handle);
         server.setExecutor(executor);
         server.start();

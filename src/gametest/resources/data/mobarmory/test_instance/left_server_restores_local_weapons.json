@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:live_edit",
+  "function": "mobarmory:left_server_restores_local_weapons",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

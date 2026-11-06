@@ -4,14 +4,11 @@ import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentLook;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 /**
  * The weapon files in the game folder (decision Q4 A):
@@ -91,28 +88,10 @@ public final class WeaponFolder implements WeaponStore {
     }
 
     private static List<Path> list(Path folder, String extension) throws IOException {
-        try (Stream<Path> files = Files.list(folder)) {
-            return files.filter(Files::isRegularFile)
-                .filter(file -> file.getFileName().toString().endsWith(extension))
-                .sorted()
-                .toList();
-        }
+        return ConfigFiles.list(folder, extension);
     }
 
-    /** Writes a temporary file next to the target, then renames it over the target. */
     private static void writeAtomically(Path folder, String fileName, byte[] content) throws IOException {
-        Files.createDirectories(folder);
-        Path target = folder.resolve(fileName);
-        Path temporary = Files.createTempFile(folder, "." + fileName + ".", ".tmp");
-        try {
-            Files.write(temporary, content);
-            try {
-                Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-            } catch (AtomicMoveNotSupportedException e) {
-                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
-            }
-        } finally {
-            Files.deleteIfExists(temporary);
-        }
+        ConfigFiles.writeAtomically(folder, fileName, content);
     }
 }
