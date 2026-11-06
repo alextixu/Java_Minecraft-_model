@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:live_edit",
+  "function": "mobarmory:weapon_uses_stats_from_files",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

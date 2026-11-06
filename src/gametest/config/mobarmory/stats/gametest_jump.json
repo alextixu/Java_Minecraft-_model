@@ -1,0 +1,7 @@
+{
+  "format": 1,
+  "attribute": "minecraft:jump_strength",
+  "default": 0.42,
+  "min": 0,
+  "max": 32
+}

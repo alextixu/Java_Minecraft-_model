@@ -78,6 +78,18 @@ D1 由另一個 session 在 `feature/damage-hud` 分支做，2026-11-07 合進 m
 
 結果：`gradlew clean build runGameTestServer` 單元 **333/333**、遊戲內 **59/59**（58 個我們的加原版 1 個）。
 
+## 段落 E：數值改成 JSON 定義（2026-11-07 夜間）
+
+使用者定下主軸：「主軸在我們這個系統可以未來讓玩家新增東西而不是我們自己要開發出很厲害的怪物與武器」。數值從 Java 的 `content/ModStats` 改成 `config/mobarmory/stats/<id>.json`，玩家加一個檔、重開遊戲，就多一個數值。主 session 依夜間授權採用建議值，**待使用者確認**。
+
+| 檔案 | 內容 | 狀態 |
+|---|---|---|
+| [24-stat-files-boundary-note.md](24-stat-files-boundary-note.md) | 需求翻譯、平台限制、檔案格式、變更邊界、給其他分支的介面、SOLID（含為什麼要動 `ModStats`） | 依夜間授權採用建議值 |
+| [25-stat-files-given-when-then.md](25-stat-files-given-when-then.md) | 成功條件，H1～H7、B1～B12 | 同上 |
+| [26-stat-files-open-questions.md](26-stat-files-open-questions.md) | Q1～Q11、O1～O5，每題第一個選項是建議值 | 待使用者確認 |
+| [27-stat-files-behavior-report.md](27-stat-files-behavior-report.md) | 行為報告：改了什麼、給其他分支的介面、為什麼執行中不能改、Given / When / Then 對照、手動步驟、SOLID／Pattern 檢查 | 已產出（單元 375/375、遊戲內 61/61） |
+| [prompts/round-08-stat-files.md](prompts/round-08-stat-files.md) | 指令和每一步的 SOLID、Pattern、變更邊界 | 2026-11-07 |
+
 ## 文件編號
 
 | 編號 | 內容 | 誰寫 |
@@ -86,7 +98,9 @@ D1 由另一個 session 在 `feature/damage-hud` 分支做，2026-11-07 合進 m
 | 05～07、14 | R4 自訂怪物（邊界、行為報告） | R4 的 session |
 | 08～10、15 | R2b＋R6（邊界、行為報告） | 架構師（原 `mc-dev`） |
 | 11～13、16 | D1 砍怪傷害顯示（邊界、行為報告） | `damage-hud` |
-| 17～19、20 | R3 combo（邊界、行為報告） | 之後決定 |
+| 17～19、20 | R3 combo（邊界、行為報告） | 連招小弟 |
+| 21～23 | （保留） | — |
+| 24～26、27 | 段落 E：數值改成 JSON（邊界、行為報告） | 架構師 |
 
 本索引由架構師維護。
 
