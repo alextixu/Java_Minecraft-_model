@@ -66,3 +66,15 @@
 > - hanhanpx 的 PNG 只複製到 `run/config/mobarmory/textures/` 測試，不進 repo。
 > - 網頁第一步先驗證 `jdk.httpserver` 在 Forge 裡能用；不行就改用 Netty，不加相依。
 > - 不碰 `mod-damage-hud/`，不 push。
+
+## 實作紀錄（每一步的完成條件和結果）
+
+| 步驟 | 完成條件 | 結果 |
+|---|---|---|
+| A1 核心 | 名稱、`EquipmentLook`、`EquipmentLibrary`；既有測試全過 | 單元 118、遊戲內 19 |
+| A2 資料層 | JSON 讀寫、資料夾、預設檔；遷移測試證明 JSON = 舊 Java 定義 | 單元 188、遊戲內 19 |
+| A3 改讀設定檔 | 刪 `ModEquipment`；測試只改查法、數字不變；遊戲內測試獨立資料夾 | 單元 188、遊戲內 19（log 確認讀 `run-gametest/config`） |
+| A4 自訂貼圖 | 執行時資源包；runClient 看到貼圖 | 單元 193、遊戲內 19；戟和紅寶石短刀在遊戲裡顯示正確 |
+| A5 執行中改武器 | `/mobarmory reload`；手上的劍立刻變；反向驗證 | 單元 204、遊戲內 24；拿掉重算後 3 個測試如預期失敗 |
+| B1～B6 網頁 | 先證明 `jdk.httpserver` 在 Forge 裡能用；安全檢查；網頁 | 單元 225、遊戲內 25；真的 HTTP PUT 讓手上的劍 7 → 17 |
+| B7 走查 | runClient＋瀏覽器走一次、示範劇本、行為報告 | 螢幕鎖定，遊戲畫面沒走；網頁用同一份程式接設定檔複本、在內建瀏覽器實測；修掉一個「null」顯示問題；報告 [14](../14-weapon-data-web-behavior-report.md) |

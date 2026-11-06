@@ -61,7 +61,9 @@ const round = (value) => Math.round(value * 1e6) / 1e6;
 function notice(kind, message, items = []) {
   const box = $('#notice');
   box.className = 'notice ' + kind;
-  box.replaceChildren(el('div', { text: message }), items.length ? el('ul', {}, items.map((item) => el('li', { text: item }))) : null);
+  const parts = [el('div', { text: message })];
+  if (items.length) parts.push(el('ul', {}, items.map((item) => el('li', { text: item }))));
+  box.replaceChildren(...parts);
 }
 
 function describeError(error) {
@@ -92,6 +94,7 @@ function renderList() {
     return el('li', {}, el('button', {
       type: 'button',
       class: 'weapon-item' + (entry.id === state.selected ? ' selected' : ''),
+      'aria-label': `${weapon.name}，${STATUS_LABELS[entry.status]}，${summary(weapon.modifiers)}`,
       onclick: () => { state.selected = entry.id; renderList(); openEditor(entry); },
     },
     el('div', {}, el('span', { class: 'name', text: weapon.name }), el('span', { class: 'badge ' + entry.status, text: STATUS_LABELS[entry.status] })),
@@ -169,8 +172,8 @@ function lookField(look) {
     } catch (e) { /* no preview */ }
   };
   textures.addEventListener('change', showPreview);
-  const radioItem = el('input', { type: 'radio', name: group, value: 'item', checked: kind === 'item' });
-  const radioTexture = el('input', { type: 'radio', name: group, value: 'texture', checked: kind === 'texture' });
+  const radioItem = el('input', { type: 'radio', name: group, value: 'item', checked: kind === 'item', 'aria-label': '借用原版物品' });
+  const radioTexture = el('input', { type: 'radio', name: group, value: 'texture', checked: kind === 'texture', 'aria-label': '自訂貼圖' });
   const sync = () => {
     items.disabled = !radioItem.checked;
     textures.disabled = !radioTexture.checked;
