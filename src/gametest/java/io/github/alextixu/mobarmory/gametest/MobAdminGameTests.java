@@ -17,12 +17,16 @@ import io.github.alextixu.mobarmory.forge.ArmoryMob;
 import io.github.alextixu.mobarmory.forge.MobArmoryMod;
 import io.github.alextixu.mobarmory.forge.MobNames;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import net.minecraft.commands.CommandSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
@@ -62,6 +66,7 @@ final class MobAdminGameTests {
         test("mob_save_never_heals", MobAdminGameTests::saveNeverHeals);
         test("mob_reload_reads_hand_edits", MobAdminGameTests::reloadReadsHandEdits);
         test("mob_loads_with_current_stats", MobAdminGameTests::loadsWithCurrentStats);
+        test("reload_command_prints_weapons_combos_mobs", MobAdminGameTests::reloadCommandPrintsThreeSections);
     }
 
     /** Spawns like a spawn egg would (finalizeSpawn takes the definition in effect now). */
@@ -287,6 +292,45 @@ final class MobAdminGameTests {
             } finally {
                 copy.discard();
             }
+        });
+    }
+
+    /**
+     * Merge with R3 (review-05 F1): the real {@code /mobarmory reload} reads weapons, combos and mobs, in that order, each
+     * with its own line (R4b O12: each kind is all or nothing on its own).
+     */
+    static void reloadCommandPrintsThreeSections(GameTestHelper helper) {
+        inBatch(helper, () -> {
+            List<String> keys = new ArrayList<>();
+            CommandSource capture = new CommandSource() {
+                @Override
+                public void sendSystemMessage(Component message) {
+                    if (message.getContents() instanceof TranslatableContents translatable) {
+                        keys.add(translatable.getKey());
+                    }
+                }
+
+                @Override
+                public boolean acceptsSuccess() {
+                    return true;
+                }
+
+                @Override
+                public boolean acceptsFailure() {
+                    return true;
+                }
+
+                @Override
+                public boolean shouldInformAdmins() {
+                    return false;
+                }
+            };
+            MinecraftServer server = helper.getLevel().getServer();
+            server.getCommands().performPrefixedCommand(server.createCommandSourceStack().withSource(capture), "mobarmory reload");
+            int weapons = keys.indexOf("commands.mobarmory.reload.done");
+            int combos = keys.indexOf("commands.mobarmory.reload.combos");
+            int mobs = keys.indexOf("commands.mobarmory.reload.mobs.done");
+            check(helper, weapons >= 0 && weapons < combos && combos < mobs, "weapons, then combos, then mobs: " + keys);
         });
     }
 }

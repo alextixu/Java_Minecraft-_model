@@ -289,7 +289,7 @@ R4 說的「遊戲內 48」是伺服器報告的數字。遊戲內測試的報�
 | O 開放封閉 | 加一種顯示方式（例如之後的 combo 名稱、網頁的戰鬥紀錄）：實作 `HitDisplay`，在 `MobArmoryMod` 加一行，既有的顯示和規則都不用改 | 符合 |
 | O（注意） | `HitText` 用 `switch` 判斷 `HitResult`（命中、暴擊、迴避），`ActionBarDisplay` 用 `switch` 判斷 `Tone`。兩個都是封閉集合，加一種結果要改這兩處 | 刻意的取捨 |
 | L 替換 | 用 `CombatObserver.NONE` 時，`CombatEffectListener` 的行為和 D1 之前完全一樣，舊的建構子就是這樣。`HitDisplay` 有正式的 `ActionBarDisplay`，還有遊戲內測試用 `addDisplay` 加上的觀察用 display，兩者收到同樣的 `HitReport`。`HitText` 有契約測試（`HitTextContractTest`） | 符合 |
-| I 介面隔離 | `CombatObserver` 有兩個 default 方法，實作的一方只要覆寫需要的那個；`HitDisplay` 只有 `show` | 符合 |
+| I 介面隔離 | `CombatObserver` 有三個 default 方法（R3 合進 main 後多了 `comboTriggered`），實作的一方只要覆寫需要的那個；`HitDisplay` 只有 `show` | 符合 |
 | D 依賴反轉 | `CombatEffectListener` 依賴 `CombatObserver` 介面，不知道 action bar 存在。`core/feedback` 只 import `core/combat` 和 JDK（`CoreBoundaryTest`）。顯示出錯時，`HitFeedbackListener` 會接住例外，不會影響戰鬥 | 符合 |
 
 ### Pattern

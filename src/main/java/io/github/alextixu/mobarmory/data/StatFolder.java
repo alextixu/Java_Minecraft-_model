@@ -2,8 +2,6 @@ package io.github.alextixu.mobarmory.data;
 
 import io.github.alextixu.mobarmory.core.stat.StatId;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,35 +11,37 @@ import java.util.List;
  * <pre>
  * config/mobarmory/stats/attack_damage.json ...   one file per stat, the file name is the id
  * </pre>
+ * The folder is a {@link JsonFolder}, listed and written the same way as the weapon and combo files.
  */
 public final class StatFolder implements StatStore {
-    private final Path stats;
+    private final JsonFolder stats;
 
     /** @param root usually {@code config/mobarmory} */
     public StatFolder(Path root) {
-        this.stats = root.resolve("stats");
+        this.stats = new JsonFolder(root.resolve("stats"));
     }
 
     public Path statsFolder() {
-        return stats;
+        return stats.path();
     }
 
     @Override
     public boolean exists() {
-        return Files.isDirectory(stats);
+        return stats.exists();
     }
 
+    /** Empty when the folder does not exist yet. */
     @Override
     public List<StatFile> statFiles() throws IOException {
         List<StatFile> files = new ArrayList<>();
-        for (Path file : ConfigFiles.list(stats, ".json")) {
-            files.add(new StatFile(file.getFileName().toString(), Files.readString(file, StandardCharsets.UTF_8)));
+        for (JsonFolder.DataFile file : stats.files()) {
+            files.add(new StatFile(file.fileName(), file.text()));
         }
         return files;
     }
 
     @Override
     public void writeStat(StatId id, String json) throws IOException {
-        ConfigFiles.writeAtomically(stats, id.value() + ".json", json.getBytes(StandardCharsets.UTF_8));
+        stats.write(id.value(), json);
     }
 }

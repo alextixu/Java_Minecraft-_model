@@ -47,6 +47,18 @@ D1 由另一個 session 在 `feature/damage-hud` 分支做，2026-11-07 合進 m
 | [16-damage-display-behavior-report.md](16-damage-display-behavior-report.md) | 行為報告：結構摘要、各層測試數量、Given / When / Then 對照、沒有覆蓋的範圍、合併到 main 的紀錄（第 8 節）、SOLID／Pattern 檢查（第 9 節，架構師 2026-11-07 補） | 已產出（合併 R4 後：單元 322/322、遊戲內 58/58，含原版 1 個） |
 | [prompts/damage-display-round-01～03](prompts/) | D1 的邊界草案、決定、合併的 prompt | 2026-11-07 |
 
+## R3：combo（出招順序不同就是不同 combo）
+
+R3 由連招小弟在 `feature/r3-combo` 分支做。2026-11-07 夜間依使用者主軸把 combo 定義改成 `config/mobarmory/combos/<id>.json`，玩家放一個檔、打 `/mobarmory reload`，就多一種 combo。分支先合了 main `56423bd`（合併 commit `130240d`），再由架構師把 main 快轉過去。主 session 依夜間授權採用建議值，**待使用者確認**。
+
+| 檔案 | 內容 | 狀態 |
+|---|---|---|
+| [17-r3-combo-boundary-note.md](17-r3-combo-boundary-note.md) | 需求翻譯、平台查證（疾跑打中後會停止）、各裝備的移動速度、變更邊界（第 0 節是 JSON 版）、SOLID、Pattern、測試計畫 | 依夜間授權採用建議值 |
+| [18-r3-combo-given-when-then.md](18-r3-combo-given-when-then.md) | 成功條件，H1～H7、B1～B20、J1～J9（combo 檔） | 同上 |
+| [19-r3-combo-open-questions.md](19-r3-combo-open-questions.md) | Q1～Q7、O1～O12，以及決定紀錄（採用建議值、Q2 改成 JSON） | 待使用者確認 |
+| [20-r3-combo-behavior-report.md](20-r3-combo-behavior-report.md) | 行為報告：實作時的假設 C1～C11、結構摘要、各層測試數量、Given / When / Then 對照、SOLID／Pattern 檢查（第 5 節）、之後（第 7 節）、合併到 main（第 8 節） | 已產出（合併 main 後：單元 450/450、遊戲內 68/68，含原版 1 個） |
+| [prompts/r3-combo-round-01～03](prompts/) | 邊界草案、實作（每一步的 SOLID／Pattern）、合併 main | 2026-11-07 |
+
 ## R2b ＋ R6：武器改成資料驅動、網頁後台
 
 | 檔案 | 內容 | 狀態 |

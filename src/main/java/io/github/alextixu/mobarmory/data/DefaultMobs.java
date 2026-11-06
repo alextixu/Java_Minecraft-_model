@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * The prototype's two mobs (R4 decision O1), shipped inside the mod as mob files in {@code mobarmory/default_mobs/}
- * (R4b, decision O16; they replace the Java {@code content/ModMobs}). On the very first start they are copied to the
+ * (R4b, decision O16; they replace R4's mob definitions in Java). On the very first start they are copied to the
  * config folder (H1); after that the config folder is the only source, and the game never overwrites it (O15).
  */
 public final class DefaultMobs {

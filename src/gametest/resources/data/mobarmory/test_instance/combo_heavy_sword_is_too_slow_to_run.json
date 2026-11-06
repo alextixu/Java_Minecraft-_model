@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:combo_heavy_sword_is_too_slow_to_run",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

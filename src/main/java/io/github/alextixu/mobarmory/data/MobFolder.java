@@ -2,8 +2,6 @@ package io.github.alextixu.mobarmory.data;
 
 import io.github.alextixu.mobarmory.core.mob.MobId;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,36 +12,37 @@ import java.util.List;
  * config/mobarmory/
  *   mobs/brute.json ...   one file per kind of mob, the file name is the id
  * </pre>
- * Reading and writing go through the same helpers as the weapon and stat folders ({@link ConfigFiles}).
+ * The folder is a {@link JsonFolder}, listed and written the same way as the weapon, stat and combo files.
  */
 public final class MobFolder implements MobStore {
-    private final Path mobs;
+    private final JsonFolder mobs;
 
     /** @param root usually {@code config/mobarmory} */
     public MobFolder(Path root) {
-        this.mobs = root.resolve("mobs");
+        this.mobs = new JsonFolder(root.resolve("mobs"));
     }
 
     public Path mobsFolder() {
-        return mobs;
+        return mobs.path();
     }
 
     @Override
     public boolean exists() {
-        return Files.isDirectory(mobs);
+        return mobs.exists();
     }
 
+    /** Empty when the folder does not exist yet. */
     @Override
     public List<MobFile> mobFiles() throws IOException {
         List<MobFile> files = new ArrayList<>();
-        for (Path file : ConfigFiles.list(mobs, ".json")) {
-            files.add(new MobFile(file.getFileName().toString(), Files.readString(file, StandardCharsets.UTF_8)));
+        for (JsonFolder.DataFile file : mobs.files()) {
+            files.add(new MobFile(file.fileName(), file.text()));
         }
         return files;
     }
 
     @Override
     public void writeMob(MobId id, String json) throws IOException {
-        ConfigFiles.writeAtomically(mobs, id.value() + ".json", json.getBytes(StandardCharsets.UTF_8));
+        mobs.write(id.value(), json);
     }
 }

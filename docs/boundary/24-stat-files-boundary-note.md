@@ -80,13 +80,14 @@ config/mobarmory/stats/
 
 - `ModStats.ATTACK_DAMAGE` … `ModStats.DODGE_CHANCE`、`ModStats.CATALOG`、`ModStats.COMBAT_EFFECTS`：**全部保留，型別不變**。`ModStats.CATALOG` 現在的意思是「7 個內建數值」，單元測試照用。
 - 遊戲裡實際的登記表（內建＋玩家加的）：`MobArmoryMod.STATS.catalog()`。要列出所有數值的地方，例如怪物 JSON 的驗證、網頁，請用這個，不要用 `ModStats.CATALOG`。
-- `StatAttributeBridge(StatCatalog, String)` 舊的建構子保留，所以 combo 分支的 `MobArmoryMod` 不會因為建構子而編譯失敗；合併時只有 `MobArmoryMod` 開頭幾行會有文字上的衝突。
+- `StatAttributeBridge(StatCatalog, String)` 舊的建構子保留，所以 combo 分支的 `MobArmoryMod` 不會因為建構子而編譯失敗。
+- 合併 combo 分支時的文字衝突，實際是 3 個檔案：`MobArmoryGameTests`、`MobArmoryMod`（import 區和啟動 log）、`WeaponFolder`（實作時抽出的共用寫檔程式，和分支的 `JsonFolder` 重疊；合併時收成 `JsonFolder` 一份，見 20 號第 8 節）。細節見 review-04 第 3 節。2026-11-07 依 review-04 E3 更正，原本只寫了 `MobArmoryMod` 開頭。
 
 ### 四件事
 
 | 項目 | 內容 |
 |---|---|
-| 可以改的模組 | 新建 `data/` 的 `StatJson`、`StatEntry`、`StatStore`、`StatFolder`、`StatLoader`、`StatSetup`<br>新建 `forge/StatStartup`<br>修改：`forge/StatAttributeBridge`（加建構子）、`forge/MobArmoryMod`（接線）、`forge/client/GeneratedWeaponPack`（多一個語系檔）、`content/ModStats`（只改說明）<br>`build.gradle`：遊戲內測試前把 `src/gametest/config/` 複製進 `run-gametest/`<br>測試、README、文件 |
+| 可以改的模組 | 新建 `data/` 的 `StatJson`、`StatEntry`、`StatStore`、`StatFolder`、`StatLoader`、`StatSetup`<br>新建 `forge/StatStartup`<br>修改：`forge/StatAttributeBridge`（加建構子）、`forge/MobArmoryMod`（接線）、`forge/client/GeneratedWeaponPack`（多一個語系檔）、`content/ModStats`（只改說明）<br>實作時追加：`data/WeaponFolder`（寫檔程式抽出來給 `StatFolder` 共用，行為不變；記在 prompt round-08 第 1 步，review-04 E3 補進這裡。合併 combo 後，共用的是 `data/JsonFolder`）<br>`build.gradle`：遊戲內測試前把 `src/gametest/config/` 複製進 `run-gametest/`<br>測試、README、文件 |
 | 不准動的相依 | `core/stat` 的公開介面和規則；`ModStats` 的常數、型別和 `COMBAT_EFFECTS`；`StatEffect` 和戰鬥規則；R4、D1 的類別；`feature/r3-combo`；Minecraft 和 Forge 本身；不加外部相依 |
 | 保留或新建的抽象介面 | 保留：`StatCatalog`、`StatDefinition`、`StatAttributeBridge` 舊建構子<br>新建：`StatStore`（資料夾版、記憶體版，跑同一組契約測試） |
 | 新功能放哪、用什麼形狀 | 新數值：`config/mobarmory/stats/<id>.json`，重開遊戲<br>有戰鬥效果的新數值：JSON 加上 Java 的 `StatEffect` 和 `ModStats.COMBAT_EFFECTS` 一行（和以前一樣） |

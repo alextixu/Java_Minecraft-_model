@@ -24,7 +24,7 @@
 | | `StatStore`、`StatFolder` | 數值檔放哪裡；介面加資料夾版，測試用記憶體版 |
 | | `StatLoader` | 第一次寫出 7 個檔；讀全部；檢查內建數值的種類；缺的內建數值用內建值；所有問題一次列出 |
 | | `StatSetup`、`StatLoadException` | 讀完的結果（登記表、名稱、不同步的、用了內建值的），以及產生語系檔；讀不了時的錯誤 |
-| | `ConfigFiles` | 從 `WeaponFolder` 抽出來的「先寫暫存檔再改名」和「列出檔案」，兩個資料夾共用 |
+| | `JsonFolder`（合併 combo 後） | 「先寫暫存檔再改名」和「列出檔案」，武器、數值、combo 三個資料夾共用。段落 E 時另外從 `WeaponFolder` 抽了一份，合併 combo 時收成這一份（20 號第 8 節） |
 | `forge/` | `StatStartup`（新） | 模組建構時讀檔，寫錯就停，和 `WeaponStartup` 同一個形狀 |
 | | `StatAttributeBridge` | 多一個建構子，決定哪些自訂屬性要同步；舊的建構子保留 |
 | | `MobArmoryMod` | 多 `STAT_FILES`、`STAT_SETUP`；武器、載入器都改吃 `STATS.catalog()` |
@@ -39,7 +39,12 @@
 - 遊戲裡**所有的**數值，包括玩家加的：`MobArmoryMod.STATS.catalog()`。`ModStats.CATALOG` 只有 7 個內建數值。
   - 怪物 JSON 驗證數值時，請用 `STATS.catalog()`，玩家加的數值才能用在怪物身上。
 - `StatAttributeBridge(StatCatalog, String)`、`WeaponStartup.load(store, catalog)` 都還在。
-- 合併時，`MobArmoryMod` 開頭（`STATS`、`EQUIPMENT_LIBRARY`、`WEAPON_SYNC`、`WEAPON_ADMIN` 那幾行）會有文字上的衝突。解法是：保留 main 的寫法（`STAT_SETUP`、`STATS.catalog()`），再加上分支自己新增的欄位。
+- 合併 combo 分支時的文字衝突，實際是 **3 個檔案、5 處**（2026-11-07 依 review-04 E3 更正；原本只寫了 `MobArmoryMod` 開頭，不正確）：
+  - `MobArmoryGameTests` 的註冊：兩行都留。
+  - `MobArmoryMod`：import 區全部留；common setup 的啟動 log 合成一行，數值數量用 `STATS.catalog().size()`。
+  - `WeaponFolder`：import 和檔案結尾兩處，用分支的 `JsonFolder` 版本，再把段落 E 抽出的那份共用寫檔程式收掉。已在合併時完成，見 20 號第 8 節。
+  - 細節和語意上的衝突（兩份一樣的寫檔程式），見 review-04（`java_minecraft_model/reviews/review-04-overnight.md`，不在 repo 裡）第 3 節。
+  - `STATS`、`EQUIPMENT_LIBRARY` 那幾行分支沒有動，保留 main 的寫法。
 
 ## 4. 現有數值的預設值能不能在執行中改（指令要求說明）
 
@@ -89,7 +94,7 @@
 - **H6 名稱顯示在畫面上**：
   1. 在 `run/config/mobarmory/stats/` 放 `luck.json`：`{ "format": 1, "name": "Luck", "default": 0, "min": 0, "max": 1 }`。
   2. 在 `weapons/heavy_sword.json` 的 `modifiers` 加 `{ "stat": "luck", "add": 0.5 }`。
-  3. 開 `runClient`，`/give @p mobarmory:heavy_sword`，tooltip 應該顯示「+0.5 Luck」；`/mobarmory stats` 也列出 Luck。
+  3. 開 `runClient`，`/give @p mobarmory:heavy_sword`，tooltip 應該顯示「+50% Luck」。`luck` 是純數值，上限 ≤ 1，`EquipmentItem` 會當成機率，用百分比顯示（2026-11-07 依 review-04 E2 更正，原本誤寫成「+0.5 Luck」）。`/mobarmory stats` 也列出 Luck，值是 0.5000。
   4. 做完把兩個檔還原。這會在世界存檔留下 `mobarmory:luck` 屬性，所以要用測試世界做。
 - **B11 `sync: false`**：只能用兩台客戶端看，和 R5 一起驗。
 - **B10 數值檔不同時連不上**：平台限制，和 R5 一起驗。
@@ -103,7 +108,7 @@
 
 | 原則 | 對照的程式 | 判斷 |
 |---|---|---|
-| S 單一職責 | `StatJson` 只管格式；`StatFolder` 只管檔案；`StatLoader` 只管讀、檢查、補內建值；`StatSetup` 只是結果，加上產生語系檔；`StatStartup` 只管「啟動時讀，錯了就停」；`ConfigFiles` 是寫檔細節的唯一一處 | 符合 |
+| S 單一職責 | `StatJson` 只管格式；`StatFolder` 只管檔案；`StatLoader` 只管讀、檢查、補內建值；`StatSetup` 只是結果，加上產生語系檔；`StatStartup` 只管「啟動時讀，錯了就停」；`JsonFolder` 是寫檔細節的唯一一處（合併 combo 後，武器、數值、combo 共用） | 符合 |
 | S（`ModStats`） | 職責從「遊戲裡所有的數值」縮小成「Java 程式要用的 7 個內建數值，也是預設檔的內容」，常數、型別都不變。這就是這次要動它的理由：不動它，玩家每加一個數值都要改 Java（違反 O） | 符合 |
 | S（注意） | `GeneratedWeaponPack` 原本只放武器的模型和貼圖，現在也放數值名稱的語系檔，角色變成「玩家內容的執行時資源包」，類別名稱沒有跟著改。`MobArmoryMod` 的共用元件欄位從 10 個變成 12 個（多了 `STAT_FILES`、`STAT_SETUP`），15 號第 11 節「組裝根變大」的注意事項更明顯 | 注意，沒有違反 |
 | O 開放封閉 | 加一個數值：1 個 JSON、0 行 Java（以前要改 `ModStats` 和語系檔）。有戰鬥效果的數值，還是要加一個 `StatEffect` 和 `COMBAT_EFFECTS` 一行，規則本來就是程式 | 符合 |

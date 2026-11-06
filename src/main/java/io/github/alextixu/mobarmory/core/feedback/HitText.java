@@ -16,11 +16,14 @@ import java.util.List;
  *       {@code 0.0} (at least {@code 0.1}); a dead defender shows {@code 0} health; a whole maximum shows no
  *       decimal ({@code 20}).</li>
  * </ul>
- * Jump crits and crit-chance crits look the same (O10). The words live in the language file under
- * {@value #KEY_PREFIX}.
+ * Jump crits and crit-chance crits look the same (O10). A hit that completed a combo (R3, O8) gets the combo's name
+ * after the line, on both players' lines: {@code Cow -1.5 ❤ 7.5/10 · Lunge}. The words live in the language file
+ * under {@value #KEY_PREFIX}.
  */
 public final class HitText {
     public static final String KEY_PREFIX = "mobarmory.hit.";
+    /** Language key of the combo suffix; its one argument is the combo's name. */
+    public static final String COMBO_KEY = KEY_PREFIX + "combo";
     private static final BigDecimal SMALLEST = new BigDecimal("0.1");
 
     private HitText() {
@@ -28,7 +31,7 @@ public final class HitText {
 
     public static HitLine line(HitReport report, Viewer viewer) {
         return new HitLine(key(report.result(), viewer), tone(report.result(), viewer),
-            damage(report.damage()), health(report.healthAfter()), maxHealth(report.maxHealth()));
+            damage(report.damage()), health(report.healthAfter()), maxHealth(report.maxHealth()), report.combo());
     }
 
     /** Every language key {@link #line} can produce, so a test can check the language file has them all. */
@@ -39,6 +42,7 @@ public final class HitText {
                 keys.add(key(result, viewer));
             }
         }
+        keys.add(COMBO_KEY);
         return List.copyOf(keys);
     }
 

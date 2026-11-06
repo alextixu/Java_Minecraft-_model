@@ -28,7 +28,7 @@
 | | `Behavior` | 速度範圍改成大於 0、不超過 3（O7）；`choosesTargets()`、`needsTarget()` 讓行為組合的規則不用寫死名稱 |
 | | `MobDefinition` | 多 `name`（同武器的名稱規則）；攻擊和中立只能選一種、衝刺要搭配其中一種；`withLook` |
 | `data/` | `MobFileJson`（新） | 怪物檔格式 v1；每個錯誤都標出欄位；行為的讀寫查對照表 |
-| | `MobStore`、`MobFolder`（新） | 怪物檔放哪裡；資料夾版沿用 `ConfigFiles`（原子寫檔） |
+| | `MobStore`、`MobFolder`（新） | 怪物檔放哪裡；資料夾版沿用 combo 合併後的 `JsonFolder`（列出、原子寫檔），見第 9 節 |
 | | `MobLoader`、`MobLoadException`、`MobEditor`、`MobSetup`、`DefaultMobs`、`MobAssets`（新） | 讀全部、改檔再改遊戲、啟動時的規則、jar 裡的預設檔、生怪蛋外觀 |
 | `web/` | `MobApi`（新） | `/api/v1/mobs` 的列出、讀、存、新增、重新載入，`/api/v1/mob-options` |
 | | `MobAdmin`、`MobJson` | 架構師的唯讀版擴充成可以存檔；清單原本的欄位全部保留，多 `name`、`status`、`mob` |

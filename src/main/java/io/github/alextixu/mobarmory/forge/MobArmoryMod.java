@@ -1,10 +1,15 @@
 package io.github.alextixu.mobarmory.forge;
 
 import com.mojang.logging.LogUtils;
+import io.github.alextixu.mobarmory.content.ModCombos;
 import io.github.alextixu.mobarmory.content.ModStats;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
 import io.github.alextixu.mobarmory.core.mob.MobLibrary;
+import io.github.alextixu.mobarmory.data.ComboEffectTypes;
+import io.github.alextixu.mobarmory.data.ComboFiles;
+import io.github.alextixu.mobarmory.data.ComboLoader;
+import io.github.alextixu.mobarmory.data.JsonFolder;
 import io.github.alextixu.mobarmory.data.MobAssets;
 import io.github.alextixu.mobarmory.data.MobEditor;
 import io.github.alextixu.mobarmory.data.MobFolder;
@@ -85,6 +90,12 @@ public final class MobArmoryMod {
         new MobEditor(MOB_LIBRARY, MOB_FILES, new MobLoader(STATS.catalog())), MOB_SYNC);
     // D1: each hit's result on the action bar of the players taking part.
     public static final HitFeedbackListener HIT_FEEDBACK = new HitFeedbackListener(List.of(new ActionBarDisplay()));
+    /**
+     * R3: {@code config/mobarmory/combos/}, one file per combo; the defaults (Lunge, Follow-up) are installed on the
+     * first start, and a player adds a combo by adding a file (19, Q2 changed to JSON).
+     */
+    public static final ComboFiles COMBO_FILES = ComboFiles.load(
+        new JsonFolder(FMLPaths.CONFIGDIR.get().resolve(MODID).resolve("combos")), new ComboLoader(ComboEffectTypes.STANDARD));
 
     private static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
@@ -115,12 +126,14 @@ public final class MobArmoryMod {
         new EntityStatBinder(STATS).register();
         EQUIPMENT_STATS.register();
         new StatsCommand(STATS).register();
-        new ReloadCommand(List.of(ReloadCommand.weapons(WEAPON_ADMIN), ReloadCommand.mobs(MOB_ADMIN))).register();
+        new ReloadCommand(List.of(ReloadCommand.weapons(WEAPON_ADMIN), ReloadCommand.combos(COMBO_FILES),
+            ReloadCommand.mobs(MOB_ADMIN))).register();
         WEAPON_SYNC.register();
         MOB_SYNC.register();
         new WebAdminLifecycle(WEAPON_ADMIN, MOB_ADMIN, FMLPaths.CONFIGDIR.get().resolve(MODID).resolve("web.json")).register();
         new CombatEffectListener(ModStats.COMBAT_EFFECTS, STATS, HIT_FEEDBACK).register();
         HIT_FEEDBACK.register();
+        new ComboListener(COMBO_FILES.library(), ModCombos.INPUTS, ModCombos.FULL_CHARGE, STATS, HIT_FEEDBACK).register();
         if (FMLEnvironment.dist == Dist.CLIENT) {
             MobArmoryClient.register(MOBS, MOB_SYNC);
             WeaponClientEvents.register(WEAPON_SYNC);
@@ -130,9 +143,10 @@ public final class MobArmoryMod {
             STATS.verifyAll();
             WeaponStartup.verifyLooks(EQUIPMENT_LIBRARY, WEAPON_FILES);
             MOB_EQUIPMENT.warnAll(MOBS.catalog().all());
-            LOGGER.info("Mob Armory: {} stats from {}, {} pieces of equipment from {}, {} mobs from {}", STATS.catalog().size(),
-                STAT_FILES.statsFolder(), EQUIPMENT_LIBRARY.registered().size(), WEAPON_FILES.weaponsFolder(),
-                MOB_LIBRARY.registered().size(), MOB_FILES.mobsFolder());
+            LOGGER.info("Mob Armory: {} stats from {}, {} pieces of equipment from {}, {} mobs from {}, {} combos from {}",
+                STATS.catalog().size(), STAT_FILES.statsFolder(), EQUIPMENT_LIBRARY.registered().size(),
+                WEAPON_FILES.weaponsFolder(), MOB_LIBRARY.registered().size(), MOB_FILES.mobsFolder(),
+                COMBO_FILES.library().current().all().size(), COMBO_FILES.folder().path());
         });
     }
 

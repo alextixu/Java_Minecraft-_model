@@ -17,15 +17,27 @@ import java.util.Objects;
  * @param damage      health the defender loses; 0 when dodged
  * @param healthAfter the defender's health after the hit; 0 or less means it died
  * @param maxHealth   the defender's maximum health
+ * @param combo       name of the combo this hit completed (R3), or {@code null} for none
  */
 public record HitReport(DamageKind kind, Party attacker, Party defender, HitResult result,
-                        double damage, double healthAfter, double maxHealth) {
+                        double damage, double healthAfter, double maxHealth, String combo) {
 
     public HitReport {
         Objects.requireNonNull(kind, "kind");
         Objects.requireNonNull(attacker, "attacker");
         Objects.requireNonNull(defender, "defender");
         Objects.requireNonNull(result, "result");
+    }
+
+    /** A hit that completed no combo. */
+    public HitReport(DamageKind kind, Party attacker, Party defender, HitResult result,
+                     double damage, double healthAfter, double maxHealth) {
+        this(kind, attacker, defender, result, damage, healthAfter, maxHealth, null);
+    }
+
+    /** The same hit, completing the combo with this name ({@code null} for none). */
+    public HitReport withCombo(String name) {
+        return new HitReport(kind, attacker, defender, result, damage, healthAfter, maxHealth, name);
     }
 
     /** A hit that took {@code damage} health from a defender that had {@code healthBefore}. */

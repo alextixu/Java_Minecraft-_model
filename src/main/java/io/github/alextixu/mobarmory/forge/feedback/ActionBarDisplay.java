@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -17,7 +18,8 @@ import net.minecraft.world.entity.LivingEntity;
 /**
  * Shows a hit on the action bar, the line above the hotbar (decision Q4 C). The attacking player sees the target's
  * name and health, the player who was hit sees the attacker's name and their own health (Q5). Uses Minecraft's own
- * system message packet, so nothing has to be written for the client or for multiplayer (Q8 A).
+ * system message packet, so nothing has to be written for the client or for multiplayer (Q8 A). A hit that completed a
+ * combo (R3) ends with the combo's name on both lines, in the line's color.
  */
 public final class ActionBarDisplay implements HitDisplay {
     private final BiConsumer<ServerPlayer, Component> sender;
@@ -45,8 +47,12 @@ public final class ActionBarDisplay implements HitDisplay {
     /** The line one viewer gets. {@code other} is whose name is shown: the target for the attacker, and the other way round. */
     static Component message(HitReport report, Viewer viewer, Entity other) {
         HitLine line = HitText.line(report, viewer);
-        return Component.translatable(line.translationKey(), other.getDisplayName(), line.damage(), line.health(), line.maxHealth())
-            .withStyle(color(line.tone()));
+        MutableComponent text = Component.translatable(line.translationKey(), other.getDisplayName(), line.damage(),
+            line.health(), line.maxHealth());
+        if (line.combo() != null) {
+            text.append(Component.translatable(HitText.COMBO_KEY, line.combo()));
+        }
+        return text.withStyle(color(line.tone()));
     }
 
     static ChatFormatting color(Tone tone) {

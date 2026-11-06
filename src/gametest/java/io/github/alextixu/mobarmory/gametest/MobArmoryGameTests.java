@@ -50,6 +50,7 @@ public final class MobArmoryGameTests {
         SyncGameTests.registerAll();
         FeedbackGameTests.registerAll();
         StatFileGameTests.registerAll();
+        ComboGameTests.registerAll();
     }
 
     private MobArmoryGameTests() {

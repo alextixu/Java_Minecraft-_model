@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:live_edit",
+  "function": "mobarmory:reload_command_prints_weapons_combos_mobs",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

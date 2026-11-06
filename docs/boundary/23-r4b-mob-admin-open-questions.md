@@ -194,7 +194,7 @@
 
 監控 session 說「如果 21～23 有地方要跟著調整，改完在 23 記一行就好」。架構師的段落 A、E 進 main 以後，下面幾處照現況調整，決定的方向不變：
 
-- **原子寫檔不用再抽**：架構師已經抽成 `data/ConfigFiles`（`list`、`writeAtomically`），怪物直接用，`WeaponFolder` 不用動。
+- **原子寫檔不用再抽**：架構師已經抽好了，怪物直接用，`WeaponFolder` 不用動。（當時叫 `data/ConfigFiles`；combo 合併時換成 `JsonFolder`，R4b 合進 main 時 `MobFolder` 跟著改，見 [28](28-r4b-mob-admin-behavior-report.md) 第 9 節。）
 - **`web/MobAdmin`、`web/MobJson` 已經存在**（唯讀清單）：R4b 擴充 `MobAdmin`（加讀狀態、存檔、新增、重新載入），不另建介面；`web/MobJson` 的清單欄位全部保留，每一筆加 `name`、`status`、`mob`。檔案格式的讀寫取名 `data/MobFileJson`，避免和 `web/MobJson` 撞名。
 - **怪物的路由**：架構師放在 `WeaponApi`，R4b 搬進新的 `MobApi`，由 `AdminHttpServer` 依路徑分給兩個 API。
 - **數值改成 JSON 檔**（段落 E）：怪物檔的數值照 `MobArmoryMod.STATS.catalog()` 檢查，所以玩家自己加的數值，怪物檔也能設定。

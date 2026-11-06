@@ -5,6 +5,7 @@ import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
 import io.github.alextixu.mobarmory.core.equipment.ReloadReport;
 import io.github.alextixu.mobarmory.core.mob.MobId;
 import io.github.alextixu.mobarmory.core.mob.MobReloadReport;
+import io.github.alextixu.mobarmory.data.ComboFiles;
 import io.github.alextixu.mobarmory.data.MobLoadException;
 import io.github.alextixu.mobarmory.data.WeaponLoadException;
 import io.github.alextixu.mobarmory.web.MobAdmin;
@@ -20,8 +21,9 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 
 /**
  * {@code /mobarmory reload}: reads the files in {@code config/mobarmory/} again after editing them by hand (decision
- * Q4 A). Each kind of file is one {@link Section}: weapons (R2b) and mobs (R4b), each all or nothing on its own (R4b
- * O12). New files wait for a restart (B7, B14), deleted ones stay until a restart (B8, B12).
+ * Q4 A). Each kind of file is one {@link Section}, run in order: weapons (R2b), combos (R3) and mobs (R4b), each all or
+ * nothing on its own (R3, R4b O12). New weapon and mob files wait for a restart (B7, B14), deleted ones stay until a
+ * restart (B8, B12); a new or deleted combo file applies right away (R3).
  */
 public final class ReloadCommand {
 
@@ -58,6 +60,26 @@ public final class ReloadCommand {
             line(source, "commands.mobarmory.reload.missing", report.fileMissing(), EquipmentId::value);
             line(source, "commands.mobarmory.reload.slot", report.slotWaits(), EquipmentId::value);
             return report.changed().size();
+        };
+    }
+
+    /** Combos (R3): the messages of R3's own reload, now as one section. */
+    public static Section combos(ComboFiles files) {
+        return source -> {
+            List<String> ids;
+            try {
+                ids = files.reload();
+            } catch (WeaponLoadException e) {
+                source.sendFailure(Component.translatable("commands.mobarmory.reload.combos_failed"));
+                e.problems().forEach(problem -> source.sendFailure(Component.literal("  " + problem)));
+                return -1;
+            } catch (IOException e) {
+                source.sendFailure(Component.translatable("commands.mobarmory.reload.combos_io", e.getMessage()));
+                return -1;
+            }
+            source.sendSuccess(() -> Component.translatable("commands.mobarmory.reload.combos", ids.size(),
+                ids.isEmpty() ? "-" : String.join(", ", ids)).withStyle(ChatFormatting.GREEN), true);
+            return ids.size();
         };
     }
 
