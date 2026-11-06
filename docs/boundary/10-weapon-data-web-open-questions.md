@@ -1,23 +1,32 @@
 # 確認點的問題與決定（R2b 資料驅動武器＋R6 網頁後台）
 
-> 狀態：**已決定**（2026-11-06）。使用者在開發 session 直接回覆「全部照建議」，全部採用建議值。
-> 依 boundary-first，設計和商業規則由人決定，AI 只提案。
-> R4 的 [07](07-r4-open-questions.md) 維持未回答，這份不影響 R4。
+> 狀態：**已決定**（2026-11-06，最終版是「照審查建議版」，Q7 再調整一次）。依 boundary-first，設計和商業規則由人決定，AI 只提案。
+> R4 的 [07](07-r4-open-questions.md) 由 R4 的 session 處理，這份不影響 R4。
 
-## 決定總表
+## 決定的經過
+
+1. **第一次**：使用者在開發 session 回「全部照建議」（記錄在 commit `18c4487`）。開發 session 照這個版本做完了 R2b 和 R6（commit `a6bd8bc`～`905554d`），包括執行時產生的資源包、上傳 PNG、版本號和 409。
+2. **改為「照審查建議版」**：使用者在主 session 看了審查員的 review-01（`java_minecraft_model/reviews/review-01-requirements-gap.md`，不在 repo 裡；第 5 節風險 4、第 6 節建議 2），主 session 說明兩版的差別和一般 Forge 模組的做法後，使用者回「照審查建議版」，取代第一次的決定。理由：
+   - 多人同步（R5）：設定檔和貼圖只在伺服器上時，遠端客戶端的名稱、tooltip、貼圖都會和伺服器不一樣，等於自己做出「兩個客戶端畫面不同」的反例。
+   - 一般 Forge 模組也是把貼圖放進 jar，數值由伺服器同步給客戶端。
+3. **Q7 再調整**：使用者原話「我們只要做到學長說的可以上傳武器，並且還有數值的部分才是重點。」所以 Q7 從 B 改成「網頁有新增武器的表單，但不上傳 PNG」。重點是「新增武器」和「數值」；外觀只從內建清單選；不為武器另外加特效或規則，之後遇到「要不要多做某個效果」預設「不做」。
+
+第一次版本做出來、但最終版不要的程式，已依最終版刪除或改寫，見 [15 號行為報告](15-weapon-data-web-behavior-report.md)。
+
+## 決定總表（最終版）
 
 | 題號 | 決定 | 內容 |
 |---|---|---|
 | Q1 | **A** | 同意 SOLID 判斷 |
-| Q2 | **A** | 啟動時讀設定資料夾、每把武器一個物品；執行中只換定義；網頁走介面＋轉接器；外觀用執行時資源包 |
-| Q3 | **A** | 同意變更邊界 |
+| Q2 | **A** | 啟動時讀設定資料夾、每把武器一個物品；執行中只換定義；網頁走介面＋轉接器 |
+| Q3 | **B** | 變更邊界調整：① 劃掉 `forge/client/GeneratedWeaponPack`，不做執行時產生的資源包；② 補上「武器定義同步到客戶端」的封包，遠端客戶端的名稱、tooltip、外觀和伺服器一樣；③ 補上：選定的貼圖 PNG 放進 jar（`src/main/resources/assets/mobarmory/textures/item/`）；④「不能動」加上 `content/ModStats`（R4 會在那裡加最大生命值） |
 | Q4 | **A** | `config/mobarmory/weapons/`，一把一個檔；`/mobarmory reload` 和網頁按鈕；新武器重開生效 |
-| Q5 | **A** | 執行時產生資源包，PNG 放 `config/mobarmory/textures/`，不進 git |
+| Q5 | **B** | 7 張 hanhanpx 貼圖放進 jar 並 commit（`dagger_iron`、`dagger_ruby`、`spear_iron`、`pitchfork_gold`、`halberd_netherite`、`halberd_wooden`、`scythe_blood`），旁邊放作者標註；網頁換外觀只能從「原版物品＋這 7 張」選，不上傳貼圖 |
 | Q6 | **A** | 只綁 `127.0.0.1`，不用密碼，檢查 `Host`／`Origin`、只收 JSON；對外開放時強制 token |
-| Q7 | **A** | 這次做上傳新武器，存檔後「待重開」；排在改數值、換外觀之後 |
-| O1～O16 | **同意** | 全部採用下方表格的建議值 |
+| Q7 | **新增武器表單，不上傳 PNG** | 網頁有「新增武器」表單（id、名稱、欄位、數值、外觀從內建清單選）；伺服器用讀檔時同一套驗證，存成 `config/mobarmory/weapons/<id>.json`；清單標「待重開」，重開後能 `/give`，也會同步到客戶端 |
+| O1～O16 | **同意**，三項例外 | **O10**：後存的蓋掉先存的，不做版本號和 409。**O11**：外觀只在內建清單裡切換；需要重新載入資源就自動做，做不到就退回 F3+T 並寫進報告。**O15**：上面 7 張 commit 進 repo，加作者標註 `Weapon textures by HanhanPx — https://hanhanpx.itch.io/minecraft-weapon-pack` |
 
-以下保留當時的問題原文，每題都已標上決定。
+以下保留當時的問題原文。題目後面的「A（建議）」是當時的建議值，最終決定以上表為準。
 
 ## 第一輪：設計（3 題）
 

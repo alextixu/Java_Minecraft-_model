@@ -25,26 +25,38 @@
 
 ## R4：自訂怪物（驗收 T2）
 
+R4 由另一個 session 在 `feature/r4-mobs` 分支做；行為報告是 14。
+
 | 檔案 | 內容 | 狀態 |
 |---|---|---|
-| [05-r4-boundary-note.md](05-r4-boundary-note.md) | 需求翻譯、平台限制、變更邊界、實作順序、測試計畫 | 草案 |
-| [06-r4-given-when-then.md](06-r4-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 草案 |
-| [07-r4-open-questions.md](07-r4-open-questions.md) | 待使用者決定的問題（設計 3 題、商業規則 4 題、其他 10 項） | 等待回覆 |
+| [05-r4-boundary-note.md](05-r4-boundary-note.md) | 需求翻譯、平台限制、變更邊界、實作順序、測試計畫 | 草案（在 `feature/r4-mobs` 更新） |
+| [06-r4-given-when-then.md](06-r4-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 草案（在 `feature/r4-mobs` 更新） |
+| [07-r4-open-questions.md](07-r4-open-questions.md) | 待使用者決定的問題（設計 3 題、商業規則 4 題、其他 10 項） | 在 `feature/r4-mobs` 處理 |
 
 ## R2b ＋ R6：武器改成資料驅動、網頁後台
 
-R4 暫停期間先做（使用者 2026-11-06 指示）。11～13 號留給 D1 砍怪傷害顯示（在 `feature/damage-hud` 分支），所以行為報告是 14。
-
 | 檔案 | 內容 | 狀態 |
 |---|---|---|
-| [08-weapon-data-web-boundary-note.md](08-weapon-data-web-boundary-note.md) | 需求翻譯、平台限制、變更邊界、網頁 API、實作順序、測試計畫、示範影片劇本草稿 | 已確認 |
-| [09-weapon-data-web-given-when-then.md](09-weapon-data-web-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 已確認 |
-| [10-weapon-data-web-open-questions.md](10-weapon-data-web-open-questions.md) | 確認點的問題與決定（設計 3 題、商業規則 4 題、其他 16 項） | 已決定（全部照建議） |
-| [14-weapon-data-web-behavior-report.md](14-weapon-data-web-behavior-report.md) | 行為報告：結構摘要、各層測試數量、Given / When / Then 對照、實測紀錄、沒有覆蓋的範圍、示範影片劇本 | 已產出（單元 225/225、遊戲內 25/25） |
+| [08-weapon-data-web-boundary-note.md](08-weapon-data-web-boundary-note.md) | 需求翻譯、平台限制、變更邊界、給其他模組的穩定介面、網頁 API、實作順序、測試計畫 | 已確認（最終版） |
+| [09-weapon-data-web-given-when-then.md](09-weapon-data-web-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 已確認（最終版） |
+| [10-weapon-data-web-open-questions.md](10-weapon-data-web-open-questions.md) | 確認點的問題與決定，含決定的經過（先「全部照建議」，後改「照審查建議版」） | 已決定 |
+| [15-weapon-data-web-behavior-report.md](15-weapon-data-web-behavior-report.md) | 行為報告：結構摘要、各層測試數量、Given / When / Then 對照、實測紀錄、沒有覆蓋的範圍、示範影片劇本 | 依最終版更新中 |
+
+## 文件編號
+
+| 編號 | 內容 | 誰寫 |
+|---|---|---|
+| 01～04 | R1＋R2 | `mc-dev` |
+| 05～07、14 | R4 自訂怪物（邊界、行為報告） | R4 的 session |
+| 08～10、15 | R2b＋R6（邊界、行為報告） | `mc-dev` |
+| 11～13、16 | D1 砍怪傷害顯示（邊界、行為報告） | `damage-hud` |
+| 17～19、20 | R3 combo（邊界、行為報告） | 之後決定 |
+
+本索引由 `mc-dev` 維護。
 
 ## 之後的功能
 
-R3 combo → R5 多人同步，每一項各跑一次同樣的流程。
+R5 多人同步，跑同樣的流程。
 
 ## 怎麼跑測試
 

@@ -1,7 +1,7 @@
 # 行為報告：R2b 資料驅動武器＋R6 網頁後台
 
 > boundary-first 第 6 步的產出。邊界在 [08](08-weapon-data-web-boundary-note.md)、行為在 [09](09-weapon-data-web-given-when-then.md)、決定在 [10](10-weapon-data-web-open-questions.md)（使用者 2026-11-06「全部照建議」）。
-> 11～13 號留給 D1 砍怪傷害顯示（`feature/damage-hud`），所以這份是 14。
+> 11～13 號留給 D1 砍怪傷害顯示（`feature/damage-hud`），所以這份是 15（14 是 R4 的行為報告）。
 
 ## 1. 結果一覽
 
