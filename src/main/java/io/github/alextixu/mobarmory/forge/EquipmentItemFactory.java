@@ -3,6 +3,7 @@ package io.github.alextixu.mobarmory.forge;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentCatalog;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentDefinition;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
+import io.github.alextixu.mobarmory.core.equipment.EquipmentLook;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +65,7 @@ public final class EquipmentItemFactory {
 
     /** "minecraft:iron_chestplate" is drawn on the body with Minecraft's "iron" armor (O8). */
     private static ResourceKey<EquipmentAsset> armorAsset(EquipmentDefinition definition) {
-        Identifier look = Identifier.parse(definition.look());
+        Identifier look = Identifier.parse(((EquipmentLook.VanillaItem) definition.look()).item());
         String material = look.getPath();
         for (String piece : ARMOR_PIECES) {
             if (material.endsWith(piece)) {

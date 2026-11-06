@@ -3,6 +3,7 @@ package io.github.alextixu.mobarmory.content;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.alextixu.mobarmory.core.equipment.EquipmentDefinition;
+import io.github.alextixu.mobarmory.core.equipment.EquipmentLook;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,7 +37,7 @@ class ContentResourcesTest {
         Path model = ASSETS.resolve("items/" + equipment.id().value() + ".json");
         assertTrue(Files.exists(model), "missing " + model);
 
-        String[] look = equipment.look().split(":", 2);
+        String[] look = ((EquipmentLook.VanillaItem) equipment.look()).item().split(":", 2);
         String expected = "\"" + look[0] + ":item/" + look[1] + "\"";
         assertTrue(Files.readString(model).contains(expected), model + " should use model " + expected);
     }
