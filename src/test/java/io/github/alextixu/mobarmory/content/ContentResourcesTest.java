@@ -13,6 +13,7 @@ import io.github.alextixu.mobarmory.data.PngCheck;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -107,9 +108,27 @@ class ContentResourcesTest {
         assertTrue(BuiltInTextures.png(name).isPresent(), "the jar lookup must find " + name);
     }
 
+    /**
+     * Review-03 P3-9: every file under {@code assets/} must have a path Minecraft accepts (lower-case letters, digits
+     * and {@code _-./}). The old {@code textures/item/CREDITS.md} broke this, and every client start logged
+     * "Invalid path in pack". Anything that is not a game resource belongs outside {@code assets/}.
+     */
+    @Test
+    void everyAssetPathIsAValidResourcePath() throws IOException {
+        Path assets = Path.of("src/main/resources/assets");
+        List<String> invalid;
+        try (Stream<Path> files = Files.walk(assets)) {
+            invalid = files.filter(Files::isRegularFile)
+                .map(file -> assets.relativize(file).toString().replace('\\', '/'))
+                .filter(path -> !path.matches("[a-z0-9_.\\-/]+"))
+                .toList();
+        }
+        assertEquals(List.of(), invalid, "not valid resource paths (use lower case, digits, _ - . /)");
+    }
+
     @Test
     void texturesCarryTheAuthorsCredit() throws IOException {
-        String credits = Files.readString(ASSETS.resolve("textures/item/CREDITS.md"));
+        String credits = Files.readString(Path.of("src/main/resources/mobarmory/CREDITS.md"));
         assertTrue(credits.contains("Weapon textures by HanhanPx — https://hanhanpx.itch.io/minecraft-weapon-pack"), credits);
         for (String name : BuiltInTextures.NAMES) {
             assertTrue(credits.contains(name + ".png"), "CREDITS.md does not list " + name);

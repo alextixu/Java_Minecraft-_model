@@ -3,12 +3,14 @@
 
 const STAT_LABELS = {
   attack_damage: '攻擊力', movement_speed: '移動速度', armor: '護甲',
-  attack_speed: '攻擊速度', crit_chance: '暴擊率', dodge_chance: '迴避率',
+  attack_speed: '攻擊速度', max_health: '最大生命', crit_chance: '暴擊率', dodge_chance: '迴避率',
 };
 const SLOT_LABELS = { mainhand: '主手', offhand: '副手', head: '頭盔', chest: '胸甲', legs: '護腿', feet: '靴子' };
 const STATUS_LABELS = { active: '生效中', pending_restart: '待重開遊戲', file_missing: '檔案已刪除，重開後消失' };
+const BODY_LABELS = { zombie: '殭屍', husk: '屍殼', skeleton: '骷髏', stray: '流髑' };
+const BEHAVIOR_LABELS = { wander: '閒晃', attack_players: '攻擊玩家' };
 
-const state = { stats: [], looks: { items: [], textures: [] }, weapons: [], selected: null };
+const state = { stats: [], looks: { items: [], textures: [] }, weapons: [], mobs: [], selected: null };
 const token = readToken();
 
 function readToken() {
@@ -76,11 +78,14 @@ function describeError(error) {
 
 // ---------- loading ----------
 async function loadAll(keepSelection = true) {
-  const [stats, looks, list] = await Promise.all([api('GET', '/api/v1/stats'), api('GET', '/api/v1/looks'), api('GET', '/api/v1/weapons')]);
+  const [stats, looks, list, mobs] = await Promise.all([
+    api('GET', '/api/v1/stats'), api('GET', '/api/v1/looks'), api('GET', '/api/v1/weapons'), api('GET', '/api/v1/mobs')]);
   state.stats = stats;
   state.looks = looks;
   state.weapons = list.weapons;
+  state.mobs = mobs.mobs;
   renderList();
+  renderMobs();
   const still = keepSelection && state.selected && state.weapons.find((w) => w.id === state.selected);
   if (still) openEditor(still); else if (!keepSelection) closeEditor();
   renderCreator();
@@ -340,7 +345,38 @@ function renderCreator() {
   };
 }
 
-// ---------- header, tabs, mobs ----------
+// ---------- mobs (read only) ----------
+function statValue(id, value) {
+  const stat = statById(id);
+  return stat && stat.chance ? `${round(value * 100)}%` : String(round(value));
+}
+
+function weaponLabel(id) {
+  const entry = state.weapons.find((w) => w.id === id);
+  return entry ? `${entry.weapon.name}（${id}）` : id;
+}
+
+function renderMobs() {
+  const list = $('#mob-list');
+  if (!state.mobs.length) {
+    list.replaceChildren(el('li', { class: 'empty', text: '伺服器上沒有自訂怪物。' }));
+    return;
+  }
+  list.replaceChildren(...state.mobs.map((mob) => {
+    const stats = Object.entries(mob.stats).map(([id, value]) => `${statLabel(id)} ${statValue(id, value)}`);
+    const equipment = Object.entries(mob.equipment).map(([slot, id]) => `${SLOT_LABELS[slot] || slot}：${weaponLabel(id)}`);
+    const behaviors = mob.behaviors.map((name) => BEHAVIOR_LABELS[name] || name);
+    const row = (label, text) => el('div', { class: 'mob-row' }, el('span', { class: 'mob-label', text: label }), el('span', { text }));
+    return el('li', { class: 'mob-card' },
+      el('div', { class: 'name', text: mob.id }),
+      row('外觀', `${BODY_LABELS[mob.look.body] || mob.look.body}的身體，大小 ×${round(mob.look.scale)}`),
+      row('數值', stats.length ? stats.join('、') + '（沒列出的用預設值）' : '全部用預設值'),
+      row('裝備', equipment.length ? equipment.join('、') : '沒有'),
+      row('行為', behaviors.length ? behaviors.join('、') : '沒有（站著不動）'));
+  }));
+}
+
+// ---------- header, tabs ----------
 async function reloadFromFiles() {
   try {
     const report = await api('POST', '/api/v1/reload');
@@ -370,14 +406,5 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
   $('#refresh').addEventListener('click', () => loadAll().then(() => notice('ok', '已載入最新的數值。')).catch((e) => notice('error', describeError(e))));
   $('#reload').addEventListener('click', reloadFromFiles);
-  $('#mobs-check').addEventListener('click', async () => {
-    const box = $('#mobs-result');
-    box.classList.remove('hidden');
-    try {
-      box.textContent = JSON.stringify(await api('GET', '/api/v1/mobs'), null, 2);
-    } catch (error) {
-      box.textContent = `${error.status}：${error.message}`;
-    }
-  });
   loadAll(false).catch((error) => notice('error', describeError(error)));
 });

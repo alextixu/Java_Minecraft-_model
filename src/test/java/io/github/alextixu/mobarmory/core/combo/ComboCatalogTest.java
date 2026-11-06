@@ -48,9 +48,10 @@ class ComboCatalogTest {
     }
 
     @Test
-    @DisplayName("id：小寫英文、數字、底線；名稱：1～32 字、前後空白去掉；時間窗：1～1200 tick")
+    @DisplayName("id：小寫英文開頭，再接小寫英文、數字、底線（和武器、數值的 id 一樣）；名稱：1～32 字；時間窗：1～1200 tick")
     void definitionRules() {
-        for (String bad : List.of("", "Lunge", "follow-up", "a b", "../x")) {
+        assertEquals("spin_2", combo("spin_2", WALK, RUN).id());
+        for (String bad : List.of("", "Lunge", "follow-up", "a b", "../x", "2hit", "_spin")) {
             assertThrows(IllegalArgumentException.class, () -> combo(bad, WALK, RUN), bad);
         }
         assertEquals("Follow-up", new ComboDefinition("f", "  Follow-up ", RUN, WALK, 30, TIMES_2).name());

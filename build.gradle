@@ -104,8 +104,15 @@ def cleanGameTestRun = tasks.register('cleanGameTestRun', Delete) {
     delete gameTestRunDir
     doLast { gameTestRunDir.mkdirs() }
 }
-tasks.matching { it.name == 'runGametestGameTestServer' }.configureEach {
+// Section E: the test server starts with two stat files a player could have written (src/gametest/config), so the
+// game tests check stats added by files. With the stats folder already there, the built-in stats come from code (Q5 A).
+def prepareGameTestRun = tasks.register('prepareGameTestRun', Copy) {
     dependsOn cleanGameTestRun
+    from layout.projectDirectory.dir('src/gametest/config')
+    into layout.projectDirectory.dir('run-gametest/config')
+}
+tasks.matching { it.name == 'runGametestGameTestServer' }.configureEach {
+    dependsOn cleanGameTestRun, prepareGameTestRun
 }
 
 // `build` also compiles the game tests, so a broken test is caught even without running the test server.

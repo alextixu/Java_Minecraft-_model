@@ -9,7 +9,8 @@ import java.util.regex.Pattern;
  * RUN then WALK are two combos. Every field comes from the combo's file in {@code config/mobarmory/combos/}, so a
  * player adds a combo by adding a file (19, Q2 changed to JSON).
  *
- * @param id          the file name without {@code .json}: lowercase letters, digits and underscores
+ * @param id          the file name without {@code .json}: a lowercase letter, then lowercase letters, digits and
+ *                    underscores (the same rule as weapon and stat ids)
  * @param name        display name, shown as-is on the action bar in any language (like weapon names)
  * @param first       the swing that starts the combo
  * @param second      the swing that completes it
@@ -23,7 +24,7 @@ public record ComboDefinition(String id, String name, ComboInput first, ComboInp
     public static final int MAX_NAME_LENGTH = 32;
     /** One minute; a longer window would make any two swings a combo. */
     public static final long MAX_WINDOW_TICKS = 1200;
-    private static final Pattern ID = Pattern.compile("[a-z0-9_]{1,64}");
+    private static final Pattern ID = Pattern.compile("[a-z][a-z0-9_]*");
 
     public ComboDefinition {
         Objects.requireNonNull(id, "id");
@@ -32,7 +33,8 @@ public record ComboDefinition(String id, String name, ComboInput first, ComboInp
         Objects.requireNonNull(second, "second");
         Objects.requireNonNull(effect, "effect");
         if (!ID.matcher(id).matches()) {
-            throw new IllegalArgumentException("combo id must be 1 to 64 lowercase letters, digits or _, got '" + id + "'");
+            throw new IllegalArgumentException("combo id must start with a lowercase letter, then lowercase letters, "
+                + "digits or _, got '" + id + "'");
         }
         name = name.strip();
         if (name.isEmpty() || name.length() > MAX_NAME_LENGTH || name.chars().anyMatch(Character::isISOControl)) {

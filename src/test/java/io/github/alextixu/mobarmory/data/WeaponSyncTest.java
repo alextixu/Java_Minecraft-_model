@@ -90,12 +90,37 @@ class WeaponSyncTest {
         server.update(new EquipmentDefinition(EquipmentId.of("dagger"), "Dagger", EquipmentSlotKind.MAINHAND, List.of(),
             EquipmentLook.texture("dagger_iron")));
 
-        Map<String, byte[]> sent = WeaponSync.uploadedTexturesInUse(server, store);
+        Map<String, byte[]> sent = WeaponSync.uploadedTexturesInUse(server, store, (name, problem) -> {
+            throw new AssertionError(name + " " + problem);
+        });
 
         assertEquals(List.of("my_blade"), List.copyOf(sent.keySet()), "only uploaded textures in use; built-in ones are in every jar");
         Map<String, String> digests = WeaponSync.digests(sent);
         assertTrue(WeaponSync.needsReload(digests, Map.of()), "a client without it must reload");
         assertTrue(!WeaponSync.needsReload(digests, digests), "a client that has it must not");
         assertTrue(WeaponSync.needsReload(digests, Map.of("my_blade", "an older picture")), "a replaced picture needs a reload");
+    }
+
+    @Test
+    @DisplayName("P2-8 Given 遊戲執行中有人把正在用的 PNG 換成壞檔或超過 256 KB 的檔 When 要送給玩家 Then 那張不送、不列進摘要，並說出原因")
+    void unusableFilesAreNotSent() throws Exception {
+        InMemoryWeaponStore store = new InMemoryWeaponStore()
+            .putTexture("my_blade", TestPng.of(32, 32))
+            .putTexture("not_a_png", "hello".getBytes(java.nio.charset.StandardCharsets.UTF_8))
+            .putTexture("too_big", new byte[PngCheck.MAX_BYTES + 1]);
+        EquipmentLibrary server = defaults();
+        server.update(new EquipmentDefinition(SWORD, "Heavy Sword", EquipmentSlotKind.MAINHAND, List.of(), EquipmentLook.texture("my_blade")));
+        server.update(new EquipmentDefinition(EquipmentId.of("dagger"), "Dagger", EquipmentSlotKind.MAINHAND, List.of(),
+            EquipmentLook.texture("not_a_png")));
+        server.update(new EquipmentDefinition(EquipmentId.of("heavy_armor"), "Heavy Armor", EquipmentSlotKind.CHEST, List.of(),
+            EquipmentLook.texture("too_big")));
+        Map<String, String> left = new LinkedHashMap<>();
+
+        Map<String, byte[]> sent = WeaponSync.uploadedTexturesInUse(server, store, left::put);
+
+        assertEquals(List.of("my_blade"), List.copyOf(sent.keySet()));
+        assertEquals(List.of("not_a_png", "too_big"), List.copyOf(left.keySet()));
+        assertTrue(left.get("too_big").contains("256 KB"), left.get("too_big"));
+        assertEquals(List.of("my_blade"), List.copyOf(WeaponSync.digests(sent).keySet()), "only what is sent gets a digest");
     }
 }

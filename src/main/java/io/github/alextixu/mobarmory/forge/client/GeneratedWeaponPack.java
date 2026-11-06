@@ -8,6 +8,7 @@ import io.github.alextixu.mobarmory.data.WeaponStore;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -38,6 +39,9 @@ import org.slf4j.Logger;
  * ({@link ClientTextures}). Nothing is written to disk and nothing needs a rebuild. Every resource reload builds a
  * fresh snapshot, and remembers which uploaded textures it holds ({@link #textureDigests()}), so a client can tell
  * when the server uses one it does not have yet.
+ * <p>
+ * Since section E it also holds {@code lang/en_us.json} with the names of stats added in {@code config/mobarmory/stats/},
+ * so it is the runtime pack for everything players add, not only weapons; the class keeps its name.
  */
 public final class GeneratedWeaponPack extends AbstractPackMetadataResources implements PackResources {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -54,8 +58,13 @@ public final class GeneratedWeaponPack extends AbstractPackMetadataResources imp
         this.files = files;
     }
 
-    /** Adds the pack to the client's resource packs; always on, above the mod's own resources. */
-    public static void register(EquipmentLibrary library, WeaponStore store) {
+    /**
+     * Adds the pack to the client's resource packs; always on, above the mod's own resources.
+     *
+     * @param languageFile {@code lang/en_us.json} with the names of stats added in stat files (section E, Q7 A); the
+     *                     game merges it with the mod's own language file
+     */
+    public static void register(EquipmentLibrary library, WeaponStore store, String languageFile) {
         AddPackFindersEvent.BUS.addListener(event -> {
             if (event.getPackType() != PackType.CLIENT_RESOURCES) {
                 return;
@@ -63,7 +72,7 @@ public final class GeneratedWeaponPack extends AbstractPackMetadataResources imp
             PackLocationInfo location = new PackLocationInfo(ID, Component.literal("Mob Armory weapons"), PackSource.BUILT_IN, Optional.empty());
             PackMetadataSection metadata = new PackMetadataSection(Component.literal("Weapon models and textures from config/mobarmory"),
                 SharedConstants.getCurrentVersion().packVersion(PackType.CLIENT_RESOURCES).minorRange());
-            Pack pack = Pack.readMetaAndCreate(location, new Supplier(library, store, metadata), PackType.CLIENT_RESOURCES,
+            Pack pack = Pack.readMetaAndCreate(location, new Supplier(library, store, languageFile, metadata), PackType.CLIENT_RESOURCES,
                 new PackSelectionConfig(true, Pack.Position.TOP, false));
             if (pack == null) {
                 LOGGER.error("Mob Armory: could not create the weapon resource pack; weapons will show missing textures");
@@ -78,7 +87,13 @@ public final class GeneratedWeaponPack extends AbstractPackMetadataResources imp
         return lastDigests;
     }
 
-    private static Map<String, byte[]> snapshot(EquipmentLibrary library, WeaponStore store) {
+    private static Map<String, byte[]> snapshot(EquipmentLibrary library, WeaponStore store, String languageFile) {
+        Map<String, byte[]> files = new LinkedHashMap<>(weaponFiles(library, store));
+        files.put("lang/en_us.json", languageFile.getBytes(StandardCharsets.UTF_8));
+        return files;
+    }
+
+    private static Map<String, byte[]> weaponFiles(EquipmentLibrary library, WeaponStore store) {
         Map<String, byte[]> included = new LinkedHashMap<>();
         Map<String, byte[]> files = WeaponAssets.generate(library.current().all(), name -> {
             Optional<byte[]> png = ClientTextures.get(name);
@@ -139,7 +154,8 @@ public final class GeneratedWeaponPack extends AbstractPackMetadataResources imp
     }
 
     /** Opens a fresh snapshot each time Minecraft (re)loads resources. */
-    private record Supplier(EquipmentLibrary library, WeaponStore store, PackMetadataSection metadata) implements Pack.ResourcesSupplier {
+    private record Supplier(EquipmentLibrary library, WeaponStore store, String languageFile, PackMetadataSection metadata)
+        implements Pack.ResourcesSupplier {
         @Override
         public PackMetadataResources openMetadata(PackLocationInfo location) {
             return new GeneratedWeaponPack(location, metadata, Map.of());
@@ -147,7 +163,7 @@ public final class GeneratedWeaponPack extends AbstractPackMetadataResources imp
 
         @Override
         public Stream<PackResources> openResources(PackLocationInfo location, Pack.Metadata packMetadata) {
-            return Stream.of(new GeneratedWeaponPack(location, metadata, snapshot(library, store)));
+            return Stream.of(new GeneratedWeaponPack(location, metadata, snapshot(library, store, languageFile)));
         }
     }
 }

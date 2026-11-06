@@ -2,6 +2,7 @@ package io.github.alextixu.mobarmory.forge;
 
 import com.mojang.logging.LogUtils;
 import io.github.alextixu.mobarmory.web.AdminHttpServer;
+import io.github.alextixu.mobarmory.web.MobAdmin;
 import io.github.alextixu.mobarmory.web.WeaponAdmin;
 import io.github.alextixu.mobarmory.web.WebSettings;
 import java.io.IOException;
@@ -27,12 +28,14 @@ public final class WebAdminLifecycle {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private final WeaponAdmin admin;
+    private final MobAdmin mobs;
     private final Path settingsFile;
     private volatile AdminHttpServer running;
     private volatile String problem;
 
-    public WebAdminLifecycle(WeaponAdmin admin, Path settingsFile) {
+    public WebAdminLifecycle(WeaponAdmin admin, MobAdmin mobs, Path settingsFile) {
         this.admin = admin;
+        this.mobs = mobs;
         this.settingsFile = settingsFile;
     }
 
@@ -57,7 +60,7 @@ public final class WebAdminLifecycle {
                 LOGGER.info("Mob Armory: web admin is turned off in {}", settingsFile);
                 return;
             }
-            running = AdminHttpServer.start(admin, settings);
+            running = AdminHttpServer.start(admin, mobs, settings);
             LOGGER.info("Mob Armory: web admin at {}", running.uri());
         } catch (IOException | IllegalStateException e) {
             problem = e.getMessage();

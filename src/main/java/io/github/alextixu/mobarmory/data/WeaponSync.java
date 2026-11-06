@@ -9,11 +9,14 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.BiConsumer;
 
 /**
  * What the server tells each client about weapons (decision Q3 B, review-01 risk 4): the definitions in effect, in the
@@ -34,14 +37,31 @@ public final class WeaponSync {
         return weapons;
     }
 
-    /** The uploaded (not built-in) textures the weapons in effect use, as name → PNG. */
-    public static Map<String, byte[]> uploadedTexturesInUse(EquipmentLibrary library, WeaponStore store) throws IOException {
+    /**
+     * The uploaded (not built-in) textures the weapons in effect use, as name → PNG, ready to send to players.
+     * <p>
+     * Each file is read from disk again and checked with {@link PngCheck} first: a file replaced by hand after the
+     * weapon was loaded could be too big or not a PNG, and a client would refuse it or drop the connection while
+     * decoding it (review-03 P2-8). Such a file is left out and passed to {@code unusable} with the reason.
+     *
+     * @param unusable told each texture left out, with the reason
+     */
+    public static Map<String, byte[]> uploadedTexturesInUse(EquipmentLibrary library, WeaponStore store,
+                                                            BiConsumer<String, String> unusable) throws IOException {
         Map<String, byte[]> textures = new LinkedHashMap<>();
+        Set<String> seen = new HashSet<>();
         for (EquipmentDefinition definition : library.current().all()) {
             if (definition.look() instanceof EquipmentLook.Texture texture && !BuiltInTextures.contains(texture.texture())
-                && !textures.containsKey(texture.texture())) {
+                && seen.add(texture.texture())) {
                 Optional<byte[]> png = store.texture(texture.texture());
-                png.ifPresent(bytes -> textures.put(texture.texture(), bytes));
+                if (png.isPresent()) {
+                    Optional<String> problem = PngCheck.problem(png.get());
+                    if (problem.isPresent()) {
+                        unusable.accept(texture.texture(), problem.get());
+                    } else {
+                        textures.put(texture.texture(), png.get());
+                    }
+                }
             }
         }
         return textures;

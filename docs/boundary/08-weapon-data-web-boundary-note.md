@@ -9,7 +9,7 @@
 需求來源：使用者 2026-11-06 的指示（「都做」）、「我們只要做到學長說的可以上傳武器，並且還有數值的部分才是重點」、「要能上傳 PNG」。
 
 - **A. R2b**：武器的定義（id、欄位、數值修飾、外觀）改從 JSON 設定檔讀，加武器、改數值都不用改 Java。外觀有三種：借用原版物品、jar 裡的 7 張內建貼圖、上傳的 PNG。現有 4 件裝備搬成 JSON，行為不變。
-- **B. R6**：伺服器端開 API。網頁可以列出伺服器上的武器和數值、修改數值和外觀、新增武器（可以上傳 PNG，重開後生效）。改了以後，玩家手上那把照 R2 Q6 生效。怪物先在 API 留位置。
+- **B. R6**：伺服器端開 API。網頁可以列出伺服器上的武器和數值、修改數值和外觀、新增武器（可以上傳 PNG，重開後生效）。改了以後，玩家手上那把照 R2 Q6 生效。怪物先在 API 留位置；R4 合進 main 後，2026-11-07 補上唯讀的怪物清單（`web/MobAdmin`）。
 - **多人一致**（review-01 風險 4）：另一台電腦連進來，名稱、tooltip、貼圖都要和伺服器一樣。
 - **示範影片**：在網頁後台改重劍的攻擊力，回遊戲砍殭屍，傷害跟著變。
 
@@ -50,7 +50,7 @@ web/              （純 Java）WeaponAdmin、WeaponApi、AdminHttpServer、WebS
 forge/            ServerWeaponAdmin、WeaponLooks（武器帶著目前外觀）、WeaponSyncChannel（定義＋PNG 封包）、
                   WebAdminLifecycle、ReloadCommand、EquipmentItem、EquipmentItemFactory、EquipmentStatApplier、WeaponStartup
 forge/client/     GeneratedWeaponPack（執行時資源包）、ClientTextures（從伺服器收到的 PNG）、ClientResourceReload
-resources/        mobarmory/default_weapons/*.json；assets/mobarmory/textures/item/（7 張＋CREDITS.md）；
+resources/        mobarmory/default_weapons/*.json；assets/mobarmory/textures/item/（7 張）；mobarmory/CREDITS.md（2026-11-07 從貼圖旁邊搬來）；
                   assets/mobarmory/items/look/、models/item/look/（7 種內建外觀）；assets/mobarmory/items/<4 件預設>.json；
                   mobarmory/web/（index.html、app.js、style.css）
 ```
@@ -84,7 +84,7 @@ config/mobarmory/
 | `PUT /api/v1/weapons/{id}` | 改名稱、數值、外觀（後存的蓋掉先存的） | 200／400／404 |
 | `POST /api/v1/weapons` | 新增武器 | 202（待重開）／400 |
 | `POST /api/v1/reload` | 從檔案重新載入 | 200／400 |
-| `GET /api/v1/mobs` | **預留給 R4** | 501 |
+| `GET /api/v1/mobs` | 怪物清單，唯讀（R4 合進 main 後，2026-11-07 補上；原本是預留的 501） | 200；其他方法 405 |
 
 ### 四件事
 

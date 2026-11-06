@@ -1,6 +1,7 @@
 # 行為報告：R3 combo（最小版，combo 定義是 JSON 檔）
 
-> boundary-first 第 6 步。日期：2026-11-07（夜間）。分支 `feature/r3-combo`（worktree `mod-damage-hud`），先合了 main `061e7a9`（含 R2b、R6、R4、D1）。只在本機，沒有 push、沒有合併。
+> boundary-first 第 6 步。日期：2026-11-07（夜間）。分支 `feature/r3-combo`（worktree `mod-damage-hud`），先合了 main `061e7a9`（含 R2b、R6、R4、D1）。
+> **合併到 main**：依 review-04 X1，再合了 main `56423bd`（合併 commit MERGE_COMMIT）。合併後單元 450/450、遊戲內 68/68（含原版 1 個），由架構師快轉 main，見[第 8 節](#8-合併到-main2026-11-07-夜間review-04-x1)。下面第 1～7 節是合併前的數字和內容。
 > 結果：**單元測試 396/396**（基準 322 ＋ 新增 74）、**遊戲內系統測試 64/64**（基準 57 ＋ 新增 7；伺服器報告「All 65 required tests passed」，多的一個是原版的 `always_pass`）。
 > 指令：`gradlew clean build runGameTestServer`，遊戲內報告在 `run-gametest/gametest-report.xml`（65 個 testcase、0 個 failure）。
 > **決策狀態**：使用者沒有回答 [19](19-r3-combo-open-questions.md) 的問題。主 session 依使用者夜間授權**採用建議值**；同一晚又依使用者主軸把 Q2 改成 JSON 檔。全部**待使用者確認**，見 19 的決定紀錄。
@@ -246,7 +247,8 @@ LivingDamageEvent ─▶ D1：HitReport（含 combo 名稱）─▶ action bar�
   - 同時間其他 session 也在這台機器跑 Java，HTTP 來回一旦超過 1 秒就失敗。
   - 失敗時，網頁那次存檔（重劍攻擊 +16）其實已經生效，但還原（`LiveEditGameTests.restore()`）寫在等待成功之後的那一步，沒有執行到。後面的批次就讀到被改過的重劍：4 ＋ 16 = 20。
 - 和 R3 無關：失敗的那兩次，combo 的批次都排在網頁批次前面，所以我一度懷疑是 combo 測試執行的 `/mobarmory reload` 造成的。但之後兩次同樣是 combo 在前，都全過，排除了這個可能。
-- 建議（R2b 的檔案，這次沒有改）：
+- **合併 main 後已解決**：架構師在 main `3789ffb` 修了這個測試的時間，合併後用的是修過的版本（第 8 節）。
+- 原本的建議（R2b 的檔案，這次沒有改）：
   - 等待改成看實際時間，例如等到 10 秒。
   - `restore()` 改成不管成功或失敗都會執行，避免一個測試失敗連帶弄壞其他測試。
 
@@ -261,13 +263,52 @@ LivingDamageEvent ─▶ D1：HitReport（含 combo 名稱）─▶ action bar�
 | 每把武器自己的 combo（Q7 B） | 可以在 combo 檔加一個「哪些武器能用」的欄位，不用改武器檔 |
 | 奔跑門檻放進設定檔 | 目前在 `ModCombos`（C7） |
 
-## 8. 合併注意（給主 session）
+## 8. 合併到 main（2026-11-07 夜間，review-04 X1）
 
-- 這個分支已經包含 main `061e7a9`。之後合進 main 時，可能和架構師今晚的改動衝突的地方：
-  - `MobArmoryMod`：`COMBO_FILES` 欄位、`ReloadCommand` 那一行、`ComboListener` 註冊、啟動 log。
-  - `ReloadCommand`：建構子和 `reload` 拆成兩段。
-  - `en_us.json`：reload 的 3 行加在 `commands.mobarmory.reload.io` 後面，`mobarmory.hit.combo` 加在最後。
-  - `WeaponFolder`、`DefaultWeapons`、`WeaponJson`、`WeaponLoadException`：為了共用改的幾行。
-  - `MobArmoryGameTests`：註冊一行。
-- 新的遊戲內測試環境 `test_environment/combo_files.json`：`combo_new_file_adds_a_combo` 自己一個批次。
-- `docs/boundary/README.md` 沒有改（由架構師維護），需要時請在索引加上 17～20。
+- **做法**：在 `feature/r3-combo` 執行 `git merge --no-ff 56423bd`（main：段落 E 的 `6a3e1fc` 加上架構師修的文件）。合併 commit 是 MERGE_COMMIT，架構師之後把 main 快轉過來。沒有 rebase，沒有動 main，沒有 push。每一步的 SOLID／Pattern 檢查見 [prompts/r3-combo-round-03-merge.md](prompts/r3-combo-round-03-merge.md)。
+- **測試**：`gradlew clean build runGameTestServer` 全過。
+
+| | main `56423bd` | 分支（合併前 `7c8b082`） | 合併後 |
+|---|---|---|---|
+| 單元 | 375 | 396 | **450**（375 ＋ combo 的 74 ＋ 合併時新增的 1） |
+| 遊戲內 | 60 | 64 | **67**（基準 57 ＋ main 的 3 ＋ combo 的 7） |
+| 伺服器報告 | 61 | 65 | **68**（含原版 `always_pass`） |
+
+review-04 預估的是單元 449。多出的 1 個是合併時新增的 `JsonFolderTest.aMissingFolderListsNothing`：數值資料夾不存在時要回空的，這個行為現在由共用的 `JsonFolder` 負責，所以補一個測試守住。
+
+### 文字衝突（3 個檔案、5 處，照 review-04 3-1）
+
+| 檔案 | 怎麼解 |
+|---|---|
+| `G/MobArmoryGameTests.java` | 兩行註冊都留：`StatFileGameTests`、`ComboGameTests` |
+| `M/forge/MobArmoryMod.java`，import 區 | 全留：`ComboEffectTypes`、`ComboFiles`、`ComboLoader`、`JsonFolder`、`StatFolder`、`StatSetup` |
+| `M/forge/MobArmoryMod.java`，啟動 log | 合成一行：`{} stats from {}, {} pieces of equipment from {}, {} mobs, {} combos from {}`。數值數量用 main 的 `STATS.catalog().size()`，玩家加的數值才會算進去 |
+| `M/data/WeaponFolder.java`（2 處） | 用分支的版本（`JsonFolder`） |
+
+### 語意衝突：兩份一樣的寫檔程式（照 review-04 3-2）
+
+main 的段落 E 從 `WeaponFolder` 抽出了一個 package-private 的共用類別，分支則抽出了 `JsonFolder`，兩者是同一段程式抽出來的兩份。合併後收成一份：
+
+- `StatFolder` 改成持有 `new JsonFolder(root.resolve("stats"))`：讀用 `files()`，寫用 `write(id.value(), json)`。`StatStoreContractTest` 照樣通過。
+- 刪掉 main 抽出的那個共用類別。程式碼裡（`src/`）搜尋它的名字沒有結果，原子寫入只剩 `JsonFolder` 一份。
+- `JsonFolder.list` 在資料夾不存在時也回空的，和原本那份一樣，所以三種資料夾的行為一致。新增 `JsonFolderTest.aMissingFolderListsNothing` 守住這一點。
+- `JsonFolder.write` 的 id 規則從 `[a-z0-9_]{1,64}` 改成 `[a-z][a-z0-9_]*`，和 `EquipmentId`、`StatId` 一樣，沒有長度上限。
+- 同時把 combo id（`ComboDefinition`）也改成同一條規則，否則會有 combo 讀得進來、卻寫不出去的 id，例如 `2hit`。影響：以數字或底線開頭的 combo 檔名會被拒絕，訊息寫出檔名。`ComboCatalogTest`、`JsonFolderTest` 加了這兩種例子。
+
+### 自動合併、看過一眼的檔案
+
+- `ReloadCommand`、`WeaponJson`、`WeaponLoadException`、`DefaultWeapons`、`CombatObserver`、D1 的 6 個類別、`en_us.json`、`FeedbackGameTests`：只有分支改過，內容就是分支的版本。
+- `build.gradle`、`GeneratedWeaponPack`、`WebAdminGameTests`：只有 main 改過。`WebAdminGameTests` 用的是 main `3789ffb` 修過的版本，第 6-1 節的逾時問題跟著解決。
+- combo 的遊戲內測試讀 `run-gametest/config/mobarmory/combos/`。main 的 `build.gradle` 只複製 `src/gametest/config/` 的數值檔，combos 資料夾一開始不存在，預設檔照常裝上。這次 7 個 combo 測試都通過。
+
+### 文件（照 review-04 3-3）
+
+- `README.md`：
+  - combo 那一列改「已完成」，並新增「加一個 combo」一節。
+  - `/mobarmory reload` 也重新載入 combo；網頁的重新載入只載入武器。
+  - 多人規則補一段：combo 只有伺服器需要。
+  - 刪掉「R3 combo 還沒進 main」，改成「combo 不能在網頁新增或修改」。
+  - 更新測試數字，索引改連到 17～20。
+- `docs/boundary/README.md`：加 R3 一節。
+- 16 號第 9 節 I 列：`CombatObserver` 改成三個方法。
+- 27 號：S 列和結構表改成 `JsonFolder`。

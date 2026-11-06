@@ -22,4 +22,13 @@ public final class ClientTextures {
     public static Optional<byte[]> get(String name) {
         return Optional.ofNullable(RECEIVED.get(name)).map(byte[]::clone);
     }
+
+    /**
+     * Forgets everything a server sent, when the player leaves it (review-03 P2-8), so the next world uses this game's
+     * own textures. What is already on screen changes at the next resource reload, which the next world's sync asks
+     * for if its textures differ.
+     */
+    public static void clear() {
+        RECEIVED.clear();
+    }
 }

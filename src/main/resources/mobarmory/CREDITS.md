@@ -2,6 +2,9 @@
 
 Weapon textures by HanhanPx — https://hanhanpx.itch.io/minecraft-weapon-pack
 
+The files below are in `assets/mobarmory/textures/item/`. This credit file lives outside `assets/` because a
+resource pack only allows lower-case file names there.
+
 Files from that pack, unchanged (downloaded 2026-11-06, `Assets.zip`, SHA-256 `D440B9F59D7841581B3F6C2BF97629158D761AB2E4B75C6F97791ED0DD8FEF3A`):
 
 | File | From the pack |

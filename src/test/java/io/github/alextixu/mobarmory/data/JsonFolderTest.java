@@ -44,7 +44,7 @@ class JsonFolderTest {
     }
 
     @Test
-    @DisplayName("只讀 .json，id 是檔名去掉 .json；寫入的 id 不能跳出資料夾")
+    @DisplayName("只讀 .json，id 是檔名去掉 .json；寫入的 id 和武器、數值的 id 同一條規則，不能跳出資料夾")
     void readsJsonOnlyAndKeepsWritesInside(@TempDir Path root) throws Exception {
         JsonFolder folder = new JsonFolder(root.resolve("combos"));
         folder.write("spin", "{}");
@@ -53,9 +53,17 @@ class JsonFolderTest {
         List<JsonFolder.DataFile> files = folder.files();
         assertEquals(1, files.size());
         assertEquals("spin", files.getFirst().id());
-        for (String bad : List.of("../spin", "Spin", "a/b", "")) {
+        for (String bad : List.of("../spin", "Spin", "a/b", "", "2hit", "_spin")) {
             assertThrows(IllegalArgumentException.class, () -> folder.write(bad, "{}"), bad);
         }
+        folder.write("a" + "b".repeat(80), "{}"); // no length limit, like EquipmentId and StatId
+    }
+
+    @Test
+    @DisplayName("資料夾不存在時列出來是空的（數值、武器、combo 都靠這個）")
+    void aMissingFolderListsNothing(@TempDir Path root) throws Exception {
+        assertTrue(new JsonFolder(root.resolve("nothing_here")).files().isEmpty());
+        assertTrue(JsonFolder.list(root.resolve("nothing_here"), ".png").isEmpty());
     }
 
     @Test

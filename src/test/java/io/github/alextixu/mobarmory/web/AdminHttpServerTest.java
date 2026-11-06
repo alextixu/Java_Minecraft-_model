@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.alextixu.mobarmory.content.ModMobs;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,7 +40,7 @@ class AdminHttpServerTest {
     }
 
     private AdminHttpServer start(String token) throws IOException {
-        server = AdminHttpServer.start(admin, new WebSettings(true, "127.0.0.1", 0, token));
+        server = AdminHttpServer.start(admin, ModMobs::catalog, new WebSettings(true, "127.0.0.1", 0, token));
         return server;
     }
 
@@ -92,6 +93,22 @@ class AdminHttpServerTest {
             .header("Origin", "http://127.0.0.1:" + server.port()));
 
         assertEquals(200, saved.statusCode(), saved.body());
+    }
+
+    @Test
+    @DisplayName("H10 透過 HTTP 讀怪物清單（JSON）；怪物只能看，送修改 → 405")
+    void mobsAreReadOnlyOverHttp() throws Exception {
+        start("");
+        HttpResponse<String> mobs = send(HttpRequest.newBuilder(uri("/api/v1/mobs")));
+
+        assertEquals(200, mobs.statusCode(), mobs.body());
+        assertTrue(mobs.headers().firstValue("Content-Type").orElse("").startsWith("application/json"));
+        assertTrue(mobs.body().contains("\"brute\"") && mobs.body().contains("\"skirmisher\""), mobs.body());
+
+        HttpResponse<String> change = send(HttpRequest.newBuilder(uri("/api/v1/mobs"))
+            .header("Content-Type", "application/json").header("Origin", "http://127.0.0.1:" + server.port())
+            .POST(HttpRequest.BodyPublishers.ofString("{}")));
+        assertEquals(405, change.statusCode(), change.body());
     }
 
     @Test
@@ -153,7 +170,7 @@ class AdminHttpServerTest {
     @DisplayName("B14 埠已經被佔用 → 丟出 IOException（遊戲端只記警告，照常進行）")
     void portInUse() throws Exception {
         start("");
-        assertThrows(IOException.class, () -> AdminHttpServer.start(admin, new WebSettings(true, "127.0.0.1", server.port(), "")));
+        assertThrows(IOException.class, () -> AdminHttpServer.start(admin, ModMobs::catalog, new WebSettings(true, "127.0.0.1", server.port(), "")));
     }
 
     @Test

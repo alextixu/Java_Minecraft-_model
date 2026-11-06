@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:stat_files_reach_every_mob",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

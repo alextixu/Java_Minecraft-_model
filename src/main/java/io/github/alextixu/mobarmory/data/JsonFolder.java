@@ -13,13 +13,17 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * One folder of {@code <id>.json} data files in the game folder, such as {@code config/mobarmory/weapons/} or
- * {@code config/mobarmory/combos/}. Every kind of data file is listed, read and written the same way: sorted by file
- * name, read as UTF-8, and written all or nothing (R2b decision O2), so a crash never leaves half a file.
+ * One folder of {@code <id>.json} data files in the game folder: {@code config/mobarmory/weapons/},
+ * {@code stats/} and {@code combos/}. Every kind of data file is listed, read and written the same way: sorted by file
+ * name, read as UTF-8, and written all or nothing (R2b decision O2), so a crash never leaves half a file. This is the
+ * one place with those file details.
  */
 public final class JsonFolder {
-    /** File ids that can never escape the folder: lowercase letters, digits and underscores. */
-    private static final Pattern ID = Pattern.compile("[a-z0-9_]{1,64}");
+    /**
+     * File ids that can never escape the folder, the same rule as {@code EquipmentId}, {@code StatId} and combo ids:
+     * a lowercase letter, then lowercase letters, digits and underscores.
+     */
+    private static final Pattern ID = Pattern.compile("[a-z][a-z0-9_]*");
 
     private final Path folder;
 
@@ -47,9 +51,6 @@ public final class JsonFolder {
     /** Every {@code *.json} file, sorted by file name; none if the folder does not exist. */
     public List<DataFile> files() throws IOException {
         List<DataFile> files = new ArrayList<>();
-        if (!exists()) {
-            return files;
-        }
         for (Path file : list(folder, ".json")) {
             files.add(new DataFile(file.getFileName().toString(), Files.readString(file, StandardCharsets.UTF_8)));
         }
@@ -64,8 +65,11 @@ public final class JsonFolder {
         writeAtomically(folder, id + ".json", json.getBytes(StandardCharsets.UTF_8));
     }
 
-    /** Regular files in a folder with this extension, sorted by name. */
+    /** Regular files in a folder with this extension, sorted by name; none if the folder does not exist. */
     static List<Path> list(Path folder, String extension) throws IOException {
+        if (!Files.isDirectory(folder)) {
+            return List.of();
+        }
         try (Stream<Path> files = Files.list(folder)) {
             return files.filter(Files::isRegularFile)
                 .filter(file -> file.getFileName().toString().endsWith(extension))
