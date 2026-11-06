@@ -1,0 +1,14 @@
+{
+  "format": 1,
+  "name": "Evasion Chestplate",
+  "slot": "chest",
+  "look": {
+    "item": "minecraft:chainmail_chestplate"
+  },
+  "modifiers": [
+    {
+      "stat": "dodge_chance",
+      "add": 0.15
+    }
+  ]
+}

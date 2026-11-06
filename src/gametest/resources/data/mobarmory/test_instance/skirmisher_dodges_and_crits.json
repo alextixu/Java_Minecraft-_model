@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:skirmisher_dodges_and_crits",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

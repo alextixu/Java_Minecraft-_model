@@ -7,3 +7,6 @@ src/generated/**/*.json text eol=lf
 # Keep the Unix wrapper script runnable on Linux/macOS, and the Windows one on Windows
 gradlew text eol=lf
 *.bat text eol=crlf
+
+# Weapon files are compared byte for byte after a save (see WeaponJsonTest)
+src/main/resources/mobarmory/**/*.json text eol=lf

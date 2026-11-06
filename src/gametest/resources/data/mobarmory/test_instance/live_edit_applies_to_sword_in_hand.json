@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:live_edit",
+  "function": "mobarmory:live_edit_applies_to_sword_in_hand",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

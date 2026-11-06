@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:mob_drops_no_equipment_and_5_xp",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

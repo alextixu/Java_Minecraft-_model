@@ -5,11 +5,13 @@ import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.checkNear
 import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.stats;
 import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.test;
 
+import io.github.alextixu.mobarmory.content.ModMobs;
 import io.github.alextixu.mobarmory.content.ModStats;
 import io.github.alextixu.mobarmory.core.feedback.HitReport;
 import io.github.alextixu.mobarmory.core.feedback.HitResult;
 import io.github.alextixu.mobarmory.core.feedback.Party;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
+import io.github.alextixu.mobarmory.forge.ArmoryMob;
 import io.github.alextixu.mobarmory.forge.MobArmoryMod;
 import io.github.alextixu.mobarmory.forge.feedback.ActionBarDisplay;
 import io.github.alextixu.mobarmory.forge.feedback.HitDisplay;
@@ -29,6 +31,7 @@ import net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -63,6 +66,7 @@ final class FeedbackGameTests {
         test("hud_environment_and_mob_fights_reach_nobody", FeedbackGameTests::environmentAndMobFightsReachNobody);
         test("hud_cooldown_and_stale_crit", FeedbackGameTests::cooldownAndStaleCrit);
         test("hud_reads_damage_after_other_mods", FeedbackGameTests::readsDamageAfterOtherMods);
+        test("hud_skirmisher_crit_and_dodge", FeedbackGameTests::skirmisherCritAndDodge);
     }
 
     // ---------------------------------------------------------------- recorders
@@ -134,6 +138,10 @@ final class FeedbackGameTests {
 
     private static void setBase(LivingEntity entity, StatDefinition stat, double value) {
         entity.getAttribute(stats().holder(stat.id())).setBaseValue(value);
+    }
+
+    private static double value(LivingEntity entity, StatDefinition stat) {
+        return entity.getAttributeValue(stats().holder(stat.id()));
     }
 
     private static void setAttack(ServerPlayer player, double damage) {
@@ -472,5 +480,125 @@ final class FeedbackGameTests {
             LivingDamageEvent.BUS.removeListener(halving);
         }
         helper.succeed();
+    }
+
+    // ---------------------------------------------------------------- D1 with R4's mobs (review 02, 6-3 e)
+
+    /**
+     * D1 + R4: the skirmisher fights a player with its own stats, nothing overridden (crit 0.25 + dagger 0.25 = 0.5,
+     * dodge 0.30, attack 2 + dagger 2 = 4). The display has no special case for R4's mobs; this shows the general
+     * rules reach them:
+     * <ol>
+     *   <li>The skirmisher hits the player: a red "Skirmisher hit you" line, and on its crits "CRIT" with 1.5 times
+     *       a normal hit. The skirmisher is not a player, so only the player gets lines.</li>
+     *   <li>The player swings at the skirmisher and it dodges: a gray "Skirmisher MISS" line, no health lost.</li>
+     *   <li>A player with dodge at its cap dodges the skirmisher: a gray "Dodged Skirmisher" line.</li>
+     * </ol>
+     */
+    static void skirmisherCritAndDodge(GameTestHelper helper) {
+        ArmoryMob skirmisher = helper.spawn(MobArmoryMod.MOBS.type(ModMobs.SKIRMISHER.id()), new BlockPos(12, 0, 12),
+            EntitySpawnReason.SPAWN_ITEM_USE);
+        ServerPlayer player = hurtablePlayer(helper);
+        helper.startSequence()
+            .thenWaitUntil(() -> checkNear(helper, 4, value(skirmisher, ModStats.ATTACK_DAMAGE), "skirmisher attack with dagger"))
+            .thenExecute(() -> {
+                checkNear(helper, 0.5, value(skirmisher, ModStats.CRIT_CHANCE), "skirmisher crit chance with dagger");
+                checkNear(helper, 0.30, value(skirmisher, ModStats.DODGE_CHANCE), "skirmisher dodge chance");
+                String name = skirmisher.getDisplayName().getString();
+                try (Recorder recorder = new Recorder(player)) {
+                    skirmisherCritsPlayer(helper, recorder, skirmisher, player, name);
+                    skirmisherDodgesPlayer(helper, recorder, skirmisher, player, name);
+                    playerDodgesSkirmisher(helper, recorder, skirmisher, player, name);
+                }
+            })
+            .thenSucceed();
+    }
+
+    private static void skirmisherCritsPlayer(GameTestHelper helper, Recorder recorder, ArmoryMob skirmisher,
+                                              ServerPlayer player, String name) {
+        double normal = Double.NaN;
+        double crit = Double.NaN;
+        for (int i = 0; i < TRIES && (Double.isNaN(normal) || Double.isNaN(crit)); i++) {
+            recorder.clear();
+            player.setHealth(player.getMaxHealth());
+            player.damageCooldownTime = 0;
+            float before = player.getHealth();
+            skirmisher.doHurtTarget(helper.getLevel(), player);
+            double lost = before - player.getHealth();
+
+            Shown shown = recorder.last();
+            check(helper, shown != null && shown.report().attacker() == Party.MOB, "hit " + i + ": reported with a mob attacker");
+            checkNear(helper, lost, shown.report().damage(), "hit " + i + ": report = health the player lost");
+            check(helper, recorder.sent.size() == 1, "hit " + i + ": only the player gets a line, got " + recorder.sent.size());
+            Sent line = recorder.sentTo(player).getFirst();
+            check(helper, line.name().equals(name), "hit " + i + ": the line names the skirmisher, got " + line.name());
+            checkColor(helper, line, ChatFormatting.RED);
+            if (shown.report().result() == HitResult.CRITICAL) {
+                check(helper, line.key().equals("mobarmory.hit.taken.crit"), "a crit shows CRIT, got " + line.key());
+                crit = lost;
+            } else {
+                check(helper, shown.report().result() == HitResult.HIT, "the player cannot dodge yet, got " + shown.report().result());
+                check(helper, line.key().equals("mobarmory.hit.taken"), "a normal hit has no CRIT, got " + line.key());
+                normal = lost;
+            }
+        }
+        check(helper, !Double.isNaN(crit) && !Double.isNaN(normal),
+            "with 50% crit, " + TRIES + " skirmisher hits should include a crit and a normal hit");
+        checkNear(helper, normal * 1.5, crit, "the CRIT line shows 1.5 times a normal hit");
+    }
+
+    private static void skirmisherDodgesPlayer(GameTestHelper helper, Recorder recorder, ArmoryMob skirmisher,
+                                               ServerPlayer player, String name) {
+        boolean sawMiss = false;
+        for (int i = 0; i < TRIES && !sawMiss; i++) {
+            recorder.clear();
+            skirmisher.setHealth(skirmisher.getMaxHealth());
+            skirmisher.damageCooldownTime = 0;
+            ready(player);
+            double lost = swing(player, skirmisher);
+
+            Shown shown = recorder.last();
+            check(helper, shown != null, "swing " + i + ": every swing at the skirmisher is reported");
+            Sent line = recorder.sentTo(player).getLast();
+            check(helper, line.name().equals(name), "swing " + i + ": the line names the skirmisher, got " + line.name());
+            if (shown.report().result() == HitResult.DODGED) {
+                sawMiss = true;
+                checkNear(helper, 0, lost, "a dodged swing takes no health");
+                check(helper, line.key().equals("mobarmory.hit.dealt.miss"), "the skirmisher's dodge shows MISS, got " + line.key());
+                checkColor(helper, line, ChatFormatting.GRAY);
+            } else {
+                check(helper, line.key().equals("mobarmory.hit.dealt"), "a swing that lands is a normal line, got " + line.key());
+            }
+        }
+        check(helper, sawMiss, "with the skirmisher's 30% dodge, " + TRIES + " swings should include a MISS");
+    }
+
+    private static void playerDodgesSkirmisher(GameTestHelper helper, Recorder recorder, ArmoryMob skirmisher,
+                                               ServerPlayer player, String name) {
+        setBase(player, ModStats.DODGE_CHANCE, 0.75);
+        try {
+            boolean sawDodge = false;
+            for (int i = 0; i < TRIES && !sawDodge; i++) {
+                recorder.clear();
+                player.setHealth(player.getMaxHealth());
+                player.damageCooldownTime = 0;
+                float before = player.getHealth();
+                skirmisher.doHurtTarget(helper.getLevel(), player);
+
+                Shown shown = recorder.last();
+                check(helper, shown != null, "hit " + i + ": every skirmisher hit on the player is reported");
+                if (shown.report().result() == HitResult.DODGED) {
+                    sawDodge = true;
+                    checkNear(helper, before, player.getHealth(), "a dodged hit takes no health");
+                    Sent line = recorder.sentTo(player).getLast();
+                    check(helper, line.key().equals("mobarmory.hit.taken.miss"), "the player's dodge shows Dodged, got " + line.key());
+                    check(helper, line.name().equals(name), "the line names the skirmisher, got " + line.name());
+                    checkColor(helper, line, ChatFormatting.GRAY);
+                }
+            }
+            check(helper, sawDodge, "with 75% dodge, " + TRIES + " skirmisher hits should include a dodge");
+        } finally {
+            setBase(player, ModStats.DODGE_CHANCE, 0.0);
+        }
     }
 }

@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:live_edit",
+  "function": "mobarmory:mob_spawns_without_deleted_weapon",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

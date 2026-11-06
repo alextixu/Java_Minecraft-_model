@@ -25,15 +25,61 @@
 
 ## R4：自訂怪物（驗收 T2）
 
+R4 由另一個 session 在 `feature/r4-mobs` 分支做，2026-11-07 合進 main（`96b9262`）。
+
 | 檔案 | 內容 | 狀態 |
 |---|---|---|
-| [05-r4-boundary-note.md](05-r4-boundary-note.md) | 需求翻譯、平台限制、變更邊界、實作順序、測試計畫 | 草案 |
-| [06-r4-given-when-then.md](06-r4-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 草案 |
-| [07-r4-open-questions.md](07-r4-open-questions.md) | 待使用者決定的問題（設計 3 題、商業規則 4 題、其他 10 項） | 等待回覆 |
+| [05-r4-boundary-note.md](05-r4-boundary-note.md) | 需求翻譯、平台限制、變更邊界、實作順序、測試計畫 | 已確認 |
+| [06-r4-given-when-then.md](06-r4-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 已確認 |
+| [07-r4-open-questions.md](07-r4-open-questions.md) | 確認點的問題與決定（設計 3 題、商業規則 4 題、其他 10 項，加上第三輪的 Q8、第四輪的 O2 裝備部分） | 已決定（全部照建議；Q8 選 B；O2 的裝備部分 11/07 改成 B） |
+| [14-r4-behavior-report.md](14-r4-behavior-report.md) | 行為報告：結構摘要、各層測試數量、Given / When / Then 對照、T2 實測（加第 3 種怪物）、合併到 main 的紀錄（第 8 節） | 已產出（合併 main 後：單元 268/268、遊戲內 48/48，含原版 1 個） |
+| [prompts/round-r4-02-decisions.md](prompts/round-r4-02-decisions.md)、[round-r4-03-merge.md](prompts/round-r4-03-merge.md) | R4 的決定和合併 main 時的 prompt | 2026-11-07 |
+
+## D1：砍怪傷害顯示（action bar）
+
+D1 由另一個 session 在 `feature/damage-hud` 分支做，2026-11-07 合進 main（`d2382b9`）。
+
+| 檔案 | 內容 | 狀態 |
+|---|---|---|
+| [11-damage-display-boundary-note.md](11-damage-display-boundary-note.md) | 需求翻譯、平台限制、變更邊界、實作順序、測試計畫 | 已確認（只做 action bar，Q4 C） |
+| [12-damage-display-given-when-then.md](12-damage-display-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 已確認 |
+| [13-damage-display-open-questions.md](13-damage-display-open-questions.md) | 確認點的問題與決定（照審查員 review-01 X3 縮小成只做 action bar） | 已決定 |
+| [16-damage-display-behavior-report.md](16-damage-display-behavior-report.md) | 行為報告：結構摘要、各層測試數量、Given / When / Then 對照、沒有覆蓋的範圍、合併到 main 的紀錄（第 8 節） | 已產出（合併 R4 後：單元 322/322、遊戲內 58/58，含原版 1 個） |
+| [prompts/damage-display-round-01～03](prompts/) | D1 的邊界草案、決定、合併的 prompt | 2026-11-07 |
+
+## R2b ＋ R6：武器改成資料驅動、網頁後台
+
+| 檔案 | 內容 | 狀態 |
+|---|---|---|
+| [08-weapon-data-web-boundary-note.md](08-weapon-data-web-boundary-note.md) | 需求翻譯、平台限制、變更邊界、給其他模組的穩定介面、網頁 API、實作順序、測試計畫 | 已確認（最終版） |
+| [09-weapon-data-web-given-when-then.md](09-weapon-data-web-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 已確認（最終版） |
+| [10-weapon-data-web-open-questions.md](10-weapon-data-web-open-questions.md) | 確認點的問題與決定，含決定的經過（先「全部照建議」，後改「照審查建議版」） | 已決定 |
+| [15-weapon-data-web-behavior-report.md](15-weapon-data-web-behavior-report.md) | 行為報告：第一版和最終版的差別、結構、給 R4／D1 的穩定介面、各層測試數量、Given / When / Then 對照、實測紀錄、沒有覆蓋的範圍、示範影片劇本、SOLID／Pattern 檢查（第 11 節） | 已產出（單元 237/237、遊戲內 29/29） |
+
+## 合併到 main（2026-11-07）
+
+使用者 11/07 決定「合併」。架構師把 main 依序快轉，`40ee556`（R2b＋R6）→ `96b9262`（R4）→ `d2382b9`（D1），然後補這份索引。每一步的 SOLID、Pattern、變更邊界檢查見 [prompts/round-06-merge.md](prompts/round-06-merge.md)，結論是沒有衝突。
+
+| 項目 | 結果（main 重跑 `gradlew clean build runGameTestServer`） |
+|---|---|
+| 單元測試 | **322 / 322** |
+| 遊戲內系統測試 | **58 / 58**（我們的 57 個加原版 `always_pass`） |
+
+## 文件編號
+
+| 編號 | 內容 | 誰寫 |
+|---|---|---|
+| 01～04 | R1＋R2 | 架構師（原 `mc-dev`） |
+| 05～07、14 | R4 自訂怪物（邊界、行為報告） | R4 的 session |
+| 08～10、15 | R2b＋R6（邊界、行為報告） | 架構師（原 `mc-dev`） |
+| 11～13、16 | D1 砍怪傷害顯示（邊界、行為報告） | `damage-hud` |
+| 17～19、20 | R3 combo（邊界、行為報告） | 之後決定 |
+
+本索引由架構師維護。
 
 ## 之後的功能
 
-R3 combo → R5 多人同步 → R6 網頁與伺服器 API，每一項各跑一次同樣的流程。
+R5 多人同步，跑同樣的流程。
 
 ## 怎麼跑測試
 
@@ -42,4 +88,5 @@ R3 combo → R5 多人同步 → R6 網頁與伺服器 API，每一項各跑一�
 ```
 
 - `build` 會跑單元測試（`core/`、`content/`，不用開遊戲）。
-- `runGameTestServer` 會開一個無畫面的遊戲伺服器跑系統測試（實際執行的是 `runGametestGameTestServer`，載入 `src/gametest` 的測試用模組），結果寫在 `run/gametest-report.xml`，有測試失敗時指令會失敗。測試不會打包進正式 jar。
+- `runGameTestServer` 會開一個無畫面的遊戲伺服器跑系統測試（實際執行的是 `runGametestGameTestServer`，載入 `src/gametest` 的測試用模組），結果寫在 `run-gametest/gametest-report.xml`，有測試失敗時指令會失敗。測試不會打包進正式 jar。
+- 遊戲內測試在獨立的 `run-gametest/` 資料夾跑，每次先清空，所以永遠用模組內建的 4 件預設武器，不受 `run/config/mobarmory/` 裡改過的設定影響（R2b 的 O14）。

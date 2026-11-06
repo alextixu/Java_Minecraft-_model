@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 
 /**
@@ -17,9 +18,18 @@ import java.util.function.ToDoubleFunction;
  * recomputing after a respawn or a relog can never stack the same piece twice (B11, B12).
  */
 public final class LoadoutCalculator {
-    private final EquipmentCatalog equipment;
+    private final Supplier<EquipmentCatalog> equipment;
 
     public LoadoutCalculator(EquipmentCatalog equipment) {
+        Objects.requireNonNull(equipment, "equipment");
+        this.equipment = () -> equipment;
+    }
+
+    /**
+     * Reads the definitions in effect at the time of each calculation, so a definition replaced while the game
+     * runs applies to the next recomputation (R2b; {@link EquipmentLibrary#current()}).
+     */
+    public LoadoutCalculator(Supplier<EquipmentCatalog> equipment) {
         this.equipment = Objects.requireNonNull(equipment, "equipment");
     }
 
@@ -30,6 +40,10 @@ public final class LoadoutCalculator {
      * @param loadout which of our pieces sits in each slot; slots holding nothing or a vanilla item are left out
      */
     public List<StatModifier> activeModifiers(Map<EquipmentSlotKind, EquipmentId> loadout) {
+        return activeModifiers(equipment.get(), loadout);
+    }
+
+    private static List<StatModifier> activeModifiers(EquipmentCatalog equipment, Map<EquipmentSlotKind, EquipmentId> loadout) {
         List<StatModifier> active = new ArrayList<>();
         for (EquipmentSlotKind slot : EquipmentSlotKind.values()) {
             EquipmentId id = loadout.get(slot);
@@ -51,13 +65,14 @@ public final class LoadoutCalculator {
      * @param baseOf  the entity's own base value for a stat
      */
     public Map<StatId, Double> compute(Map<EquipmentSlotKind, EquipmentId> loadout, ToDoubleFunction<StatId> baseOf) {
+        EquipmentCatalog catalog = equipment.get(); // one snapshot for the whole calculation
         Map<StatId, List<StatModifier>> byStat = new LinkedHashMap<>();
-        for (StatModifier modifier : activeModifiers(loadout)) {
+        for (StatModifier modifier : activeModifiers(catalog, loadout)) {
             byStat.computeIfAbsent(modifier.stat(), stat -> new ArrayList<>()).add(modifier);
         }
         Map<StatId, Double> values = new LinkedHashMap<>();
         byStat.forEach((stat, modifiers) -> {
-            StatDefinition definition = equipment.stats().get(stat);
+            StatDefinition definition = catalog.stats().get(stat);
             values.put(stat, StackingRules.value(definition, baseOf.applyAsDouble(stat), modifiers));
         });
         return values;

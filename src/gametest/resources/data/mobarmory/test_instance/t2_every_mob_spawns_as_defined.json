@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:t2_every_mob_spawns_as_defined",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

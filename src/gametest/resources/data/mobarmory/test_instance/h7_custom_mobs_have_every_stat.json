@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:h7_custom_mobs_have_every_stat",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

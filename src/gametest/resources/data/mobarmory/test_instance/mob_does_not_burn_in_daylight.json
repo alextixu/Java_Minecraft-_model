@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:noon",
+  "function": "mobarmory:mob_does_not_burn_in_daylight",
+  "max_ticks": 400,
+  "required": true,
+  "structure": "mobarmory:arena",
+  "sky_access": true
+}

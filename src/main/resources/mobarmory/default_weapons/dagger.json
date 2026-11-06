@@ -1,0 +1,22 @@
+{
+  "format": 1,
+  "name": "Dagger",
+  "slot": "mainhand",
+  "look": {
+    "item": "minecraft:iron_sword"
+  },
+  "modifiers": [
+    {
+      "stat": "attack_damage",
+      "add": 2
+    },
+    {
+      "stat": "crit_chance",
+      "add": 0.25
+    },
+    {
+      "stat": "movement_speed",
+      "percent": 10
+    }
+  ]
+}

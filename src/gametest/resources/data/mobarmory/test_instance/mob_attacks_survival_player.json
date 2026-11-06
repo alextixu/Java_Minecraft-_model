@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:alone_attack",
+  "function": "mobarmory:mob_attacks_survival_player",
+  "max_ticks": 300,
+  "required": true,
+  "structure": "mobarmory:arena"
+}
