@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:combo_counts_only_landed_full_swings",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

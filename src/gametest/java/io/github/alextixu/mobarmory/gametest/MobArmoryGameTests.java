@@ -49,6 +49,7 @@ public final class MobArmoryGameTests {
         WebAdminGameTests.registerAll();
         SyncGameTests.registerAll();
         FeedbackGameTests.registerAll();
+        ComboGameTests.registerAll();
     }
 
     private MobArmoryGameTests() {

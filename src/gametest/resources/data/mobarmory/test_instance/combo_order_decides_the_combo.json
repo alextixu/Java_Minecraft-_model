@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:combo_order_decides_the_combo",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

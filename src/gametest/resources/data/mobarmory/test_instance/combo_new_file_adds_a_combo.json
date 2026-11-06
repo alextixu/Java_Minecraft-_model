@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:combo_files",
+  "function": "mobarmory:combo_new_file_adds_a_combo",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

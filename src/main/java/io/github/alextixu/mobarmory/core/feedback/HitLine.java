@@ -9,6 +9,13 @@ package io.github.alextixu.mobarmory.core.feedback;
  * @param damage         formatted damage, for example {@code "6.9"}
  * @param health         formatted health of the defender after the hit, for example {@code "13.1"} or {@code "0"}
  * @param maxHealth      formatted maximum health of the defender, for example {@code "20"}
+ * @param combo          name of the combo the hit completed (R3), shown after the line with {@link HitText#COMBO_KEY};
+ *                       {@code null} for none
  */
-public record HitLine(String translationKey, Tone tone, String damage, String health, String maxHealth) {
+public record HitLine(String translationKey, Tone tone, String damage, String health, String maxHealth, String combo) {
+
+    /** A line without a combo. */
+    public HitLine(String translationKey, Tone tone, String damage, String health, String maxHealth) {
+        this(translationKey, tone, damage, health, maxHealth, null);
+    }
 }

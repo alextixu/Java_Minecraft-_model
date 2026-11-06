@@ -9,6 +9,7 @@ import io.github.alextixu.mobarmory.content.ModMobs;
 import io.github.alextixu.mobarmory.content.ModStats;
 import io.github.alextixu.mobarmory.core.feedback.HitReport;
 import io.github.alextixu.mobarmory.core.feedback.HitResult;
+import io.github.alextixu.mobarmory.core.feedback.HitText;
 import io.github.alextixu.mobarmory.core.feedback.Party;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
 import io.github.alextixu.mobarmory.forge.ArmoryMob;
@@ -93,10 +94,24 @@ final class FeedbackGameTests {
         TextColor color() {
             return message.getStyle().getColor();
         }
+
+        /** The combo name after the line (R3), or null when the hit completed no combo. */
+        String combo() {
+            for (Component sibling : message.getSiblings()) {
+                if (sibling.getContents() instanceof TranslatableContents suffix && suffix.getKey().equals(HitText.COMBO_KEY)) {
+                    Object name = suffix.getArgs()[0];
+                    return name instanceof Component component ? component.getString() : String.valueOf(name);
+                }
+            }
+            return null;
+        }
     }
 
-    /** Watches the hits on or by the given entities, through the same pipeline as the game. Close it when done. */
-    private static final class Recorder implements AutoCloseable {
+    /**
+     * Watches the hits on or by the given entities, through the same pipeline as the game. Close it when done.
+     * The combo game tests (R3) use it too.
+     */
+    static final class Recorder implements AutoCloseable {
         final List<Shown> shown = new ArrayList<>();
         final List<Sent> sent = new ArrayList<>();
         private final Set<Entity> watched = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -136,23 +151,23 @@ final class FeedbackGameTests {
 
     // ---------------------------------------------------------------- helpers (same moves as CombatGameTests)
 
-    private static void setBase(LivingEntity entity, StatDefinition stat, double value) {
+    static void setBase(LivingEntity entity, StatDefinition stat, double value) {
         entity.getAttribute(stats().holder(stat.id())).setBaseValue(value);
     }
 
-    private static double value(LivingEntity entity, StatDefinition stat) {
+    static double value(LivingEntity entity, StatDefinition stat) {
         return entity.getAttributeValue(stats().holder(stat.id()));
     }
 
-    private static void setAttack(ServerPlayer player, double damage) {
+    static void setAttack(ServerPlayer player, double damage) {
         player.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(damage);
     }
 
-    private static Cow cow(GameTestHelper helper) {
+    static Cow cow(GameTestHelper helper) {
         return helper.spawn(EntityTypes.COW, BlockPos.ZERO);
     }
 
-    private static Cow toughCow(GameTestHelper helper) {
+    static Cow toughCow(GameTestHelper helper) {
         Cow cow = cow(helper);
         cow.getAttribute(Attributes.MAX_HEALTH).setBaseValue(1000);
         cow.setHealth(1000);
@@ -160,7 +175,7 @@ final class FeedbackGameTests {
     }
 
     /** A mock player that can be hurt: its client counts as loaded and it is not invulnerable. */
-    private static ServerPlayer hurtablePlayer(GameTestHelper helper) {
+    static ServerPlayer hurtablePlayer(GameTestHelper helper) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         player.connection.handleAcceptPlayerLoad(new ServerboundPlayerLoadedPacket());
         player.getAbilities().invulnerable = false;
@@ -168,7 +183,7 @@ final class FeedbackGameTests {
     }
 
     /** Refills the attack bar and stands on the ground, so the swing is full strength but not a jump crit. */
-    private static void ready(ServerPlayer player) {
+    static void ready(ServerPlayer player) {
         for (int i = 0; i < 10; i++) {
             player.doTick();
         }
@@ -178,7 +193,7 @@ final class FeedbackGameTests {
     }
 
     /** One real swing; returns the health the target lost. */
-    private static double swing(ServerPlayer player, LivingEntity target) {
+    static double swing(ServerPlayer player, LivingEntity target) {
         float before = target.getHealth();
         player.attack(target);
         return before - target.getHealth();
@@ -189,12 +204,12 @@ final class FeedbackGameTests {
         return target.hurtServer(helper.getLevel(), source, damage);
     }
 
-    private static void checkColor(GameTestHelper helper, Sent sent, ChatFormatting expected) {
+    static void checkColor(GameTestHelper helper, Sent sent, ChatFormatting expected) {
         check(helper, TextColor.fromLegacyFormat(expected).equals(sent.color()),
             sent.key() + " should be " + expected + " but was " + sent.color());
     }
 
-    private static void checkLine(GameTestHelper helper, Sent sent, String key, List<String> numbers, String what) {
+    static void checkLine(GameTestHelper helper, Sent sent, String key, List<String> numbers, String what) {
         check(helper, key.equals(sent.key()), what + ": key " + sent.key() + ", expected " + key);
         check(helper, numbers.equals(sent.numbers()), what + ": numbers " + sent.numbers() + ", expected " + numbers);
     }

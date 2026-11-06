@@ -43,7 +43,7 @@ Prompt：`git switch feature/r3-combo`，`git merge --no-ff 061e7a9`。這個分
 
 結果：沒有衝突。基準是單元 322、遊戲內 57（伺服器報告 58，含 `always_pass`），和主 session 給的數字一樣。合併沒有改程式，不需要 SOLID 檢查。
 
-### 第 2 步：`core/combo`、combo 檔讀取、單元測試和契約測試
+### 第 2 步：`core/combo`、combo 檔讀取、單元測試和契約測試（commit `e45959d`）
 
 Prompt：
 
@@ -81,3 +81,67 @@ Prompt：
 | Pattern | 新用和沿用 | **Strategy**：`ComboEffect`。**用名稱查的 Factory**：`ComboEffectTypes`，檔案寫 `type`，它找對應的 `Reader` 建出效果。**狀態機**：`ComboTracker`。**快照**：`ComboLibrary`，和 R2b 的 `EquipmentLibrary` 一樣整份換掉。沿用 R2b 的讀檔規則：嚴格解析、欄位路徑、一次列出所有問題、第一次啟動才裝預設檔 |
 
 **命名的債**：`WeaponFormatException`、`WeaponLoadException` 現在也用在 combo 檔，名稱是 R2b 時取的。改名會動到架構師的網頁、`WeaponEditor` 和測試，今晚架構師也在 main 上改東西，所以這次不改名，記在報告 20 的「之後」。
+
+### 第 3 步：`ComboListener`、reload、D1 的 combo 名稱
+
+Prompt：
+
+- 照 17 第 3 節接上遊戲：`ComboListener` 在揮擊開始時讀輸入，在 `LivingHurtEvent`（最低優先序，被取消的不會到）判斷這一下算不算，並套用效果。R1 的 `CombatEffectListener` 不改。
+- `ComboFiles` 負責啟動時讀、`/mobarmory reload` 時換掉。規則照武器檔：第一次裝預設檔、啟動時寫錯就停、reload 全有或全無。
+- D1 照 17 的 Q3：`HitReport` 加 combo 欄位，舊建構子保留；`CombatObserver` 加預設什麼都不做的 `comboTriggered`；action bar 在同一行最後接名稱，兩邊都接（O8）。
+- 先跑 D1 的既有測試確認沒壞。
+
+做法：
+
+- 新增 `forge/ComboListener`、`data/ComboFiles`。
+- `ReloadCommand` 多一個 `ComboFiles` 參數，`reload` 拆成武器、combo 兩段，各自全有或全無。
+- `MobArmoryMod` 加 `COMBO_FILES`、註冊 `ComboListener`。
+- `en_us.json` 加 4 行。
+- D1 的 6 個類別各加幾行。
+
+| 原則 | 有沒有違反 | 說明 |
+|---|---|---|
+| S | 沒有 | `ComboListener` 只把 Forge 事件翻成輸入、套用結果，規則在 `core/combo`。`ComboFiles` 只管啟動和 reload 的時機。`ReloadCommand` 多做一件同類的事（重讀另一種資料檔），拆成兩個方法，各自處理自己的訊息 |
+| O | 沒有 | 新 combo、新效果種類都不用改 `ComboListener`。D1 只「加」：欄位、預設方法、後綴，舊的呼叫和舊的一行都不變（`noComboIsTheD1Line` 測試） |
+| L | 沒有 | `HitFeedbackListener` 和 `CombatObserver.NONE` 都能交給 `ComboListener`。D1 的 54 個單元測試、10 個遊戲內測試照樣通過 |
+| I | 有一點要說明 | `CombatObserver` 變成三個方法，都有預設的空實作；照 17 的 Q3 A。觀察者種類變多時，可以拆出 `ComboObserver` |
+| D | 沒有 | `ComboListener` 的依賴（`ComboLibrary`、`InputClassifier`、`CombatObserver`、門檻）都由 `MobArmoryMod` 注入；遊戲內測試用的是同一批物件 |
+| Pattern | 沿用 | Observer（D1）、快照（`ComboLibrary`）、R2b 的「reload 全有或全無」 |
+
+### 第 4 步：遊戲內系統測試
+
+Prompt：
+
+- 主 session 要求證明三件事：走→跑、跑→走觸發不同 combo 和不同倍率；超過時間窗不觸發；拿重劍比較難觸發奔跑揮擊。
+- 加上 18 的其他列，以及「多放一個 JSON 就多一種 combo」的遊戲內版本：寫檔、真的執行 `/mobarmory reload`，放在自己的批次、一個 tick 內做完再刪檔、reload 還原。
+- D1 的記錄器和 helper 從 private 放寬成 package-private 共用，不另抄一份。
+
+結果：
+
+- 新增 7 個測試。
+- 第一次跑有 1 個失敗：`combo_window_in_real_ticks` 用生命 1000 的牛，float 的生命值存不準 1.3（讀到 1.29998779）。這是測試的問題，改用生命 10 的牛後全過。
+- 故意改壞兩次，確認測試抓得到：拿掉「沒蓄滿不算」→ B5 失敗；拿掉「只算主目標、用過就丟」→ B10 失敗。都改回。
+- `clean build runGameTestServer`：單元 396/396、遊戲內 64/64（伺服器報告 65）。
+- 寫完文件後再確認時，連兩次有 3～4 個 R2b、R4 的測試失敗。根源是 R2b 的 `web_admin_saves_through_the_game` 在機器忙的時候逾時（200 tick 約 1 秒），而且失敗時沒有還原重劍。
+  - 一度懷疑是 combo 測試的 `/mobarmory reload` 造成的，因為失敗的兩次 combo 批次都在前面。
+  - 但之後兩次同樣是 combo 在前，都全過，排除了這個可能。
+  - 程式沒改，最後一次 `clean build runGameTestServer` 全過。
+  - 寫進報告 20 第 6-1 節給架構師，R2b 的測試這次沒有改。
+
+| 原則 | 有沒有違反 | 說明 |
+|---|---|---|
+| S | 沒有 | combo 的系統測試放在新的 `ComboGameTests`，D1 的 `FeedbackGameTests` 只放寬可見度、加一個讀後綴的方法 |
+| O | 沒有 | 「多一個檔多一種 combo」在遊戲內通過，正式程式完全沒改：這就是開放封閉的證明 |
+| L | 沒有 | — |
+| I | 沒有 | — |
+| D | 沒有 | 測試經由 `MobArmoryMod.COMBO_FILES`、`HIT_FEEDBACK` 和真的指令操作，和遊戲走同一條路 |
+| Pattern | 沿用 | 測試替身的 Observer（D1 的 `Recorder`）；R2b 的「改共用檔案的測試放自己的批次、做完還原」 |
+
+### 第 5 步：文件
+
+- 17：第 0 節寫 JSON 版的分層和「改一處牽動幾個檔」。
+- 18：加 J1～J9（combo 檔的行為）。
+- 19：決定紀錄（採用建議值、Q2 改 JSON，附使用者原話）。
+- 20：行為報告，含 SOLID／Pattern 檢查一節。
+- 本檔。
+- 沒有改 `docs/boundary/README.md`。

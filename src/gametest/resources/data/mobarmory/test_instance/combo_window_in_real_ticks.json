@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:combo_window_in_real_ticks",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

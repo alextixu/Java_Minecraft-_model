@@ -14,6 +14,9 @@
   "commands.mobarmory.reload.slot": "Slot changes apply after a restart: %s",
   "commands.mobarmory.reload.failed": "Nothing changed. Fix these problems in config/mobarmory/weapons first:",
   "commands.mobarmory.reload.io": "Could not read the weapon files: %s",
+  "commands.mobarmory.reload.combos": "Combo files reloaded: %s combos (%s)",
+  "commands.mobarmory.reload.combos_failed": "Combos unchanged. Fix these problems in config/mobarmory/combos first:",
+  "commands.mobarmory.reload.combos_io": "Could not read the combo files: %s",
   "mobarmory.web.ready": "Mob Armory weapon admin: %s",
   "mobarmory.web.failed": "Mob Armory weapon admin did not start: %s",
   "mobarmory.hit.dealt": "%1$s -%2$s ❤ %3$s/%4$s",
@@ -21,5 +24,6 @@
   "mobarmory.hit.dealt.miss": "%1$s MISS ❤ %3$s/%4$s",
   "mobarmory.hit.taken": "%1$s hit you -%2$s ❤ %3$s/%4$s",
   "mobarmory.hit.taken.crit": "%1$s hit you -%2$s CRIT ❤ %3$s/%4$s",
-  "mobarmory.hit.taken.miss": "Dodged %1$s ❤ %3$s/%4$s"
+  "mobarmory.hit.taken.miss": "Dodged %1$s ❤ %3$s/%4$s",
+  "mobarmory.hit.combo": " · %s"
 }

@@ -140,4 +140,33 @@ class HitTextTest {
         assertEquals("?", nan.damage());
         assertEquals("?", nan.health());
     }
+
+    @Test
+    @DisplayName("R3 O8 Given 第二下完成 Lunge When 組成一行 Then 攻擊者和被打者兩行都帶 combo 名稱，數字照舊")
+    void comboNameOnBothLines() {
+        HitReport report = HitReport.landed(DamageKind.MELEE, Party.PLAYER, Party.PLAYER, false, 1.5, 9, 10)
+            .withCombo("Lunge");
+        HitLine attacker = HitText.line(report, Viewer.ATTACKER);
+        HitLine defender = HitText.line(report, Viewer.DEFENDER);
+
+        assertEquals("Lunge", attacker.combo());
+        assertEquals("Lunge", defender.combo());
+        assertEquals("1.5", attacker.damage());
+        assertEquals("7.5", attacker.health());
+        assertEquals("mobarmory.hit.dealt", attacker.translationKey());
+    }
+
+    @Test
+    @DisplayName("R3 沒有 combo 的一下：combo 是 null，一行和 D1 一模一樣；暴擊加 combo 照樣是 CRIT")
+    void noComboIsTheD1Line() {
+        HitReport plain = playerHitsMob(false, 1, 10, 10);
+        assertEquals(null, HitText.line(plain, Viewer.ATTACKER).combo());
+        assertEquals(new HitLine("mobarmory.hit.dealt", Tone.NORMAL, "1.0", "9.0", "10"), HitText.line(plain, Viewer.ATTACKER));
+
+        HitLine critCombo = HitText.line(playerHitsMob(true, 2.25, 10, 10).withCombo("Lunge"), Viewer.ATTACKER);
+        assertEquals("mobarmory.hit.dealt.crit", critCombo.translationKey());
+        assertEquals(Tone.CRITICAL, critCombo.tone());
+        assertEquals("2.3", critCombo.damage());
+        assertEquals("Lunge", critCombo.combo());
+    }
 }

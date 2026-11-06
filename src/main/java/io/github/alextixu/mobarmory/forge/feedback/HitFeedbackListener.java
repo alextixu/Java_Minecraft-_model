@@ -2,6 +2,7 @@ package io.github.alextixu.mobarmory.forge.feedback;
 
 import com.mojang.logging.LogUtils;
 import io.github.alextixu.mobarmory.core.combat.CombatOutcome;
+import io.github.alextixu.mobarmory.core.combo.ComboDefinition;
 import io.github.alextixu.mobarmory.core.feedback.HitFilter;
 import io.github.alextixu.mobarmory.core.feedback.HitReport;
 import io.github.alextixu.mobarmory.core.feedback.Party;
@@ -37,6 +38,9 @@ import org.slf4j.Logger;
  *       not against creative mode, an invulnerable or dead defender, or one inside its damage cooldown (O5).</li>
  * </ul>
  * Which hits are shown and to whom is decided in {@link HitFilter}, not here.
+ * <p>
+ * R3: a combo is matched to its hit the same way as a crit: the latest combo per target, used once, only by the same
+ * attacker in the same game tick. The report then carries the combo's name.
  */
 public final class HitFeedbackListener implements CombatObserver {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -47,7 +51,13 @@ public final class HitFeedbackListener implements CombatObserver {
     /** Latest attack decision per target. Written and read on the server thread within one attack. */
     private final Map<Entity, Decision> decisions = new WeakHashMap<>();
 
+    /** Latest combo per target (R3). Same thread and lifetime as {@link #decisions}. */
+    private final Map<Entity, ComboNote> combos = new WeakHashMap<>();
+
     private record Decision(LivingEntity attacker, boolean critical, long gameTime) {
+    }
+
+    private record ComboNote(LivingEntity attacker, ComboDefinition combo, long gameTime) {
     }
 
     public HitFeedbackListener(List<HitDisplay> displays) {
@@ -79,6 +89,11 @@ public final class HitFeedbackListener implements CombatObserver {
     }
 
     @Override
+    public void comboTriggered(LivingEntity target, Player attacker, ComboDefinition combo) {
+        combos.put(target, new ComboNote(attacker, combo, target.level().getGameTime()));
+    }
+
+    @Override
     public void hitCancelled(LivingEntity defender, DamageSource source) {
         decisions.remove(defender);
         if (!(defender.level() instanceof ServerLevel level) || !couldBeHurt(level, defender, source)) {
@@ -98,7 +113,15 @@ public final class HitFeedbackListener implements CombatObserver {
         LivingEntity attacker = attackerOf(source);
         boolean critical = wasCritical(defender, attacker);
         show(HitReport.landed(CombatEffectListener.kindOf(source), party(attacker), party(defender), critical,
-            event.getAmount(), defender.getHealth(), defender.getMaxHealth()), defender, attacker);
+            event.getAmount(), defender.getHealth(), defender.getMaxHealth()).withCombo(comboOf(defender, attacker)),
+            defender, attacker);
+    }
+
+    /** The name of the combo this hit completed, or null. */
+    private String comboOf(LivingEntity defender, LivingEntity attacker) {
+        ComboNote note = combos.remove(defender);
+        return note != null && attacker != null && note.attacker() == attacker
+            && note.gameTime() == defender.level().getGameTime() ? note.combo().name() : null;
     }
 
     private boolean wasCritical(LivingEntity defender, LivingEntity attacker) {

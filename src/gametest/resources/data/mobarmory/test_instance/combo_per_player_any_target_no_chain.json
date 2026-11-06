@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:combo_per_player_any_target_no_chain",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

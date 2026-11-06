@@ -6,6 +6,38 @@
 > 工作位置：worktree `java_minecraft_model/mod-damage-hud`，分支 `feature/r3-combo`（從 `feature/damage-hud` 的 `ed05c6b` 分出，所以包含 D1 的 action bar）。
 > 前提：開發 session 的 **R2b 會先合進 main**：`content/ModEquipment` 換成 `config/mobarmory/weapons/*.json` ＋ `EquipmentLibrary`（裝備用 id 查），`MobArmoryMod` 也改了。這份邊界照合併後的樣子寫。
 
+## 0. 11/07 調整：combo 定義改成 JSON 檔（先讀這一節）
+
+使用者 11/07 的主軸：「主軸在我們這個系統可以未來讓玩家新增東西而不是我們自己要開發出很厲害的怪物與武器」。主 session 依此把 Q2 改成 JSON 設定檔（[19 的決定紀錄](19-r3-combo-open-questions.md#決定紀錄)）。下面第 3 節的分層照這個表調整，其他各節不變。
+
+```
+core/combo/          純 Java
+  ComboInput、InputClassifier、ComboEffect、DamageMultiplier   同第 3 節
+  ComboDefinition    多了 name（顯示名稱）、windowTicks（每個 combo 自己的時間窗）
+  ComboCatalog       只檢查 id 和出招順序不重複；可以是空的
+  ComboTracker       每一下都傳入目前的 ComboCatalog，reload 後下一下就生效
+  ComboLibrary       目前生效的那一份，reload 時整份換掉（同 R2b 的 EquipmentLibrary）
+data/                讀檔，沿用武器那一套
+  JsonFolder         從 WeaponFolder 抽出來的「一個資料夾的 <id>.json」：列檔、讀、原子寫入；武器和 combo 共用
+  ShippedFiles       從 DefaultWeapons 抽出來的「讀 jar 裡內附的檔」；武器和 combo 共用
+  ComboJson          combo 檔格式 1；用 WeaponJson 的嚴格解析和欄位錯誤訊息
+  ComboEffectTypes   檔案裡 effect.type 的名稱 → 建出哪個 ComboEffect（新效果種類只在這裡加一行）
+  ComboLoader        讀所有 combo 檔、一次列出所有問題（同 WeaponLoader 的結構）
+  DefaultCombos      內附的 lunge.json、follow_up.json；資料夾不存在才裝（同 DefaultWeapons）
+  ComboFiles         執行中的 combo 檔：啟動時讀、/mobarmory reload 時全有或全無地換掉
+content/ModCombos    只留所有 combo 共用的輸入規則：奔跑門檻 0.12、蓄滿 0.9
+forge/
+  ComboListener      同第 3 節，每一下讀 ComboLibrary 的目前那一份
+  ReloadCommand      R2b 的指令，多重讀 combo 檔（和武器各自全有或全無）
+src/main/resources/mobarmory/default_combos/   lunge.json、follow_up.json
+```
+
+| 項目 | 調整 |
+|---|---|
+| 可以改的模組（多的） | `data/` 新增上面的類別；R2b 的 `WeaponFolder`、`DefaultWeapons` 改成用抽出來的共用類別（行為不變）；`WeaponJson` 的 `string`、`number` 從 private 改成 package-private；`WeaponLoadException` 多一個建構子；`ReloadCommand` 多重讀 combo |
+| 不准動的相依（沒變） | R1 的戰鬥規則、`StatReader`；R2b 的 `web/`、`EquipmentLibrary`、`WeaponEditor`、武器檔格式 |
+| 改一處會牽動幾個檔案 | 新增一個 combo（用既有的效果種類）：**1**（一個 JSON 檔，不用重開，`/mobarmory reload`）<br>改倍率、時間窗、名稱：**1**（那個 JSON 檔）<br>新增一種效果：**2**（`core/combo` 一個類別、`ComboEffectTypes` 一行；契約測試的樣本一行）<br>改奔跑門檻：**1**（`ModCombos`） |
+
 ## 1. 需求翻譯
 
 ### 學長的原話（來源：審查報告 `reviews/review-01-requirements-gap.md` 的 B2、A2）
