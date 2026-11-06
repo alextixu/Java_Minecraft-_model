@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.TreeMap;
 
 /** A {@link WeaponStore} in memory, for tests. Passes the same contract as {@link WeaponFolder}. */
-public final class InMemoryWeaponStore implements WeaponStore {
+public class InMemoryWeaponStore implements WeaponStore {
     private final Map<String, String> weapons = new TreeMap<>();
     private final Map<String, byte[]> textures = new TreeMap<>();
     private boolean exists;

@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:live_edit",
+  "function": "mobarmory:live_edit_applies_to_zombie",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

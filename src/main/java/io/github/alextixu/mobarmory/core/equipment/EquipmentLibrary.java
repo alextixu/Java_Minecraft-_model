@@ -48,6 +48,19 @@ public final class EquipmentLibrary {
         return stats;
     }
 
+    /**
+     * Everything at one moment: definitions, versions, waiting and file-missing pieces, all from the same
+     * snapshot (the web page lists them together).
+     */
+    public record View(EquipmentCatalog catalog, Map<EquipmentId, Long> versions,
+                       Map<EquipmentId, EquipmentDefinition> pending, Set<EquipmentId> fileMissing) {
+    }
+
+    public View view() {
+        State now = state;
+        return new View(now.catalog(), now.versions(), now.pending(), now.fileMissing());
+    }
+
     /** The definitions in effect now. Take one snapshot per calculation. */
     public EquipmentCatalog current() {
         return state.catalog();

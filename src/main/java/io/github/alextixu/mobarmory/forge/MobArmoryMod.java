@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import io.github.alextixu.mobarmory.content.ModStats;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
+import io.github.alextixu.mobarmory.data.WeaponEditor;
 import io.github.alextixu.mobarmory.data.WeaponFolder;
 import io.github.alextixu.mobarmory.forge.client.GeneratedWeaponPack;
 import net.minecraft.core.registries.Registries;
@@ -38,6 +39,9 @@ public final class MobArmoryMod {
     public static final EquipmentLibrary EQUIPMENT_LIBRARY = WeaponStartup.load(WEAPON_FILES, ModStats.CATALOG);
     public static final EquipmentItemFactory EQUIPMENT = new EquipmentItemFactory(EQUIPMENT_LIBRARY, STATS, MODID);
     public static final EquipmentStatApplier EQUIPMENT_STATS = new EquipmentStatApplier(EQUIPMENT_LIBRARY, STATS);
+    /** The one way to change weapons while the game runs: reload command and web page (R2b, R6). */
+    public static final ServerWeaponAdmin WEAPON_ADMIN = new ServerWeaponAdmin(
+        new WeaponEditor(EQUIPMENT_LIBRARY, WEAPON_FILES, WeaponStartup.loader(ModStats.CATALOG)), EQUIPMENT_STATS);
 
     private static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
@@ -64,6 +68,7 @@ public final class MobArmoryMod {
         new EntityStatBinder(STATS).register();
         EQUIPMENT_STATS.register();
         new StatsCommand(STATS).register();
+        new ReloadCommand(WEAPON_ADMIN).register();
         new CombatEffectListener(ModStats.COMBAT_EFFECTS, STATS).register();
 
         FMLCommonSetupEvent.getBus(modBusGroup).addListener(event -> {

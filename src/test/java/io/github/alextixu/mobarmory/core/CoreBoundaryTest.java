@@ -19,7 +19,7 @@ class CoreBoundaryTest {
     private static final Path SOURCES = Path.of("src/main/java/io/github/alextixu/mobarmory");
 
     @ParameterizedTest(name = "{0}/ 不 import Minecraft 或 Forge")
-    @ValueSource(strings = {"core", "content", "data"})
+    @ValueSource(strings = {"core", "content", "data", "web"})
     void layerHasNoGameImports(String layer) throws IOException {
         Path dir = SOURCES.resolve(layer);
         if (!Files.isDirectory(dir)) {
