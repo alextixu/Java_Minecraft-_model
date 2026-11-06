@@ -9,7 +9,7 @@ import io.github.alextixu.mobarmory.core.stat.StatCatalog;
 import io.github.alextixu.mobarmory.data.WeaponEditor;
 import io.github.alextixu.mobarmory.data.WeaponFormatException;
 import io.github.alextixu.mobarmory.data.WeaponLoadException;
-import io.github.alextixu.mobarmory.forge.client.ClientResourceReload;
+import io.github.alextixu.mobarmory.data.BuiltInTextures;
 import io.github.alextixu.mobarmory.web.WeaponAdmin;
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -30,8 +30,8 @@ import net.minecraftforge.server.ServerLifecycleHooks;
  * <ol>
  *   <li>runs every change on the server thread (the web server calls from its own threads); the queue keeps
  *       running while a single-player game is paused, so saving from the browser works then too (B15);</li>
- *   <li>then recomputes every entity holding a changed piece (R2 decision Q6);</li>
- *   <li>and if a look changed, reloads the client's resources on this machine (single player, decision O11).</li>
+ *   <li>then recomputes every entity holding a changed piece (R2 decision Q6), updates the look they show, and sends
+ *       the new definitions to every player (decision Q3 B), so remote clients show the same names and tooltips.</li>
  * </ol>
  */
 public final class ServerWeaponAdmin implements WeaponAdmin {
@@ -43,10 +43,12 @@ public final class ServerWeaponAdmin implements WeaponAdmin {
 
     private final WeaponEditor editor;
     private final EquipmentStatApplier applier;
+    private final WeaponSyncChannel sync;
 
-    public ServerWeaponAdmin(WeaponEditor editor, EquipmentStatApplier applier) {
+    public ServerWeaponAdmin(WeaponEditor editor, EquipmentStatApplier applier, WeaponSyncChannel sync) {
         this.editor = editor;
         this.applier = applier;
+        this.sync = sync;
     }
 
     @Override
@@ -70,13 +72,13 @@ public final class ServerWeaponAdmin implements WeaponAdmin {
     }
 
     @Override
-    public List<String> textures() throws IOException {
-        return editor.store().textureNames();
+    public List<String> textures() {
+        return BuiltInTextures.NAMES;
     }
 
     @Override
-    public Optional<byte[]> texture(String name) throws IOException {
-        return editor.store().texture(name);
+    public Optional<byte[]> texture(String name) {
+        return BuiltInTextures.png(name);
     }
 
     @Override
@@ -93,17 +95,6 @@ public final class ServerWeaponAdmin implements WeaponAdmin {
     public void create(EquipmentDefinition definition) throws IOException, WeaponFormatException {
         change(() -> {
             editor.create(definition);
-            return null;
-        });
-    }
-
-    @Override
-    public void saveTexture(String name, byte[] png) throws IOException, WeaponFormatException {
-        change(() -> {
-            editor.saveTexture(name, png);
-            boolean inUse = editor.library().current().all().stream()
-                .anyMatch(definition -> definition.look().equals(EquipmentLook.texture(name)));
-            afterChange(false, inUse);
             return null;
         });
     }
@@ -130,12 +121,16 @@ public final class ServerWeaponAdmin implements WeaponAdmin {
 
     private void afterChange(boolean statsChanged, boolean looksChanged) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (statsChanged && server != null) {
+        if (server == null) {
+            return;
+        }
+        if (statsChanged) {
             applier.refreshHolders(server);
         }
         if (looksChanged) {
-            ClientResourceReload.requestIfClient();
+            WeaponLooks.applyToEntities(server, editor.library());
         }
+        sync.sendToAll(server);
     }
 
     @FunctionalInterface

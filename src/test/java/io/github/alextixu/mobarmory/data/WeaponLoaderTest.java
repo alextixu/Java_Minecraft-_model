@@ -31,9 +31,9 @@ class WeaponLoaderTest {
     }
 
     @Test
-    @DisplayName("H2 Given 資料夾多了 halberd.json 和它的貼圖 When 載入 Then 有 5 件，戟的數值照檔案（Java 一行都沒改）")
+    @DisplayName("H2 Given 資料夾多了 halberd.json（外觀用內建貼圖 halberd_netherite） When 載入 Then 有 5 件，戟的數值照檔案（Java 一行都沒改）")
     void loadsDefaultsAndACustomWeapon() throws Exception {
-        InMemoryWeaponStore store = defaults().putFile("halberd.json", HALBERD).putTexture("halberd_netherite", TestPng.of(32, 32));
+        InMemoryWeaponStore store = defaults().putFile("halberd.json", HALBERD);
 
         List<EquipmentDefinition> loaded = LOADER.load(store);
 
@@ -66,19 +66,17 @@ class WeaponLoaderTest {
     }
 
     @Test
-    @DisplayName("B4 Given 外觀是不存在的原版物品、或貼圖不存在、或貼圖不是 2 的次方的正方形 When 載入 Then 失敗，每個都列出來")
+    @DisplayName("B4 Given 外觀是不存在的原版物品、或不是 7 張內建貼圖之一 When 載入 Then 失敗，每個都列出來，並列出可以用的貼圖")
     void badLooks() {
         InMemoryWeaponStore store = defaults()
             .putFile("heavy_sword.json", DefaultWeapons.text("heavy_sword").replace("minecraft:netherite_sword", "minecraft:laser_sword"))
-            .putFile("halberd.json", HALBERD)
-            .putFile("spear.json", HALBERD.replace("halberd_netherite", "spear_iron"))
-            .putTexture("spear_iron", TestPng.of(32, 16));
+            .putFile("halberd.json", HALBERD.replace("halberd_netherite", "my_own_texture"));
 
         String text = problems(store);
 
         assertTrue(text.contains("heavy_sword.json: look.item") && text.contains("laser_sword"), text);
-        assertTrue(text.contains("halberd.json: look.texture") && text.contains("halberd_netherite.png"), text);
-        assertTrue(text.contains("spear.json: look.texture") && text.contains("square"), text);
+        assertTrue(text.contains("halberd.json: look.texture") && text.contains("my_own_texture"), text);
+        assertTrue(text.contains("dagger_iron") && text.contains("scythe_blood"), "lists the textures that can be used: " + text);
     }
 
     @Test

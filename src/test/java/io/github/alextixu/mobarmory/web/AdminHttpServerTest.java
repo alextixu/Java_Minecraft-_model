@@ -110,7 +110,6 @@ class AdminHttpServerTest {
     void onlyJsonChanges() throws Exception {
         start("");
         assertEquals(415, send(put("/api/v1/weapons/heavy_sword", "text/plain", SWORD)).statusCode());
-        assertEquals(415, send(put("/api/v1/textures/x", "application/json", "{}")).statusCode());
     }
 
     @Test

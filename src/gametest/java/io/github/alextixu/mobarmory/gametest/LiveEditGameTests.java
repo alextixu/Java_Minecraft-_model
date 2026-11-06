@@ -8,6 +8,7 @@ import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.test;
 import io.github.alextixu.mobarmory.content.ModStats;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentDefinition;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
+import io.github.alextixu.mobarmory.core.equipment.EquipmentLook;
 import io.github.alextixu.mobarmory.core.equipment.ReloadReport;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
 import io.github.alextixu.mobarmory.core.stat.StatModifier;
@@ -19,7 +20,9 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -47,6 +50,7 @@ final class LiveEditGameTests {
         test("reload_applies_file_edit", LiveEditGameTests::reloadAppliesFileEdit);
         test("reload_with_broken_file_changes_nothing", LiveEditGameTests::brokenReloadChangesNothing);
         test("reload_new_and_deleted_files_wait_for_restart", LiveEditGameTests::newAndDeletedFilesWait);
+        test("look_change_updates_held_sword", LiveEditGameTests::lookChangeUpdatesHeldSword);
     }
 
     private static EquipmentDefinition shipped() {
@@ -175,6 +179,22 @@ final class LiveEditGameTests {
             } finally {
                 MobArmoryMod.WEAPON_FILES.writeWeapon(Weapons.DAGGER, DefaultWeapons.text(Weapons.DAGGER.value()));
             }
+        });
+    }
+
+    /** H8 + O11: a new look reaches the sword in hand at once (its item model), stats untouched, no resource reload. */
+    static void lookChangeUpdatesHeldSword(GameTestHelper helper) {
+        inBatch(helper, () -> {
+            ServerPlayer player = playerHoldingSword(helper);
+            EquipmentDefinition sword = shipped();
+            EquipmentDefinition halberdLook = new EquipmentDefinition(SWORD, sword.name(), sword.slot(), sword.modifiers(),
+                EquipmentLook.texture("halberd_netherite"));
+
+            MobArmoryMod.WEAPON_ADMIN.update(halberdLook, MobArmoryMod.EQUIPMENT_LIBRARY.version(SWORD));
+
+            Identifier model = player.getMainHandItem().get(DataComponents.ITEM_MODEL);
+            check(helper, Identifier.parse("mobarmory:look/halberd_netherite").equals(model), "H8: sword in hand should look like the halberd, got " + model);
+            checkNear(helper, 7.0, value(player, ModStats.ATTACK_DAMAGE), "H8: a new look keeps the stats");
         });
     }
 

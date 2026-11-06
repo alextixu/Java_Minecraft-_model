@@ -8,7 +8,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
 import java.nio.charset.StandardCharsets;
-import java.nio.ByteBuffer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -100,22 +99,22 @@ class WeaponApiTest {
     }
 
     @Test
-    @DisplayName("H9 上傳貼圖再建立新武器 → 202 待重開，清單裡看得到；同一個 id 再建一次 → 400")
-    void uploadAndCreate() {
-        ByteBuffer png = ByteBuffer.allocate(33);
-        png.put(new byte[] {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'}).putInt(13).put("IHDR".getBytes(StandardCharsets.US_ASCII)).putInt(32).putInt(32);
-        assertEquals(201, api.handle("PUT", "/api/v1/textures/spear_iron", png.array()).status());
-        assertEquals("image/png", api.handle("GET", "/api/v1/textures/spear_iron", new byte[0]).contentType());
-
-        String spear = "{\"id\": \"spear\", \"name\": \"長矛\", \"slot\": \"mainhand\", \"look\": {\"texture\": \"spear_iron\"},"
-            + " \"modifiers\": [{\"stat\": \"attack_damage\", \"add\": 5}]}";
+    @DisplayName("H9 新增武器（外觀用內建貼圖）→ 202 待重開，清單裡看得到；同一個 id 再建一次 → 400；內建貼圖可以預覽，沒有上傳")
+    void createWithBuiltInTexture() {
+        String spear = """
+            {"id": "spear", "name": "長矛", "slot": "mainhand", "look": {"texture": "spear_iron"},
+             "modifiers": [{"stat": "attack_damage", "add": 5}]}""";
         WeaponApi.Response created = call("POST", "/api/v1/weapons", spear);
 
         assertEquals(202, created.status(), new String(created.body(), StandardCharsets.UTF_8));
         assertEquals("pending_restart", json(created).get("status").getAsString());
         assertEquals(5, json(call("GET", "/api/v1/weapons", "")).getAsJsonArray("weapons").size());
         assertEquals(400, call("POST", "/api/v1/weapons", spear).status());
-        assertEquals(400, api.handle("PUT", "/api/v1/textures/bad", "not a png".getBytes(StandardCharsets.UTF_8)).status());
+        String upload = spear.replace("\"spear\"", "\"axe\"").replace("spear_iron", "my_upload");
+        assertEquals(400, call("POST", "/api/v1/weapons", upload).status());
+        assertEquals("image/png", call("GET", "/api/v1/textures/spear_iron", "").contentType());
+        assertEquals(404, call("GET", "/api/v1/textures/my_upload", "").status());
+        assertEquals(405, call("PUT", "/api/v1/textures/spear_iron", "x").status());
     }
 
     @Test

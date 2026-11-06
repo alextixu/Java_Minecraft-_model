@@ -160,7 +160,7 @@ function lookField(look) {
   const items = el('select', { class: 'look-item', 'data-field': 'look.item', 'aria-label': '原版物品' },
     state.looks.items.map((id) => el('option', { value: id, selected: id === look.item, text: id.replace('minecraft:', '') })));
   if (look.item && !state.looks.items.includes(look.item)) items.prepend(el('option', { value: look.item, selected: true, text: look.item }));
-  const textures = el('select', { class: 'look-texture', 'data-field': 'look.texture', 'aria-label': '自訂貼圖' },
+  const textures = el('select', { class: 'look-texture', 'data-field': 'look.texture', 'aria-label': '內建貼圖' },
     state.looks.textures.map((name) => el('option', { value: name, selected: name === look.texture, text: name })));
   const preview = el('img', { class: 'preview', alt: '貼圖預覽' });
   const showPreview = async () => {
@@ -173,7 +173,7 @@ function lookField(look) {
   };
   textures.addEventListener('change', showPreview);
   const radioItem = el('input', { type: 'radio', name: group, value: 'item', checked: kind === 'item', 'aria-label': '借用原版物品' });
-  const radioTexture = el('input', { type: 'radio', name: group, value: 'texture', checked: kind === 'texture', 'aria-label': '自訂貼圖' });
+  const radioTexture = el('input', { type: 'radio', name: group, value: 'texture', checked: kind === 'texture', 'aria-label': '內建貼圖' });
   const sync = () => {
     items.disabled = !radioItem.checked;
     textures.disabled = !radioTexture.checked;
@@ -182,38 +182,13 @@ function lookField(look) {
   radioItem.addEventListener('change', sync);
   radioTexture.addEventListener('change', sync);
 
-  const file = el('input', { type: 'file', accept: 'image/png', 'aria-label': '選擇 PNG 檔' });
-  const name = el('input', { placeholder: '貼圖名稱，例如 halberd_netherite', pattern: '[a-z0-9_]+', 'aria-label': '貼圖名稱' });
-  file.addEventListener('change', () => {
-    if (file.files[0] && !name.value) name.value = file.files[0].name.replace(/\.png$/i, '').toLowerCase().replace(/[^a-z0-9_]/g, '_');
-  });
-  const upload = el('button', {
-    type: 'button', class: 'ghost', text: '上傳貼圖',
-    onclick: async () => {
-      if (!file.files[0] || !name.value) { notice('warn', '請先選 PNG 檔並填貼圖名稱。'); return; }
-      try {
-        await api('PUT', '/api/v1/textures/' + encodeURIComponent(name.value), await file.files[0].arrayBuffer(), 'image/png');
-        const looks = await api('GET', '/api/v1/looks');
-        state.looks = looks;
-        textures.replaceChildren(...looks.textures.map((n) => el('option', { value: n, selected: n === name.value, text: n })));
-        radioTexture.checked = true;
-        sync();
-        showPreview();
-        notice('ok', `貼圖 ${name.value}.png 已上傳。選好以後按「儲存」才會套用到武器。`);
-      } catch (error) {
-        notice('error', '上傳失敗：' + describeError(error));
-      }
-    },
-  });
-
   sync();
   if (kind === 'texture') showPreview();
   return el('div', { class: 'field look' },
     el('span', { class: 'legend', text: '外觀' }),
     el('div', { class: 'look-row' }, el('label', {}, radioItem, '借用原版物品'), items),
-    el('div', { class: 'look-row' }, el('label', {}, radioTexture, '自訂貼圖'), textures, preview),
-    el('div', { class: 'upload' }, file, name, upload),
-    el('p', { class: 'note', text: 'PNG，正方形，16、32、64、128 或 256 像素，最大 256 KB。換外觀後遊戲會自動重新載入資源（幾秒）。' }),
+    el('div', { class: 'look-row' }, el('label', {}, radioTexture, '內建貼圖'), textures, preview),
+    el('p', { class: 'note', text: '外觀只能從原版物品或模組內建的 7 張貼圖選。存檔後，玩家手上的武器馬上換成新外觀。' }),
     el('div', { class: 'field-error', 'data-error-for': 'look' }));
 }
 

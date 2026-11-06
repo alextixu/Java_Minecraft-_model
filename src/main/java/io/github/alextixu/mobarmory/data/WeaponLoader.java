@@ -13,7 +13,7 @@ import java.util.function.Predicate;
 
 /**
  * Reads every weapon file in a store and checks it: the format ({@link WeaponJson}), the file name, and that the
- * look exists (a vanilla item Minecraft knows, or a usable PNG). All problems are collected so one message lists
+ * look exists (a vanilla item Minecraft knows, or a texture shipped in the mod). All problems are collected so one message lists
  * everything to fix.
  */
 public final class WeaponLoader {
@@ -51,7 +51,7 @@ public final class WeaponLoader {
             }
             try {
                 EquipmentDefinition definition = WeaponJson.read(id, file.text(), stats);
-                Optional<String> lookProblem = lookProblem(definition.look(), store);
+                Optional<String> lookProblem = lookProblem(definition.look());
                 if (lookProblem.isPresent()) {
                     problems.add(fileName + ": " + lookProblem.get());
                     continue;
@@ -67,19 +67,19 @@ public final class WeaponLoader {
         return loaded;
     }
 
-    /** What is wrong with a look, as "look.item: ..." or "look.texture: ...", or empty if it can be used (B4). */
-    public Optional<String> lookProblem(EquipmentLook look, WeaponStore store) throws IOException {
+    /**
+     * What is wrong with a look, as "look.item: ..." or "look.texture: ...", or empty if it can be used (B4):
+     * a vanilla item Minecraft knows, or one of the textures in the mod jar.
+     */
+    public Optional<String> lookProblem(EquipmentLook look) {
         return switch (look) {
             case EquipmentLook.VanillaItem item -> vanillaItemExists.test(item.item())
                 ? Optional.empty()
                 : Optional.of("look.item: Minecraft has no item '" + item.item() + "'");
-            case EquipmentLook.Texture texture -> {
-                Optional<byte[]> png = store.texture(texture.texture());
-                if (png.isEmpty()) {
-                    yield Optional.of("look.texture: there is no textures/" + texture.texture() + ".png");
-                }
-                yield PngCheck.problem(png.get()).map(problem -> "look.texture: " + texture.texture() + ".png " + problem);
-            }
+            case EquipmentLook.Texture texture -> BuiltInTextures.contains(texture.texture())
+                ? Optional.empty()
+                : Optional.of("look.texture: '" + texture.texture() + "' is not one of the built-in textures ("
+                    + String.join(", ", BuiltInTextures.NAMES) + ")");
         };
     }
 }

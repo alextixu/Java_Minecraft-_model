@@ -9,11 +9,15 @@ import io.github.alextixu.mobarmory.core.stat.StatModifier;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.component.TooltipDisplay;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The item for one kind of equipment. It carries only the equipment id; name, stats and tooltip are read from
@@ -42,6 +46,12 @@ public final class EquipmentItem extends Item {
         return library.current().find(equipmentId)
             .<Component>map(definition -> Component.literal(definition.name()))
             .orElseGet(() -> super.getName(stack));
+    }
+
+    /** Keeps every copy in a player's inventory showing the current look (see {@link WeaponLooks}). */
+    @Override
+    public void inventoryTick(ItemStack stack, ServerLevel level, Entity owner, @Nullable EquipmentSlot slot) {
+        WeaponLooks.apply(stack, library);
     }
 
     @Override

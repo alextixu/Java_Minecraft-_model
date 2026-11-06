@@ -18,7 +18,6 @@ import io.github.alextixu.mobarmory.core.equipment.ReloadReport;
 import io.github.alextixu.mobarmory.core.equipment.StaleVersionException;
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -149,9 +148,8 @@ class WeaponEditorTest {
     }
 
     @Test
-    @DisplayName("H9 Given 上傳新武器（貼圖＋數值） When 存檔 Then 寫出檔案和貼圖，狀態是待重開；同一個 id 不能再上傳")
+    @DisplayName("H9 Given 網頁的新增武器表單（數值＋內建貼圖） When 存檔 Then 寫出檔案，狀態是待重開；同一個 id 不能再新增")
     void uploadWaitsForRestart() throws Exception {
-        editor.saveTexture("spear_iron", TestPng.of(32, 32));
         EquipmentDefinition spear = new EquipmentDefinition(EquipmentId.of("spear"), "長矛", EquipmentSlotKind.MAINHAND,
             List.of(add(ModStats.ATTACK_DAMAGE.id(), 5)), EquipmentLook.texture("spear_iron"));
 
@@ -161,14 +159,5 @@ class WeaponEditorTest {
         assertEquals(spear, library.pending().get(spear.id()));
         assertEquals("id", assertThrows(WeaponFormatException.class, () -> editor.create(spear)).field());
         assertEquals("id", assertThrows(WeaponFormatException.class, () -> editor.create(sword(1))).field());
-    }
-
-    @Test
-    @DisplayName("B4 上傳的貼圖不是 PNG、不是正方形、名稱有路徑時拒絕，什麼都不寫")
-    void badTextureUploads() throws Exception {
-        assertEquals("file", assertThrows(WeaponFormatException.class, () -> editor.saveTexture("a", "GIF89a".getBytes())).field());
-        assertEquals("file", assertThrows(WeaponFormatException.class, () -> editor.saveTexture("a", TestPng.of(32, 16))).field());
-        assertEquals("name", assertThrows(WeaponFormatException.class, () -> editor.saveTexture("../a", TestPng.of(16, 16))).field());
-        assertEquals(Optional.empty(), store.texture("a"));
     }
 }

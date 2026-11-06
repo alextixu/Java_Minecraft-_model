@@ -127,12 +127,6 @@ public final class WeaponApi {
                 case "GET" -> admin.texture(name)
                     .map(png -> new Response(200, "image/png", png))
                     .orElseGet(() -> Response.error(404, "not_found", "No texture '" + name + "'"));
-                case "PUT" -> {
-                    admin.saveTexture(name, body);
-                    JsonObject json = new JsonObject();
-                    json.addProperty("name", name);
-                    yield Response.json(201, json);
-                }
                 default -> notAllowed();
             };
         }

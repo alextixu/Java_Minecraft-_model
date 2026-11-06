@@ -6,6 +6,7 @@ import io.github.alextixu.mobarmory.core.equipment.EquipmentDefinition;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
 import io.github.alextixu.mobarmory.core.equipment.ReloadReport;
 import io.github.alextixu.mobarmory.core.stat.StatCatalog;
+import io.github.alextixu.mobarmory.data.BuiltInTextures;
 import io.github.alextixu.mobarmory.data.DefaultWeapons;
 import io.github.alextixu.mobarmory.data.InMemoryWeaponStore;
 import io.github.alextixu.mobarmory.data.WeaponEditor;
@@ -52,12 +53,12 @@ final class TestWeaponAdmin implements WeaponAdmin {
 
     @Override
     public List<String> textures() {
-        return store.textureNames();
+        return BuiltInTextures.NAMES;
     }
 
     @Override
     public Optional<byte[]> texture(String name) {
-        return store.texture(name);
+        return BuiltInTextures.png(name);
     }
 
     @Override
@@ -68,11 +69,6 @@ final class TestWeaponAdmin implements WeaponAdmin {
     @Override
     public void create(EquipmentDefinition definition) throws IOException, WeaponFormatException {
         editor.create(definition);
-    }
-
-    @Override
-    public void saveTexture(String name, byte[] png) throws IOException, WeaponFormatException {
-        editor.saveTexture(name, png);
     }
 
     @Override

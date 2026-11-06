@@ -26,14 +26,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <ul>
  *   <li>by default it listens on 127.0.0.1 only, so other computers cannot connect;</li>
  *   <li>the {@code Host} header must name this server, which stops other websites reaching it through DNS tricks;</li>
- *   <li>changes must come from this page ({@code Origin}) and as JSON or PNG, which a browser will not send from
+ *   <li>changes must come from this page ({@code Origin}) and as JSON, which a browser will not send from
  *       another website without asking first; this server never says yes (no CORS headers);</li>
  *   <li>with a token in web.json, every API call must carry it ({@code Authorization: Bearer ...}).</li>
  * </ul>
  */
 public final class AdminHttpServer implements AutoCloseable {
     static final int MAX_JSON_BYTES = 64 * 1024;
-    static final int MAX_PNG_BYTES = 256 * 1024;
     private static final Map<String, String> STATIC = Map.of(
         "/", "index.html",
         "/index.html", "index.html",
@@ -131,15 +130,13 @@ public final class AdminHttpServer implements AutoCloseable {
                     send(exchange, WeaponApi.Response.error(403, "forbidden_origin", "Changes are only accepted from this page"));
                     return;
                 }
-                boolean png = path.startsWith("/api/v1/textures/");
-                String expected = png ? "image/png" : "application/json";
                 String type = request.getFirst("Content-Type");
-                if (type == null || !type.toLowerCase().startsWith(expected)) {
-                    send(exchange, WeaponApi.Response.error(415, "wrong_content_type", "Send " + expected));
+                if (type == null || !type.toLowerCase().startsWith("application/json")) {
+                    send(exchange, WeaponApi.Response.error(415, "wrong_content_type", "Send application/json"));
                     return;
                 }
             }
-            byte[] body = readLimited(exchange.getRequestBody(), path.startsWith("/api/v1/textures/") ? MAX_PNG_BYTES : MAX_JSON_BYTES);
+            byte[] body = readLimited(exchange.getRequestBody(), MAX_JSON_BYTES);
             if (body == null) {
                 send(exchange, WeaponApi.Response.error(413, "too_large", "The request is too large"));
                 return;

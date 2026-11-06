@@ -6,7 +6,6 @@ import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentLibrary;
 import io.github.alextixu.mobarmory.data.WeaponEditor;
 import io.github.alextixu.mobarmory.data.WeaponFolder;
-import io.github.alextixu.mobarmory.forge.client.GeneratedWeaponPack;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -39,9 +38,11 @@ public final class MobArmoryMod {
     public static final EquipmentLibrary EQUIPMENT_LIBRARY = WeaponStartup.load(WEAPON_FILES, ModStats.CATALOG);
     public static final EquipmentItemFactory EQUIPMENT = new EquipmentItemFactory(EQUIPMENT_LIBRARY, STATS, MODID);
     public static final EquipmentStatApplier EQUIPMENT_STATS = new EquipmentStatApplier(EQUIPMENT_LIBRARY, STATS);
+    /** Sends the definitions to players so remote clients show the same names and tooltips (decision Q3 B). */
+    public static final WeaponSyncChannel WEAPON_SYNC = new WeaponSyncChannel(EQUIPMENT_LIBRARY);
     /** The one way to change weapons while the game runs: reload command and web page (R2b, R6). */
     public static final ServerWeaponAdmin WEAPON_ADMIN = new ServerWeaponAdmin(
-        new WeaponEditor(EQUIPMENT_LIBRARY, WEAPON_FILES, WeaponStartup.loader(ModStats.CATALOG)), EQUIPMENT_STATS);
+        new WeaponEditor(EQUIPMENT_LIBRARY, WEAPON_FILES, WeaponStartup.loader(ModStats.CATALOG)), EQUIPMENT_STATS, WEAPON_SYNC);
 
     private static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
@@ -51,7 +52,7 @@ public final class MobArmoryMod {
             .title(Component.translatable("itemGroup." + MODID))
             .withTabsBefore(CreativeModeTabs.COMBAT)
             .icon(MobArmoryMod::tabIcon)
-            .displayItems((_, output) -> EQUIPMENT.items().forEach(item -> output.accept(item.get())))
+            .displayItems((_, output) -> EQUIPMENT.items().forEach(item -> output.accept(WeaponLooks.stackOf(item.get(), EQUIPMENT_LIBRARY))))
             .build());
     }
 
@@ -61,20 +62,19 @@ public final class MobArmoryMod {
         STATS.register(modBusGroup);
         EQUIPMENT.register(modBusGroup);
         TABS.register(modBusGroup);
-        // Item models and custom textures are generated from the weapon files (decision Q5 A); client only in effect.
-        GeneratedWeaponPack.register(EQUIPMENT_LIBRARY, WEAPON_FILES);
         // Game tests live in the separate src/gametest source set and register themselves (see build.gradle).
 
         new EntityStatBinder(STATS).register();
         EQUIPMENT_STATS.register();
         new StatsCommand(STATS).register();
         new ReloadCommand(WEAPON_ADMIN).register();
+        WEAPON_SYNC.register();
         new WebAdminLifecycle(WEAPON_ADMIN, FMLPaths.CONFIGDIR.get().resolve(MODID).resolve("web.json")).register();
         new CombatEffectListener(ModStats.COMBAT_EFFECTS, STATS).register();
 
         FMLCommonSetupEvent.getBus(modBusGroup).addListener(event -> {
             STATS.verifyAll();
-            WeaponStartup.verifyLooks(EQUIPMENT_LIBRARY, WEAPON_FILES);
+            WeaponStartup.verifyLooks(EQUIPMENT_LIBRARY);
             LOGGER.info("Mob Armory: {} stats, {} pieces of equipment from {}", ModStats.CATALOG.size(),
                 EQUIPMENT_LIBRARY.registered().size(), WEAPON_FILES.weaponsFolder());
         });
@@ -83,7 +83,7 @@ public final class MobArmoryMod {
     /** The heavy sword if it still exists, else the first piece, else a vanilla sword. */
     private static ItemStack tabIcon() {
         if (EQUIPMENT_LIBRARY.isRegistered(TAB_ICON)) {
-            return EQUIPMENT.item(TAB_ICON).getDefaultInstance();
+            return WeaponLooks.stackOf(EQUIPMENT.item(TAB_ICON), EQUIPMENT_LIBRARY);
         }
         return EQUIPMENT.items().stream().findFirst()
             .map(item -> item.get().getDefaultInstance())

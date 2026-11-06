@@ -43,3 +43,15 @@
 > 5. 每一步跑 `gradlew clean build runGameTestServer`；既有測試的預期數字不改。完成後本機 commit、更新 PROGRESS.md，停下來回報。
 >
 > 不碰 `content/ModStats`、`mod-damage-hud/`、`mod-r4-mobs/`；不 push。
+
+## 實作紀錄（R2b）
+
+| 步驟 | 結果 |
+|---|---|
+| 7 張貼圖＋模型＋`CREDITS.md` 放進 jar；`BuiltInTextures` | 內建貼圖契約（PNG、模型、物品模型定義、作者標註）全過 |
+| 刪掉執行時資源包和上傳貼圖；放回 4 件預設的物品模型檔 | `GeneratedWeaponPack`、`WeaponAssets`、`ClientResourceReload`、貼圖儲存和上傳都已刪除；`PngCheck` 移到測試 |
+| `WeaponLooks`：武器帶著目前外觀的 `item_model` | 遊戲內測試：換外觀後手上的劍立刻是新模型、數值不變；runClient：重劍即時變成血鐮刀 |
+| `WeaponSync`＋`WeaponSyncChannel` | 單元測試＋遊戲內測試（編碼、解碼、套用到另一份定義） |
+| 全部測試 | 單元 227/227、遊戲內 28/28 |
+
+行為報告：[15](../15-weapon-data-web-behavior-report.md)。R6 最小版等監控 session 回覆後再做。

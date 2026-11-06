@@ -28,10 +28,11 @@ public interface WeaponAdmin {
     /** Vanilla items that make sensible weapon or armor looks, for the look picker. */
     List<String> vanillaLooks();
 
-    /** Names of the uploaded textures. */
-    List<String> textures() throws IOException;
+    /** Names of the textures shipped in the mod (decision Q5 B); there is no upload. */
+    List<String> textures();
 
-    Optional<byte[]> texture(String name) throws IOException;
+    /** A built-in texture's PNG, for the page's preview. */
+    Optional<byte[]> texture(String name);
 
     /**
      * @throws NoSuchElementException if there is no such weapon (404)
@@ -42,8 +43,6 @@ public interface WeaponAdmin {
 
     /** A new weapon; an item after the next restart. */
     void create(EquipmentDefinition definition) throws IOException, WeaponFormatException;
-
-    void saveTexture(String name, byte[] png) throws IOException, WeaponFormatException;
 
     /** Reads the files again; all or nothing. */
     ReloadReport reload() throws IOException, WeaponLoadException;

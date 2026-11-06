@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:live_edit",
+  "function": "mobarmory:look_change_updates_held_sword",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

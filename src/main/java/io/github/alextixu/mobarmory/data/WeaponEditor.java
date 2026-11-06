@@ -14,8 +14,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * The one place that changes weapons while the game runs: the reload command, the web page's save, upload and
- * texture upload all come here, so files and game always agree (decision O2: the file is written first, and
+ * The one place that changes weapons while the game runs: the reload command and the web page's save and
+ * new-weapon form all come here, so files and game always agree (decision O2: the file is written first, and
  * only a successful write changes the game).
  * <p>
  * Plain Java; the Forge adapter runs it on the server thread and then recomputes the holders.
@@ -95,27 +95,8 @@ public final class WeaponEditor {
         library.addPending(definition);
     }
 
-    /**
-     * Saves an uploaded texture as {@code textures/<name>.png}. Replacing a texture in use changes its look at
-     * the next resource reload.
-     *
-     * @throws WeaponFormatException if the name or the image is not usable (B4)
-     */
-    public synchronized void saveTexture(String name, byte[] png) throws IOException, WeaponFormatException {
-        try {
-            EquipmentLook.texture(name);
-        } catch (IllegalArgumentException e) {
-            throw new WeaponFormatException("name", e.getMessage());
-        }
-        Optional<String> problem = PngCheck.problem(png);
-        if (problem.isPresent()) {
-            throw new WeaponFormatException("file", "the image " + problem.get());
-        }
-        store.writeTexture(name, png);
-    }
-
-    private void checkLook(EquipmentLook look) throws IOException, WeaponFormatException {
-        Optional<String> problem = loader.lookProblem(look, store);
+    private void checkLook(EquipmentLook look) throws WeaponFormatException {
+        Optional<String> problem = loader.lookProblem(look);
         if (problem.isPresent()) {
             String text = problem.get();
             int colon = text.indexOf(": ");
