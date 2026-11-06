@@ -3,6 +3,8 @@
 
 modLoader="javafml"
 loaderVersion="[66,)"
+# Forge 66 refuses to load a mod whose license is empty ("Missing License Information"), so this field must stay.
+# "All Rights Reserved" grants no license; it is what applies anyway when nothing is granted.
 license="All Rights Reserved"
 #issueTrackerURL="https://github.com/MyOrganization/MyMod/" #optional
 #clientSideOnly=true #optional, default=false

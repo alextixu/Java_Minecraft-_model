@@ -214,15 +214,21 @@ src/gametest/（獨立 source set，只在測試伺服器載入，不進正式 j
 
 ## 7. 第 3 輪：N1～N5 的決定與結果
 
-使用者原話：「2.github目前當作儲存倉庫 先不用寫任何授權其他同意」。
+使用者原話：「2.github目前當作儲存倉庫 先不用寫任何授權其他同意」，之後補充：「寫的授權都先刪除」。
 
 | # | 問題 | 決定 | 結果 |
 |---|---|---|---|
-| N1 | 推到 GitHub 的授權 | **暫不處理，GitHub 目前只當儲存庫** | `LICENSE.txt` 和 `mods.toml` 的 license 維持 MDK 原狀，沒有新增或修改 |
+| N1 | 推到 GitHub 的授權 | **刪除所有授權檔，GitHub 目前只當儲存庫** | 刪除 `LICENSE.txt`；`mods.toml` 的 `license` 欄位因為 Forge 必填而保留為 `"All Rights Reserved"`，見下方 |
 | N2 | 暴擊機率要不要像原版跳劈一樣要求蓄滿 | **要**（照建議） | 已實作，見下方 |
 | N3 | 重武器要不要揮得比較慢 | **要，重劍 −40% 攻速**（照建議） | 已實作，見第 1 節「實測」 |
 | N4 | 30% 移速下限要不要擋住緩速藥水等原版效果 | **不要，維持原版規則**（照建議） | 不改程式 |
 | N5 | 建立／載入世界時的「實驗性設定」警告 | **查證並修正**（照建議） | 已修正，見下方 |
+
+### N1：刪除授權
+
+- **刪除 `LICENSE.txt`**：這是 Forge 範本專案附的 Forge LGPL 2.1 授權，不是我們的。
+- **`mods.toml` 的 `license` 欄位保留為 `"All Rights Reserved"`**：Forge 66 的 `ModLoader` 會把 `license` 是空的模組檔轉成載入錯誤。實測拿掉這一行，測試伺服器直接失敗：`ModLoadingException: Missing License Information in file …/build/sourceSets/main/`。`"All Rights Reserved"` 沒有給任何授權，和完全不寫授權時的法律效果相同。檔案裡加了註解說明為什麼不能刪。測試用模組（`src/gametest`）的 `mods.toml` 同樣處理。
+- **其他授權宣告**：`gradle.properties`、我們的原始碼、文件裡都沒有。`gradlew`、`gradlew.bat` 開頭的 Apache-2.0 註解，是 Gradle 對它自己這兩個啟動腳本的著作權聲明，不是本專案的授權；Apache-2.0 要求轉散布時保留這些聲明，所以沒有刪。`changelog.txt` 是 Forge 的更新紀錄，不是授權檔。
 
 ### N5：原因與處理
 

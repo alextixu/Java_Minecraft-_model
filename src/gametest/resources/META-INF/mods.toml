@@ -2,6 +2,7 @@
 # classpath; it is never built into a jar or shipped. See build.gradle and docs/boundary/04-behavior-report.md (N5).
 modLoader="javafml"
 loaderVersion="[66,)"
+# Required by Forge 66 (see src/main/resources/META-INF/mods.toml); grants no license.
 license="All Rights Reserved"
 
 [[mods]]

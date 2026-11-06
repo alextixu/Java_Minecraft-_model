@@ -59,3 +59,15 @@
 > - 需求來源：會議重點第 3 節（自訂怪物：外觀和行為可設定，先做閒晃和攻擊；網頁要能設定奔跑、衝刺、攻擊玩家、中立）＋ 驗收 T2。
 > - 先讀 Forge 26.3 原始碼確認平台能力：生物種類註冊（啟動後凍結）、`EntityAttributeCreationEvent`、原版 AI goal、人形渲染器、26.x 生怪蛋、對玩家傷害的難度縮放。
 > - 產出：[05](../05-r4-boundary-note.md)、[06](../06-r4-given-when-then.md)、[07](../07-r4-open-questions.md)。**沒有寫任何 R4 功能程式**。
+
+### N1 更正：刪除授權
+
+> 使用者補充：「寫的授權都先刪除」（取代「N1 維持現狀」，其他指示不變）。監控 session 的整理：
+>
+> 1. 刪除 `mod/LICENSE.txt`（Forge 範本附的 Forge LGPL 2.1 授權，不是我們的）。
+> 2. `mods.toml` 的 `license`：先查 Forge 66 是不是必填。不是必填就刪掉這一行；是必填就保留 "All Rights Reserved"，並說明為什麼不能刪。
+> 3. 用 grep 確認專案裡沒有其他授權宣告。`changelog.txt` 不是授權檔，不用動。
+> 4. `gradlew clean build runGameTestServer` 全部通過才 commit。
+> 5. 決定紀錄裡 N1 改成「刪除所有授權檔，GitHub 目前只當儲存庫」。
+>
+> 結果：Forge 66 的 `ModLoader` 會把空的 `license` 當成載入錯誤，實測拿掉後出現 `Missing License Information`，所以保留 "All Rights Reserved" 並加註解。`gradlew`／`gradlew.bat` 的 Apache-2.0 註解是 Gradle 自己的聲明，依其授權要求保留。
