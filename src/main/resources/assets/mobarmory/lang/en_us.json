@@ -10,5 +10,7 @@
   "commands.mobarmory.reload.missing": "Files missing; kept until a restart, then removed from every world: %s",
   "commands.mobarmory.reload.slot": "Slot changes apply after a restart: %s",
   "commands.mobarmory.reload.failed": "Nothing changed. Fix these problems in config/mobarmory/weapons first:",
-  "commands.mobarmory.reload.io": "Could not read the weapon files: %s"
+  "commands.mobarmory.reload.io": "Could not read the weapon files: %s",
+  "mobarmory.web.ready": "Mob Armory weapon admin: %s",
+  "mobarmory.web.failed": "Mob Armory weapon admin did not start: %s"
 }

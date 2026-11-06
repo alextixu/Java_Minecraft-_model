@@ -69,6 +69,7 @@ public final class MobArmoryMod {
         EQUIPMENT_STATS.register();
         new StatsCommand(STATS).register();
         new ReloadCommand(WEAPON_ADMIN).register();
+        new WebAdminLifecycle(WEAPON_ADMIN, FMLPaths.CONFIGDIR.get().resolve(MODID).resolve("web.json")).register();
         new CombatEffectListener(ModStats.COMBAT_EFFECTS, STATS).register();
 
         FMLCommonSetupEvent.getBus(modBusGroup).addListener(event -> {

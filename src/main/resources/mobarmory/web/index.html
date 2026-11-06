@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mob Armory 武器後台</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <h1>Mob Armory 武器後台</h1>
+      <p class="sub">改了以後立刻套用到遊戲裡所有同種武器，並寫回 <code>config/mobarmory/weapons/</code></p>
+    </div>
+    <div class="top-actions">
+      <button type="button" id="refresh" class="ghost">重新整理</button>
+      <button type="button" id="reload" class="ghost">從檔案重新載入</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button type="button" role="tab" class="tab active" data-tab="weapons" aria-selected="true">武器</button>
+    <button type="button" role="tab" class="tab" data-tab="create" aria-selected="false">新增武器</button>
+    <button type="button" role="tab" class="tab" data-tab="mobs" aria-selected="false">怪物</button>
+  </nav>
+
+  <div id="notice" class="notice hidden" role="status" aria-live="polite"></div>
+
+  <main>
+    <section id="tab-weapons" class="panel">
+      <div class="layout">
+        <aside>
+          <h2>伺服器上的武器</h2>
+          <ul id="weapon-list" class="weapon-list"></ul>
+        </aside>
+        <section class="editor-wrap">
+          <div id="editor-empty" class="empty">從左邊選一把武器來編輯。</div>
+          <form id="editor" class="editor hidden" novalidate></form>
+        </section>
+      </div>
+    </section>
+
+    <section id="tab-create" class="panel hidden">
+      <h2>新增武器</h2>
+      <p class="hint">新的武器會存成 <code>config/mobarmory/weapons/&lt;id&gt;.json</code>。Minecraft 只在啟動時建立物品種類，所以<strong>重開遊戲後</strong>才能用 <code>/give</code> 拿到。</p>
+      <form id="creator" class="editor" novalidate></form>
+    </section>
+
+    <section id="tab-mobs" class="panel hidden">
+      <h2>怪物</h2>
+      <p class="hint">怪物的外觀、數值和行為要等 R4（自訂怪物）完成才能在這裡設定。API 位置 <code>/api/v1/mobs</code> 已經保留。</p>
+      <button type="button" id="mobs-check" class="ghost">查詢怪物 API</button>
+      <pre id="mobs-result" class="result hidden"></pre>
+    </section>
+  </main>
+
+  <template id="modifier-row">
+    <div class="modifier">
+      <select class="m-stat" aria-label="數值"></select>
+      <select class="m-op" aria-label="方式">
+        <option value="add">加固定值</option>
+        <option value="percent">百分比</option>
+      </select>
+      <input class="m-amount" type="number" step="any" aria-label="數字">
+      <span class="m-unit"></span>
+      <button type="button" class="m-remove ghost" aria-label="刪除這一行">刪除</button>
+    </div>
+  </template>
+</body>
+</html>

@@ -86,7 +86,7 @@ final class LiveEditGameTests {
     }
 
     /** Puts the shipped file and definition back, whatever the test did. */
-    private static void restore() {
+    static void restore() {
         try {
             MobArmoryMod.WEAPON_FILES.writeWeapon(SWORD, DefaultWeapons.text(SWORD.value()));
             MobArmoryMod.WEAPON_ADMIN.reload();
@@ -104,7 +104,7 @@ final class LiveEditGameTests {
     }
 
     @SuppressWarnings("removal")
-    private static ServerPlayer playerHoldingSword(GameTestHelper helper) {
+    static ServerPlayer playerHoldingSword(GameTestHelper helper) {
         ServerPlayer player = helper.makeMockServerPlayerInLevel();
         player.setItemSlot(EquipmentSlot.MAINHAND, sword());
         MobArmoryMod.EQUIPMENT_STATS.refresh(player);
