@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:alone_spawn",
+  "function": "mobarmory:mob_spawns_from_egg_and_summon",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

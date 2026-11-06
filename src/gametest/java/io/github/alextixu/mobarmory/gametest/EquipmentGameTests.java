@@ -5,9 +5,8 @@ import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.checkNear
 import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.stats;
 import static io.github.alextixu.mobarmory.gametest.MobArmoryGameTests.test;
 
-import io.github.alextixu.mobarmory.content.ModEquipment;
 import io.github.alextixu.mobarmory.content.ModStats;
-import io.github.alextixu.mobarmory.core.equipment.EquipmentDefinition;
+import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
 import io.github.alextixu.mobarmory.forge.EquipmentStatApplier;
 import io.github.alextixu.mobarmory.forge.MobArmoryMod;
@@ -49,7 +48,7 @@ final class EquipmentGameTests {
         Player player = player(helper);
         checkNear(helper, 4.0, value(player, ModStats.ATTACK_SPEED), "N3 given: empty-handed attack speed");
 
-        equip(player, EquipmentSlot.MAINHAND, stack(ModEquipment.HEAVY_SWORD));
+        equip(player, EquipmentSlot.MAINHAND, stack(Weapons.HEAVY_SWORD));
         checkNear(helper, 2.4, value(player, ModStats.ATTACK_SPEED), "N3 then: attack speed with heavy sword");
 
         equip(player, EquipmentSlot.MAINHAND, ItemStack.EMPTY);
@@ -57,8 +56,8 @@ final class EquipmentGameTests {
         helper.succeed();
     }
 
-    private static ItemStack stack(EquipmentDefinition equipment) {
-        return new ItemStack(MobArmoryMod.EQUIPMENT.item(equipment.id()));
+    private static ItemStack stack(EquipmentId equipment) {
+        return new ItemStack(MobArmoryMod.EQUIPMENT.item(equipment));
     }
 
     private static double value(LivingEntity entity, StatDefinition stat) {
@@ -80,7 +79,7 @@ final class EquipmentGameTests {
         Player player = player(helper);
         checkNear(helper, 0.1, value(player, ModStats.MOVEMENT_SPEED), "H1 given: empty-handed speed");
 
-        equip(player, EquipmentSlot.MAINHAND, stack(ModEquipment.HEAVY_SWORD));
+        equip(player, EquipmentSlot.MAINHAND, stack(Weapons.HEAVY_SWORD));
         checkNear(helper, 0.07, value(player, ModStats.MOVEMENT_SPEED), "H1 then: speed with heavy sword");
 
         equip(player, EquipmentSlot.MAINHAND, ItemStack.EMPTY);
@@ -93,7 +92,7 @@ final class EquipmentGameTests {
     /** B1: weapons only work in the main hand. */
     static void heavySwordInOffhandDoesNothing(GameTestHelper helper) {
         Player player = player(helper);
-        equip(player, EquipmentSlot.OFFHAND, stack(ModEquipment.HEAVY_SWORD));
+        equip(player, EquipmentSlot.OFFHAND, stack(Weapons.HEAVY_SWORD));
         checkNear(helper, 0.1, value(player, ModStats.MOVEMENT_SPEED), "B1: speed with heavy sword in off hand");
         helper.succeed();
     }
@@ -101,8 +100,8 @@ final class EquipmentGameTests {
     /** B2: heavy sword (-30%) and heavy armor (-15%) multiply: 0.1 x 0.7 x 0.85 = 0.0595. */
     static void slowdownsMultiply(GameTestHelper helper) {
         Player player = player(helper);
-        equip(player, EquipmentSlot.MAINHAND, stack(ModEquipment.HEAVY_SWORD));
-        equip(player, EquipmentSlot.CHEST, stack(ModEquipment.HEAVY_ARMOR));
+        equip(player, EquipmentSlot.MAINHAND, stack(Weapons.HEAVY_SWORD));
+        equip(player, EquipmentSlot.CHEST, stack(Weapons.HEAVY_ARMOR));
         checkNear(helper, 0.0595, value(player, ModStats.MOVEMENT_SPEED), "B2: speed with sword and armor");
         checkNear(helper, 8.0, value(player, ModStats.ARMOR), "B2: armor from heavy armor");
         helper.succeed();
@@ -111,7 +110,7 @@ final class EquipmentGameTests {
     /** B11/B12: recomputing (as after a respawn or relog) never stacks the same piece. */
     static void refreshDoesNotStack(GameTestHelper helper) {
         Player player = player(helper);
-        equip(player, EquipmentSlot.MAINHAND, stack(ModEquipment.HEAVY_SWORD));
+        equip(player, EquipmentSlot.MAINHAND, stack(Weapons.HEAVY_SWORD));
         for (int i = 0; i < 3; i++) {
             MobArmoryMod.EQUIPMENT_STATS.refresh(player);
         }
@@ -123,7 +122,7 @@ final class EquipmentGameTests {
     static void evasionChestplateGivesDodge(GameTestHelper helper) {
         Player player = player(helper);
         checkNear(helper, 0.0, value(player, ModStats.DODGE_CHANCE), "H4 given: dodge");
-        equip(player, EquipmentSlot.CHEST, stack(ModEquipment.EVASION_CHESTPLATE));
+        equip(player, EquipmentSlot.CHEST, stack(Weapons.EVASION_CHESTPLATE));
         checkNear(helper, 0.15, value(player, ModStats.DODGE_CHANCE), "H4 then: dodge with evasion chestplate");
         helper.succeed();
     }
@@ -131,7 +130,7 @@ final class EquipmentGameTests {
     /** H7: dagger gives attack 1.0 + 2 = 3.0, plus its crit chance and speed bonus. */
     static void daggerAttackDamage(GameTestHelper helper) {
         Player player = player(helper);
-        equip(player, EquipmentSlot.MAINHAND, stack(ModEquipment.DAGGER));
+        equip(player, EquipmentSlot.MAINHAND, stack(Weapons.DAGGER));
         checkNear(helper, 3.0, value(player, ModStats.ATTACK_DAMAGE), "H7: attack damage with dagger");
         checkNear(helper, 0.25, value(player, ModStats.CRIT_CHANCE), "dagger crit chance");
         checkNear(helper, 0.11, value(player, ModStats.MOVEMENT_SPEED), "dagger speed");
@@ -156,7 +155,7 @@ final class EquipmentGameTests {
         Zombie zombie = helper.spawn(EntityTypes.ZOMBIE, BlockPos.ZERO);
         zombie.setBaby(false);
         double base = zombie.getAttributeBaseValue(stats().holder(ModStats.MOVEMENT_SPEED.id()));
-        zombie.setItemSlot(EquipmentSlot.MAINHAND, stack(ModEquipment.HEAVY_SWORD));
+        zombie.setItemSlot(EquipmentSlot.MAINHAND, stack(Weapons.HEAVY_SWORD));
         helper.succeedWhen(() -> checkNear(helper, base * 0.7, value(zombie, ModStats.MOVEMENT_SPEED),
             "zombie speed after the equipment-change event"));
     }

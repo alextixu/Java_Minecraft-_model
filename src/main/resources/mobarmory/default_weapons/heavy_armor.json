@@ -1,0 +1,18 @@
+{
+  "format": 1,
+  "name": "Heavy Armor",
+  "slot": "chest",
+  "look": {
+    "item": "minecraft:iron_chestplate"
+  },
+  "modifiers": [
+    {
+      "stat": "armor",
+      "add": 8
+    },
+    {
+      "stat": "movement_speed",
+      "percent": -15
+    }
+  ]
+}

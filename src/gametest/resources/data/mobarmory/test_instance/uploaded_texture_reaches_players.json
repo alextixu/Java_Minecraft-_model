@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:live_edit",
+  "function": "mobarmory:uploaded_texture_reaches_players",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "minecraft:empty"
+}

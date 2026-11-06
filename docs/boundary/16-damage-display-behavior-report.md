@@ -4,6 +4,7 @@
 > 結果：**單元測試 160/160**（原本 106 ＋ 新增 54）、**遊戲內系統測試 27/27**（原本 18 ＋ 新增 9；伺服器報告寫「All 28 required tests passed」，多的一個是 Minecraft 自帶的 `minecraft:always_pass`）。
 > 指令：`gradlew clean build runGameTestServer`，結果另存在 `run/gametest-report.xml`（28 個 testcase、0 個 failure）。
 > 範圍：使用者照審查員的建議縮小，只做 action bar（[13](13-damage-display-open-questions.md) Q4 C）。
+> **2026-11-07 合併**：已把 R4 分支頭 `96b9262`（含 main `40ee556` 的 R2b＋R6 最終版）合進來，加了一個遊擊兵的遊戲內測試。合併後是**單元 322/322**、**遊戲內 57/57**（伺服器報告 58，含 `always_pass`）。見[第 8 節](#8-合併到-main2026-11-07)。
 
 ## 1. 邊界說明（已確認的版本）
 
@@ -211,6 +212,67 @@ HitReport ─▶ HitFilter.shows ─▶ 每個 HitDisplay ─▶ ActionBarDispla
 
 ## 7. 合併注意（給監控 session）
 
+> 11/07 已經合併，實際情況見第 8 節。下面是合併前寫的預估。
+
 - **R2b 先合進 main**：可能和這個分支改到相鄰行的地方只有 `MobArmoryMod`（`HIT_FEEDBACK` 欄位、`CombatEffectListener` 建構子那一行、`HIT_FEEDBACK.register()`）、`CombatEffectListener`（三處通知和建構子）、`lang/en_us.json`（最後 6 行）、`MobArmoryGameTests`（註冊一行）。都是加行，衝突容易解。`content/` 沒動，D1 的測試也不引用 `ModEquipment`。合併後要再跑一次 `gradlew clean build runGameTestServer`。
 - **給 R3 combo**：combo 名稱要顯示在同一行時，`HitReport` 加一個欄位、`HitText` 加一個語系字串變體、`en_us.json` 加字串，`ActionBarDisplay` 和 `HitFeedbackListener` 不用改。
 - `docs/boundary/README.md` 沒有改（由開發 session 維護），需要時請在索引加上 11～13、16。
+
+## 8. 合併到 main（2026-11-07）
+
+使用者 11/07 決定「合併」。D1 排在 R4 之後合（review-02 6-4）。每一步的 prompt 和 SOLID／Pattern 檢查見 [prompts/damage-display-round-03-merge.md](prompts/damage-display-round-03-merge.md)。
+
+- **做法**：在 `feature/damage-hud` 執行 `git merge --no-ff 96b9262`。`96b9262` 是 `feature/r4-mobs` 的分支頭，已經包含 main `40ee556`（R2b＋R6 最終版）和 R4，架構師之後會把 main 快轉到這個分支。沒有 rebase，沒有動 main，沒有 push。`feature/r3-combo` 停在 `74bd43b`，沒有動。
+- **測試**：`gradlew clean build runGameTestServer` 全過。
+
+| | 合併前：D1（`ed05c6b`） | 合併前：R4 分支頭（`96b9262`） | 合併後 |
+|---|---|---|---|
+| 單元 | 160 | 268 | **322**（268 ＋ D1 新增的 54） |
+| 遊戲內 | 27 | 47 | **57**（47 ＋ D1 的 9 ＋ 這次新增的 1） |
+| 伺服器報告 | 28 | 48 | **58**（多的一個都是原版 `always_pass`） |
+
+R4 說的「遊戲內 48」是伺服器報告的數字。遊戲內測試的報告改放在 `run-gametest/gametest-report.xml`：R2b 讓遊戲內測試用自己的資料夾，每次執行前清空。這次是 58 個 testcase、0 個 failure。jar 裡沒有任何遊戲內測試的類別或 `test_instance`。
+
+### 衝突怎麼解（照 review-02 6-1：兩邊各加幾行，全部保留）
+
+| 檔案 | 衝突區塊 | 怎麼解 |
+|---|---|---|
+| `forge/MobArmoryMod.java` | 3（import、欄位、接線） | **import**：兩邊都留，照字母順序排<br>**欄位**：裝備用 R4 分支（＝main）的寫法：`WEAPON_FILES`、`EQUIPMENT_LIBRARY`、`WEAPON_SYNC`、`WEAPON_ADMIN`、`MOB_EQUIPMENT`、`MOBS`。D1 那邊的 `EQUIPMENT`／`EQUIPMENT_STATS` 還是用 `ModEquipment.CATALOG`，R2b 已經刪掉 `ModEquipment`，所以不能留。後面加上 D1 的 `HIT_FEEDBACK`<br>**接線**：R4 分支的 reload 指令、同步、網頁、客戶端註冊全部保留；`CombatEffectListener` 那一行換成 D1 帶 `HIT_FEEDBACK` 的建構子，後面加 `HIT_FEEDBACK.register()` |
+| `lang/en_us.json` | 1 | 審查的試算是「自動合併」，但 R2b 的 reload 和網頁字串也加在最後，所以實際上有衝突。兩邊都留：R2b 的 8 行在前、D1 的 6 行在後，R2b 原本的最後一行補上逗號。用 JSON 解析器確認合法（23 個字串）；`HitTextContractTest` 也確認 D1 的 6 個字串都在 |
+| `gametest/MobArmoryGameTests.java` | 1 | 兩邊都留，`FeedbackGameTests.registerAll()` 放最後 |
+
+自動合併、要確認的地方：
+
+- `CombatEffectListener`：main 和 R4 都沒動過，合併後就是 D1 的版本（三處通知、新的建構子）。
+- D1 的正式程式：`core/feedback`、`forge/feedback`、`CombatEffectListener` 合併後和 `ed05c6b` 一模一樣。
+- R2b、R4 的類別：D1 一行都沒改。
+
+### 6-3 e：遊擊兵和 action bar（新增遊戲內測試）
+
+`hud_skirmisher_crit_and_dodge`（`FeedbackGameTests`，在 `mobarmory:arena` 裡跑）：
+
+- **用真的遊擊兵**：經由 `MobArmoryMod.MOBS` 生成，和生怪蛋走同一條路，會拿到短刀。用的是它自己的數值，不覆寫：暴擊 0.25 ＋ 短刀 0.25 = 0.5、迴避 0.30、攻擊 2 ＋ 短刀 2 = 4。測試先確認這三個數字。
+- **D1 對 R4 的怪物沒有任何特例**，正式程式沒改就通過。
+- 三個情境：
+
+| 情境 | 預期 | 結果 |
+|---|---|---|
+| 遊擊兵打玩家（直到暴擊和一般各出現一次，最多 60 下） | 只有玩家收到一行，紅色，名稱是 `Skirmisher`。暴擊那一下是 `mobarmory.hit.taken.crit`（`Skirmisher hit you -x CRIT ❤ …`），一般是 `mobarmory.hit.taken`。數字都等於玩家實際少掉的血，**暴擊 = 一般 × 1.5**（用比例比，所以和難度無關） | 通過 |
+| 玩家打遊擊兵（直到被迴避，最多 60 下） | 被迴避的那一下是灰色 `mobarmory.hit.dealt.miss`（`Skirmisher MISS ❤ …`），遊擊兵沒扣血；打中的是一般的 `dealt` | 通過 |
+| 玩家迴避調到上限 0.75，遊擊兵打玩家（直到迴避，最多 60 下） | 灰色 `mobarmory.hit.taken.miss`（`Dodged Skirmisher ❤ …`），玩家沒扣血 | 通過 |
+
+隨機造成誤判的機率：
+
+- 60 下裡沒有暴擊或沒有一般：約 2 × 0.5⁶⁰。
+- 60 下都沒被迴避：0.7⁶⁰ ≈ 5 × 10⁻¹⁰。
+- 60 下都沒迴避成功：0.25⁶⁰。
+
+### 手動走查（錄影用，`runClient`）
+
+這一段沒有實際在客戶端跑過，是照自動測試寫的預期畫面。
+
+1. `gradlew runClient`，開新世界（生存、普通難度）。
+2. 打開創造模式物品欄的 Mob Armory 分頁，拿遊擊兵的生怪蛋放出一隻，再 `/gamemode survival`。
+3. 站著讓它打：畫面下方出現紅色的 `Skirmisher hit you -x ❤ …/20`，大約一半會是 `… CRIT …`，數字是一般的 1.5 倍。
+4. 空手打它：大約三成出現灰色的 `Skirmisher MISS ❤ 16.0/16`，它的血不會少；打中時出現白色的 `Skirmisher -1.0 ❤ 15.0/16`。
+5. `/attribute @s mobarmory:dodge_chance base set 0.75`，再讓它打：大部分是灰色的 `Dodged Skirmisher ❤ …/20`。

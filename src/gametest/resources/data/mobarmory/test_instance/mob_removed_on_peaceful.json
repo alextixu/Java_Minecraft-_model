@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "mobarmory:difficulty_restored",
+  "function": "mobarmory:mob_removed_on_peaceful",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

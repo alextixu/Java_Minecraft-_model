@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:h1_h2_prototype_mob_stats",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

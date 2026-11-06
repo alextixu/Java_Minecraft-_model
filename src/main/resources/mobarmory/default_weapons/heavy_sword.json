@@ -1,0 +1,22 @@
+{
+  "format": 1,
+  "name": "Heavy Sword",
+  "slot": "mainhand",
+  "look": {
+    "item": "minecraft:netherite_sword"
+  },
+  "modifiers": [
+    {
+      "stat": "attack_damage",
+      "add": 6
+    },
+    {
+      "stat": "movement_speed",
+      "percent": -30
+    },
+    {
+      "stat": "attack_speed",
+      "percent": -40
+    }
+  ]
+}

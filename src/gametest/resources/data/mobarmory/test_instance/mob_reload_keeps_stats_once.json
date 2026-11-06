@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:function",
+  "environment": "minecraft:default",
+  "function": "mobarmory:mob_reload_keeps_stats_once",
+  "max_ticks": 100,
+  "required": true,
+  "structure": "mobarmory:arena"
+}

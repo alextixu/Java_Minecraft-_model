@@ -24,6 +24,9 @@ public final class ModStats {
     /** Swings per second; the attack bar refills in 20 / attack speed ticks. Added for N3 (heavy weapons swing slower). */
     public static final StatDefinition ATTACK_SPEED =
         StatDefinition.vanilla("attack_speed", "minecraft:attack_speed", 4.0, 0, 1024);
+    /** Hit points when unhurt. Added for R4 (O9) so a mob definition can set it; 1-1024 like Minecraft's own limit. */
+    public static final StatDefinition MAX_HEALTH =
+        StatDefinition.vanilla("max_health", "minecraft:max_health", 20.0, 1, 1024);
     /** Chance that an attack deals 1.5x damage. Capped at 100%. */
     public static final StatDefinition CRIT_CHANCE = StatDefinition.custom("crit_chance", 0, 0, 1.0);
     /** Chance to avoid damage caused by a mob (melee or projectile). Capped at 75%. */
@@ -34,6 +37,7 @@ public final class ModStats {
         .add(MOVEMENT_SPEED)
         .add(ARMOR)
         .add(ATTACK_SPEED)
+        .add(MAX_HEALTH)
         .add(CRIT_CHANCE)
         .add(DODGE_CHANCE)
         .build();
