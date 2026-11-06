@@ -15,10 +15,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.cow.Cow;
 import net.minecraft.world.entity.monster.zombie.Zombie;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.GameType;
-import net.minecraftforge.common.ForgeHooks;
-import net.minecraftforge.event.entity.player.CriticalHitEvent;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * System tests for crit and dodge going through Minecraft's real damage pipeline and Forge's events.
@@ -35,6 +32,7 @@ final class CombatGameTests {
         test("environment_damage_is_never_dodged", CombatGameTests::environmentDamageIsNeverDodged);
         test("mob_crit_multiplies_damage", CombatGameTests::mobCritMultipliesDamage);
         test("player_crit_uses_one_multiplier", CombatGameTests::playerCritUsesOneMultiplier);
+        test("player_crit_needs_full_charge", CombatGameTests::playerCritNeedsFullCharge);
     }
 
     private static void setBase(LivingEntity entity, StatDefinition stat, double value) {
@@ -105,24 +103,71 @@ final class CombatGameTests {
         helper.succeed();
     }
 
-    /** H5 + B9 in game, player attacker: our crit and a vanilla jump crit share one 1.5x multiplier. */
+    /** Lets the player's attack bar refill completely (5 ticks for an empty hand; 10 to be safe). */
+    private static void charge(ServerPlayer player) {
+        for (int i = 0; i < 10; i++) {
+            player.doTick();
+        }
+    }
+
+    /** Puts the player mid-fall (a jump attack) or on the ground. Vanilla only jump-crits while falling. */
+    private static void airborne(ServerPlayer player, boolean falling) {
+        player.setOnGround(!falling);
+        player.fallDistance = falling ? 1.0 : 0.0;
+        player.setSprinting(false);
+    }
+
+    /** One real swing through Player.attack, returning the damage the cow took. */
+    private static double swing(ServerPlayer player, Cow cow) {
+        cow.damageCooldownTime = 0;
+        float before = cow.getHealth();
+        player.attack(cow);
+        return before - cow.getHealth();
+    }
+
+    /**
+     * H5 + B9 in game, with real player swings (empty hand, attack damage 1.0): a jump attack alone, a 100% crit
+     * alone, and both together all deal exactly 1.5. The two crits share one multiplier and never make 2.25.
+     */
     static void playerCritUsesOneMultiplier(GameTestHelper helper) {
-        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
         Cow cow = toughCow(helper);
 
-        check(helper, ForgeHooks.getCriticalHit(player, cow, false, 1.0f) == null, "0 crit, no jump: should not crit");
-        CriticalHitEvent jumpOnly = ForgeHooks.getCriticalHit(player, cow, true, 1.5f);
-        check(helper, jumpOnly != null, "jump attack alone should still crit");
-        checkNear(helper, 1.5, jumpOnly.getDamageModifier(), "jump attack multiplier");
+        charge(player);
+        airborne(player, false);
+        checkNear(helper, 1.0, swing(player, cow), "0 crit, no jump: plain hit");
+
+        charge(player);
+        airborne(player, true);
+        checkNear(helper, 1.5, swing(player, cow), "jump attack alone");
 
         setBase(player, ModStats.CRIT_CHANCE, 1.0);
-        CriticalHitEvent rolled = ForgeHooks.getCriticalHit(player, cow, false, 1.0f);
-        check(helper, rolled != null, "100% crit should crit without jumping");
-        checkNear(helper, 1.5, rolled.getDamageModifier(), "H5: crit multiplier");
+        charge(player);
+        airborne(player, false);
+        checkNear(helper, 1.5, swing(player, cow), "H5: 100% crit without jumping");
 
-        CriticalHitEvent both = ForgeHooks.getCriticalHit(player, cow, true, 1.5f);
-        check(helper, both != null, "100% crit plus jump should crit");
-        checkNear(helper, 1.5, both.getDamageModifier(), "B9: crit plus jump must not stack to 2.25");
+        charge(player);
+        airborne(player, true);
+        checkNear(helper, 1.5, swing(player, cow), "B9: 100% crit plus jump must not stack to 2.25");
+        helper.succeed();
+    }
+
+    /**
+     * N2: a swing that is not fully charged never rolls a crit, even at 100%. Right after a swing the bar is
+     * empty, so the next hit is weak: 1.0 x (0.2 + 0.1^2 x 0.8) = 0.208, and a crit would have made it 0.312.
+     */
+    static void playerCritNeedsFullCharge(GameTestHelper helper) {
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        Cow cow = toughCow(helper);
+        setBase(player, ModStats.CRIT_CHANCE, 1.0);
+        airborne(player, false);
+
+        charge(player);
+        checkNear(helper, 1.5, swing(player, cow), "charged swing crits");
+
+        double weak = swing(player, cow); // no ticks in between: the bar is empty
+        check(helper, weak < 0.25, "N2: weak swing must not crit (0.208 expected, a crit would be 0.312), got " + weak);
+        check(helper, weak > 0.15, "N2: weak swing should still deal its reduced damage, got " + weak);
         helper.succeed();
     }
 }

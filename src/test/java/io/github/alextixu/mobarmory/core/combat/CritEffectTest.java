@@ -58,6 +58,27 @@ class CritEffectTest {
     }
 
     @Test
+    @DisplayName("N2 Given 攻擊者暴擊率 100%，但這一下沒蓄滿 When 打中目標 Then 不判定暴擊，傷害維持 10")
+    void n2WeakSwingNeverCrits() {
+        var ctx = new CombatContext(with(CRIT, 1.0), StatReader.NONE, 10, DamageKind.MELEE, false, false);
+        CombatOutcome outcome = effect.apply(ctx, always(0.0));
+
+        assertFalse(outcome.critical());
+        assertEquals(10.0, outcome.damage(), EPS);
+    }
+
+    @Test
+    @DisplayName("N2：蓄滿的一擊照常判定；沒有蓄力的攻擊者（生物、投射物）一律算蓄滿")
+    void n2FullStrengthRolls() {
+        var charged = new CombatContext(with(CRIT, 1.0), StatReader.NONE, 10, DamageKind.MELEE, false, true);
+        var mob = new CombatContext(with(CRIT, 1.0), StatReader.NONE, 10, DamageKind.MELEE, false);
+
+        assertTrue(effect.apply(charged, always(0.0)).critical());
+        assertTrue(mob.fullStrength());
+        assertTrue(effect.apply(mob, always(0.0)).critical());
+    }
+
+    @Test
     @DisplayName("讀的是攻擊者的暴擊率，不是防禦者的")
     void readsAttacker() {
         var ctx = melee(StatReader.NONE, with(CRIT, 1.0), 10);

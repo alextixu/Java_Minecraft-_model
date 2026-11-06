@@ -7,6 +7,8 @@ import io.github.alextixu.mobarmory.core.combat.CombatOutcome;
 import io.github.alextixu.mobarmory.core.combat.CombatResolver;
 import io.github.alextixu.mobarmory.core.combat.DamageKind;
 import io.github.alextixu.mobarmory.core.combat.RandomSource;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import net.minecraft.world.damagesource.DamageSource;
@@ -16,6 +18,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.util.Result;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.event.entity.player.CriticalHitEvent;
 
 /**
@@ -31,8 +34,17 @@ import net.minecraftforge.event.entity.player.CriticalHitEvent;
  * Everything runs on the server only; the server is the authority on damage.
  */
 public final class CombatEffectListener {
+    /** Same threshold Minecraft uses for a "full strength" swing. */
+    private static final float FULL_CHARGE = 0.9F;
+
     private final CombatEffects effects;
     private final StatAttributeBridge stats;
+    /**
+     * How charged each player's current swing is. Minecraft resets the charge before it fires
+     * {@link CriticalHitEvent}, so it is recorded on {@link AttackEntityEvent}, which fires first (N2).
+     * Written and read on the server thread within the same attack.
+     */
+    private final Map<Player, Float> swingCharge = new WeakHashMap<>();
 
     public CombatEffectListener(CombatEffects effects, StatAttributeBridge stats) {
         this.effects = effects;
@@ -41,8 +53,16 @@ public final class CombatEffectListener {
 
     public void register() {
         LivingAttackEvent.BUS.addListener((Predicate<LivingAttackEvent>) this::onAttack);
+        AttackEntityEvent.BUS.addListener((Consumer<AttackEntityEvent>) this::onPlayerSwing);
         CriticalHitEvent.BUS.addListener(this::onCriticalHit);
         LivingHurtEvent.BUS.addListener((Consumer<LivingHurtEvent>) this::onHurt);
+    }
+
+    private void onPlayerSwing(AttackEntityEvent event) {
+        Player player = event.getEntity();
+        if (!player.level().isClientSide()) {
+            swingCharge.put(player, player.getAttackStrengthScale(0.5F));
+        }
     }
 
     /** @return true to cancel the attack (dodged) */
@@ -63,8 +83,11 @@ public final class CombatEffectListener {
             return;
         }
         StatReader defender = event.getTarget() instanceof LivingEntity target ? reader(target) : StatReader.NONE;
+        Float charge = swingCharge.remove(attacker);
+        boolean fullStrength = (charge != null ? charge : attacker.getAttackStrengthScale(0.5F)) > FULL_CHARGE;
         // Damage 1.0 so the resulting "damage" is exactly the multiplier Minecraft should apply.
-        CombatContext ctx = new CombatContext(reader(attacker), defender, 1.0, DamageKind.MELEE, event.isVanillaCritical());
+        CombatContext ctx = new CombatContext(
+            reader(attacker), defender, 1.0, DamageKind.MELEE, event.isVanillaCritical(), fullStrength);
         CombatOutcome outcome = CombatResolver.resolve(effects.offensive(), ctx, rng(attacker));
         if (outcome.critical()) {
             event.setResult(Result.ALLOW);

@@ -36,3 +36,9 @@
 > - 測試程式改用 `@Mod.EventBusSubscriber(bus = MOD)` 在 `RegisterEvent` 自己註冊到 `Registries.TEST_FUNCTION`，主程式不再引用測試。
 > - 加一個單元測試守住：`src/main/resources/data` 底下不能有 `test_instance`、`test_environment`。
 > - 完成條件：`gradlew clean build runGameTestServer` 單元測試不少於 101、遊戲內測試仍是 16；正式 jar 裡沒有 `test_instance`；`runClient` 建新世界不再跳警告（截圖）。
+
+### N2：玩家暴擊要蓄滿才判定
+
+> - 規則放在核心：`CombatContext` 多一個 `fullStrength`（這一擊是否蓄滿；生物沒有蓄力，永遠算蓄滿，原本 5 個參數的建構子預設為 true）。`CritEffect` 只有在蓄滿時才擲暴擊；原版跳劈本來就要求蓄滿，所以兩邊條件一致。
+> - `CombatEffectListener`：Minecraft 在觸發 `CriticalHitEvent` 之前就把蓄力歸零（`Player.attack` 先呼叫 `onAttack()`），所以改在更早的 `AttackEntityEvent` 記下這一擊的蓄力，暴擊事件再讀出來；門檻和原版一樣是 0.9。
+> - 測試：Component（`CritEffectTest`：沒蓄滿不暴擊）；System（真的伺服器端玩家用 `Player.attack` 打牛：沒蓄滿 100% 暴擊率也不暴擊；蓄滿時暴擊、跳劈、兩者同時都是 1.5 倍）。

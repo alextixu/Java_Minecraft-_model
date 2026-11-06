@@ -7,7 +7,9 @@ import java.util.Objects;
 /**
  * The attacker may land a critical hit worth {@value #MULTIPLIER}x damage. A hit is critical if it is already
  * a vanilla jump attack or the attacker's crit chance rolls; either way the multiplier applies once and
- * never stacks (decision O4). This effect is the only place the multiplier is applied.
+ * never stacks (decision O4). The crit chance only rolls on a fully charged attack, the same condition
+ * Minecraft uses for jump crits, so spam-clicking cannot farm crits (N2).
+ * This effect is the only place the multiplier is applied.
  */
 public final class CritEffect implements StatEffect {
     public static final double MULTIPLIER = 1.5;
@@ -36,6 +38,9 @@ public final class CritEffect implements StatEffect {
     }
 
     private boolean rolls(CombatContext ctx, RandomSource rng) {
+        if (!ctx.fullStrength()) {
+            return false;
+        }
         double chance = stat.clamp(ctx.attacker().get(stat.id()));
         return chance > 0 && rng.nextDouble() < chance;
     }
