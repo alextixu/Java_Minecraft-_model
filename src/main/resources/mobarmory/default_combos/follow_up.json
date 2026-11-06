@@ -1,0 +1,13 @@
+{
+  "format": 1,
+  "name": "Follow-up",
+  "sequence": [
+    "run",
+    "walk"
+  ],
+  "window_ticks": 30,
+  "effect": {
+    "type": "damage_multiplier",
+    "value": 1.3
+  }
+}

@@ -1,6 +1,7 @@
 # 邊界說明：R3 combo（最小版）
 
-> 狀態：**草案**（2026-11-06），等待確認點的回覆，問題在 [19-r3-combo-open-questions.md](19-r3-combo-open-questions.md)。
+> 狀態：**採用建議值**（2026-11-07）。主 session 依使用者夜間授權，[19](19-r3-combo-open-questions.md) 的 Q1～Q7 全選 A、O1～O12 照建議，**待使用者確認**。實作照這份邊界進行，結果見 [20](20-r3-combo-behavior-report.md)。
+> 前提已處理：實作前已把 main `061e7a9`（含 R2b、R6、R4、D1）合進這個分支。
 > 流程：boundary-first 第 1、2 步。第 3 步的 Given / When / Then 在 [18-r3-combo-given-when-then.md](18-r3-combo-given-when-then.md)。
 > 工作位置：worktree `java_minecraft_model/mod-damage-hud`，分支 `feature/r3-combo`（從 `feature/damage-hud` 的 `ed05c6b` 分出，所以包含 D1 的 action bar）。
 > 前提：開發 session 的 **R2b 會先合進 main**：`content/ModEquipment` 換成 `config/mobarmory/weapons/*.json` ＋ `EquipmentLibrary`（裝備用 id 查），`MobArmoryMod` 也改了。這份邊界照合併後的樣子寫。

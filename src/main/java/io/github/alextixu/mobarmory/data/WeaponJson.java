@@ -152,7 +152,8 @@ public final class WeaponJson {
         return new JsonPrimitive(new BigDecimal(value.stripTrailingZeros().toPlainString()));
     }
 
-    private static String string(JsonObject json, String key, String field) throws WeaponFormatException {
+    /** Also used by {@link ComboJson}, so every data file reports a missing or wrong field the same way. */
+    static String string(JsonObject json, String key, String field) throws WeaponFormatException {
         JsonElement value = json.get(key);
         if (value == null || value.isJsonNull()) {
             throw new WeaponFormatException(field, "missing");
@@ -163,7 +164,8 @@ public final class WeaponJson {
         return value.getAsString();
     }
 
-    private static BigDecimal number(JsonElement value, String field) throws WeaponFormatException {
+    /** Also used by {@link ComboJson}. */
+    static BigDecimal number(JsonElement value, String field) throws WeaponFormatException {
         if (value == null || value.isJsonNull()) {
             throw new WeaponFormatException(field, "missing");
         }

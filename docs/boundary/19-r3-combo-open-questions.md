@@ -1,6 +1,44 @@
 # 待使用者決定的問題（R3 combo 最小版）
 
-> 狀態：**等待回覆**。依 boundary-first，設計和商業規則由人決定，AI 只提案。
+> 狀態：**主 session 依使用者夜間授權採用建議值（2026-11-07），待使用者確認**。依 boundary-first，設計和商業規則由人決定，AI 只提案。
+
+## 決定紀錄
+
+使用者 11/07 睡前的原話：
+
+> 繼續把所有內容補齊 每做完一個段落就給審查審核並且自動批改 我睡醒再回來驗收
+
+使用者沒有回答下面的問題。主 session 依上面的授權**全部採用建議值**，早上會請使用者確認。這是可以改回的決定：任何一題改選別的，要回頭改 17、18 和程式。
+
+| 題號 | 採用 | 內容 |
+|---|---|---|
+| Q1 | A | 同意 SOLID 判斷：combo 是資料、`ComboTracker` 是純 Java 狀態機、效果用 `ComboEffect`、自己的 `ComboListener`，不改 R1 |
+| Q2 | A | `content/ModCombos`（Java 資料）＋ Strategy（`ComboEffect`）＋ 每個玩家一份的 `ComboTracker`，存在伺服器記憶體 |
+| Q3 | A | 照列出的變更邊界。前提已處理：開始實作前把 main `061e7a9`（含 R2b、R6、R4、D1）合進這個分支 |
+| Q4 | A | 揮擊開始時從 `StatReader` 讀移動速度，≥ 0.12 算奔跑揮擊 |
+| Q5 | A | Lunge（走→跑）第二下 ×1.5；Follow-up（跑→走）第二下 ×1.3 |
+| Q6 | A | 打中主目標、而且蓄滿的近戰揮擊才算一下 |
+| Q7 | A | 所有武器和空手共用同一組 combo |
+| O1～O12 | 照建議 | 只有玩家；不限目標；和暴擊相乘；只套第二下；時間窗 30 tick（含邊界）；不連鎖；W→W、R→R 不是 combo；action bar 兩邊都加「· 名稱」；被迴避的那一下不算也不消耗；只在記憶體；英文名稱；門檻 0.12 |
+
+### 同日調整：Q2 改成 JSON 設定檔
+
+使用者 11/07 定下主軸，原話：
+
+> 主軸在我們這個系統可以未來讓玩家新增東西而不是我們自己要開發出很厲害的怪物與武器
+
+主 session 依這個主軸把 **Q2 從「A：Java 資料（`content/ModCombos`）」改成「JSON 設定檔」**，接近原本的 B。這也是可以改回的決定，待使用者確認。
+
+| 項目 | 調整後 |
+|---|---|
+| combo 定義 | 一個 combo 一個檔：`config/mobarmory/combos/<id>.json`，檔名就是 id。第一次啟動時自動建立 `lunge.json`、`follow_up.json` 兩個預設檔。玩家多放一個 JSON 就多一種 combo，不用改 Java |
+| JSON 裡寫什麼 | 顯示名稱、出招順序（`walk`／`run`）、時間窗、效果 |
+| 效果 | 還是 Strategy。JSON 只能從已經寫好的效果種類裡挑一種，填參數，例如 `"effect": {"type": "damage_multiplier", "value": 1.5}`。要新的效果種類才寫 Java（開放封閉） |
+| 讀檔、驗證、預設檔 | 沿用 main 上武器那一套（`data/` 的嚴格 JSON 解析、「所有問題一次列出、每條寫檔名」、資料夾不存在才裝預設檔），不另外寫一套 |
+| 執行中換 combo | 這次做：`/mobarmory reload` 連 combo 檔一起重讀，全有或全無。網頁編輯 combo 這次不做，寫進報告 20 的「之後」 |
+| 留在 Java 的 | 判斷「這一下算不算」的規則：奔跑門檻 0.12（Q4、O12）、蓄滿 0.9（Q6）。這兩個不是某個 combo 的資料，是所有 combo 共用的輸入規則 |
+
+Q3 的變更邊界跟著調整：多了 `data/` 的 combo 讀檔類別、`ReloadCommand` 要連 combo 一起重讀、預設檔放在 `src/main/resources/mobarmory/default_combos/`。O5 的「30 tick」和 O11 的「英文名稱」變成預設檔裡的值，玩家可以改。
 > 每題的第一個選項是建議值。回覆時寫題號和選項就好，例如「Q1 A、Q4 B、Q5 A、O3 同意」，或直接回「全部照建議」。
 > 第一輪（Q1～Q3）如果有任何一題不是選 A，[17](17-r3-combo-boundary-note.md) 和 [18](18-r3-combo-given-when-then.md) 要依答案重寫，第二輪的題目也可能跟著改。
 > 範圍依審查報告 P1-3 和使用者的原則：學長要求的才做，效果先用最簡單的傷害倍率。

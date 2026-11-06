@@ -1,6 +1,6 @@
 # 邊界行為：Given / When / Then（R3 combo 最小版）
 
-> 狀態：**草案**（2026-11-06）。標「請確認」的列是商業決策，建議值對應 [19-r3-combo-open-questions.md](19-r3-combo-open-questions.md) 的題號；標「正確性要求」的列不需要決定，但一定要測。
+> 狀態：**採用建議值**（2026-11-07，主 session 依使用者夜間授權，待使用者確認，見 [19 的決定紀錄](19-r3-combo-open-questions.md#決定紀錄)）。下面「請確認」的列都照建議值實作。標「請確認」的列是商業決策，建議值對應 [19-r3-combo-open-questions.md](19-r3-combo-open-questions.md) 的題號；標「正確性要求」的列不需要決定，但一定要測。
 > 流程：boundary-first 第 3 步。實作後每一列都會對應一個測試，列在行為報告 `20-r3-combo-behavior-report.md`。
 
 ## 數字的前提（都是建議值）

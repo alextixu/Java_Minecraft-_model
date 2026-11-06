@@ -1,0 +1,13 @@
+{
+  "format": 1,
+  "name": "Lunge",
+  "sequence": [
+    "walk",
+    "run"
+  ],
+  "window_ticks": 30,
+  "effect": {
+    "type": "damage_multiplier",
+    "value": 1.5
+  }
+}

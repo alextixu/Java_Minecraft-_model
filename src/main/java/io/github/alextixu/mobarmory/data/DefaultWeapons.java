@@ -4,9 +4,6 @@ import io.github.alextixu.mobarmory.core.equipment.EquipmentCatalog;
 import io.github.alextixu.mobarmory.core.equipment.EquipmentId;
 import io.github.alextixu.mobarmory.core.stat.StatCatalog;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -24,14 +21,7 @@ public final class DefaultWeapons {
 
     /** The shipped file content for one default piece. */
     public static String text(String id) {
-        try (InputStream in = DefaultWeapons.class.getResourceAsStream(FOLDER + id + ".json")) {
-            if (in == null) {
-                throw new IllegalStateException("The mod is missing " + FOLDER + id + ".json");
-            }
-            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return ShippedFiles.text(FOLDER, id);
     }
 
     /**

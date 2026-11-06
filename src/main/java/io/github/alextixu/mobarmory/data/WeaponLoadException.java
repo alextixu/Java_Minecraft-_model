@@ -10,7 +10,15 @@ public final class WeaponLoadException extends Exception {
     private final List<String> problems;
 
     public WeaponLoadException(List<String> problems) {
-        super("Mob Armory weapon files have " + problems.size() + " problem(s):\n  " + String.join("\n  ", problems));
+        this("weapon files", problems);
+    }
+
+    /**
+     * @param files which files, for example {@code "combo files"}: every kind of data file reports its problems this
+     *              way (R3 combos reuse it)
+     */
+    public WeaponLoadException(String files, List<String> problems) {
+        super("Mob Armory " + files + " have " + problems.size() + " problem(s):\n  " + String.join("\n  ", problems));
         this.problems = List.copyOf(problems);
     }
 
