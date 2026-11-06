@@ -55,6 +55,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.phys.AABB;
@@ -163,13 +164,15 @@ final class MobGameTests {
     // ---- T2 / H: a mob is one definition, and it is complete -------------------------------------------------
 
     /**
-     * T2 (conditions 2-5): every mob in the catalog, whatever is in it, spawns with exactly the stats its definition
-     * and equipment give, at full health, holding its equipment, with goals for its behaviors. A new mob is covered
-     * as soon as it is defined; this test does not change.
+     * T2 (conditions 2-5, 8): every mob in the catalog, whatever is in it, has a spawn egg for its type and spawns with
+     * exactly the stats its definition and equipment give, at full health, holding its equipment, with goals for its
+     * behaviors. A new mob is covered as soon as it is defined; this test does not change.
      */
     static void t2EveryMobSpawnsAsDefined(GameTestHelper helper) {
         List<ArmoryMob> mobs = new ArrayList<>();
         for (MobDefinition definition : MOBS.catalog().all()) {
+            check(helper, SpawnEggItem.getType(new ItemStack(MOBS.spawnEgg(definition.id()))) == type(definition),
+                definition.id() + "'s spawn egg should spawn a " + definition.id());
             mobs.add(spawn(helper, definition, HERE));
         }
         helper.succeedWhen(() -> {
