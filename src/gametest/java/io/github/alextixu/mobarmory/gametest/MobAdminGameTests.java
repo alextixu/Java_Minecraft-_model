@@ -10,6 +10,7 @@ import io.github.alextixu.mobarmory.core.mob.MobDefinition;
 import io.github.alextixu.mobarmory.core.mob.MobId;
 import io.github.alextixu.mobarmory.core.mob.MobReloadReport;
 import io.github.alextixu.mobarmory.core.stat.StatDefinition;
+import io.github.alextixu.mobarmory.core.stat.StatId;
 import io.github.alextixu.mobarmory.data.DefaultMobs;
 import io.github.alextixu.mobarmory.data.MobAssets;
 import io.github.alextixu.mobarmory.data.MobFileJson;
@@ -116,7 +117,8 @@ final class MobAdminGameTests {
     /**
      * H2, T2: {@code goblin.json} is only a JSON file in the test server's config folder; no Java and no resource file
      * mention it. After the start it is a kind of mob like the others: its own entity type and spawn egg, its name, its
-     * stats with the dagger on top, its look, its behaviors (neutral running at 1.3, leap).
+     * stats with the dagger on top (including {@code gametest_luck}, a stat that is itself only a file), its look, its
+     * behaviors (neutral running at 1.3, leap).
      */
     static void goblinFromJsonOnly(GameTestHelper helper) {
         check(helper, MobArmoryMod.MOB_LIBRARY.isRegistered(Mobs.GOBLIN), "goblin.json should be an entity type at startup");
@@ -135,6 +137,9 @@ final class MobAdminGameTests {
         checkNear(helper, 0.25, value(goblin, ModStats.CRIT_CHANCE), "T2: crit from the dagger");
         checkNear(helper, 0.33, value(goblin, ModStats.MOVEMENT_SPEED), "T2: speed 0.3 x 1.1");
         checkNear(helper, 0.8, goblin.getAttributeValue(Attributes.SCALE), "T2: size");
+        // review-05 S2: a stat added as a file (section E, gametest_luck, default 0.25) can be set by a mob file too.
+        checkNear(helper, 0.5, goblin.getAttributeValue(stats().holder(StatId.of("gametest_luck"))),
+            "T2: gametest_luck from goblin.json, a stat that is itself only a JSON file");
         check(helper, goblin.getMainHandItem().is(MobArmoryMod.EQUIPMENT.item(io.github.alextixu.mobarmory.core.equipment.EquipmentId.of("dagger"))),
             "T2: holds its dagger");
 
