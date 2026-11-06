@@ -1,11 +1,12 @@
 # 邊界說明：R4b 怪物改成資料檔，網頁可以設定和新增怪物（A6、A7，T2）
 
 > 狀態：**主 session 依使用者夜間授權採用建議值（2026-11-07），待使用者確認**。決定在 [23](23-r4b-mob-admin-open-questions.md)：Q1～Q8 都選 A，O1～O21 都同意，所以本檔內容照建議值，不用改寫。
-> 流程：boundary-first 第 1、2 步。第 3 步的 Given / When / Then 在 [22](22-r4b-mob-admin-given-when-then.md)。這一輪只寫文件，不寫功能程式。
+> 流程：boundary-first 第 1、2 步。第 3 步的 Given / When / Then 在 [22](22-r4b-mob-admin-given-when-then.md)。本檔寫在第一輪（只寫文件）；之後照本檔實作（`949597d`），行為報告是 [28](28-r4b-mob-admin-behavior-report.md)。
+> 實際做法和本檔原本的寫法不同的地方，記在 23 號「合併 main `6a3e1fc` 後的調整」一節。2026-11-07 依 review-05 S6，把本檔裡已經不對的幾處改成實際的做法。
 > 前提：
 > - 沿用 R4（[05](05-r4-boundary-note.md)～[07](07-r4-open-questions.md)、[14](14-r4-behavior-report.md)）和 R2b／R6（[08](08-weapon-data-web-boundary-note.md)～[10](10-weapon-data-web-open-questions.md)、[15](15-weapon-data-web-behavior-report.md)）已確認的架構，不重新設計。
 > - 接在架構師段落 A 的唯讀 `GET /api/v1/mobs` 後面。
-> - 分支 `feature/r4b-mob-admin`，從 main `061e7a9` 開。架構師的段落 A 進 main 以後，先把 main 合進來，再開始寫程式。
+> - 分支 `feature/r4b-mob-admin`，從 main `061e7a9` 開，寫程式前先合了 main `6a3e1fc`，也就是段落 A 和 E（`403d80b`）。合進 main 前再合了含 combo 的 main `3c4eb42`（`23246ed`）。2026-11-07 由架構師快轉進 main（`ce7beaa`）。
 
 ## 1. 需求翻譯
 
@@ -93,7 +94,7 @@ core/mob/         MobLibrary（不可變快照，和 EquipmentLibrary 同形狀�
 data/             （純 Java＋Gson，不 import Minecraft）
                   MobJson（檔案格式 v1；行為的讀寫查對照表）、MobStore／MobFolder（config/mobarmory/mobs/）、
                   MobLoader、MobEditor（先寫檔，再改遊戲）、DefaultMobs（jar 的 mobarmory/default_mobs/*.json）、MobSync
-                  AtomicFiles（從 WeaponFolder 搬出來的原子寫檔，兩邊共用）
+                  （原子寫檔：沒有另外抽 AtomicFiles，沿用 main 上已經有的 JsonFolder，武器、數值、combo、怪物共用）
 web/              MobAdmin（網頁唯一認得的怪物介面）、MobApi（/api/v1/mobs*）
 forge/            MobStartup（建構時讀檔，像 WeaponStartup）、ServerMobAdmin（Adapter：切到伺服器執行緒、
                   改完套用到世界上的怪物、送同步封包）、MobSyncChannel（mobarmory:mobs 頻道）、
@@ -144,7 +145,7 @@ config/mobarmory/
 | `WeaponJson.parse`（嚴格 JSON、Windows BOM、錯誤寫出行和欄） | `MobJson` | **直接呼叫**，不複製 |
 | `WeaponFormatException(field, reason)`、`WeaponLoadException(problems)` | 同上 | **直接用**。名稱有 Weapon，但內容是通用的「哪個欄位、什麼問題」；要不要改名留給架構師 |
 | `EquipmentLibrary`（啟動時決定哪些是物品；定義整份換；待重開；檔案已刪除） | `MobLibrary` | **同形狀，另一個類別**。不抽共用的泛型基底，理由見下方 SOLID 表 |
-| `WeaponStore`／`WeaponFolder`＋記憶體版 | `MobStore`／`MobFolder`＋記憶體版 | 另一個小介面（怪物沒有貼圖，I）；原子寫檔**抽成** `data/AtomicFiles`，兩邊共用 |
+| `WeaponStore`／`WeaponFolder`＋記憶體版 | `MobStore`／`MobFolder`＋記憶體版 | 另一個小介面（怪物沒有貼圖，I）；原子寫檔原本要抽成 `data/AtomicFiles`，實際沿用 main 上的 `data/JsonFolder`，兩邊共用（見 23 號「合併後的調整」） |
 | `WeaponLoader`（一次列出所有檔案的問題） | `MobLoader` | 同形狀 |
 | `WeaponEditor`（先寫檔，成功才改遊戲；後存蓋先存） | `MobEditor` | 同規則 |
 | `DefaultWeapons.installIfMissing` | `DefaultMobs.installIfMissing` | 同規則：`mobs/` 資料夾不存在才放預設檔，不覆蓋玩家的檔案 |
@@ -177,7 +178,7 @@ config/mobarmory/
 | 項目 | 內容 |
 |---|---|
 | 可以改的模組 | 新建：上面分層裡的 `core/mob`、`data/`、`web/`、`forge/` 新類別；`resources/mobarmory/default_mobs/`<br>修改 `core/mob`：`MobDefinition` 加 `name` 和行為組合的檢查、`Behavior` 的速度加上限（23 的 O7）<br>修改 `forge/`：`ArmoryMob`（用 id 向 `MobLibrary` 拿現在的定義；生成和載入時套用基礎數值；名稱讀定義）、`MobEntityFactory`（依 `MobLibrary.registered()` 註冊；生怪蛋借原版外觀）、`ArmorySpawnEggItem`（名稱讀定義）、`BehaviorGoals`（加 2 行）、`MobArmoryClient`、`MobArmoryMod`（接線）<br>網頁：`index.html`、`app.js`、`style.css` 的怪物分頁和新增怪物表單<br>刪除：`content/ModMobs`（改成 `DefaultMobs`）、語系檔的 `entity.mobarmory.brute`／`skirmisher`、`items/brute_spawn_egg.json`、`items/skirmisher_spawn_egg.json`<br>`build.gradle`：遊戲內測試啟動前，把預設怪物檔和一個測試用怪物檔放進 `run-gametest/config/mobarmory/mobs/`（證明 T2）<br>測試：R4 的測試只改「怎麼拿到狂戰士」，預期的數字一個都不改 |
-| 要動到的 R2b 檔案（只搬移，行為不變；不同意請劃掉） | `ServerWeaponAdmin`：改用 `ServerThread`<br>`WeaponFolder`：改用 `AtomicFiles`<br>`ReloadCommand`：改成收一串可以重新載入的資料<br>`AdminHttpServer`：`/api/v1/mobs*` 交給 `MobApi`<br>`WeaponApi`：拿掉怪物的路由，`/api/v1/reload` 的回應多一段 `mobs`<br>既有的武器測試（`WeaponApiTest`、`LiveEditGameTests`、`WebAdminGameTests` 等）要全部照舊通過，數字不改 |
+| 要動到的 R2b 檔案（只搬移，行為不變；不同意請劃掉） | `ServerWeaponAdmin`：改用 `ServerThread`<br>`WeaponFolder`：原本要改用 `AtomicFiles`，實際沒有動，因為架構師和 combo 已經改用 `JsonFolder`<br>`ReloadCommand`：改成收一串可以重新載入的資料<br>`AdminHttpServer`：`/api/v1/mobs*` 交給 `MobApi`<br>`WeaponApi`：拿掉怪物的路由，`/api/v1/reload` 的回應多一段 `mobs`<br>既有的武器測試（`WeaponApiTest`、`LiveEditGameTests`、`WebAdminGameTests` 等）要全部照舊通過，數字不改 |
 | 不准動的相依 | `core/stat`、`core/equipment`（含 `EquipmentLibrary`）、`core/combat` 的公開介面和規則<br>武器檔案格式 `WeaponJson`<br>`WeaponSyncChannel`、`ClientTextures`（架構師今晚在改）<br>`EquipmentStatApplier`、`CombatEffectListener`、`EntityStatBinder`、`MobEquipmentSource` 的行為<br>D1 的 `HitFeedbackListener`；R3 combo（`feature/r3-combo`）<br>07 已確認的 R4 規則（O3 空行為是木樁、O5～O8、第四輪的裝備警告），除非 23 另外決定<br>Minecraft 和 Forge 本身（不用 Mixin、不用 Access Transformer）；不加外部相依<br>`java_minecraft_model/mod/`、`mod-damage-hud/`、`PROGRESS.md`、`transcripts/`、`docs/boundary/README.md` |
 | 保留或新建的抽象介面 | 保留：`Behavior`、`GoalBinder`、`MobEquipmentSource`、`WeaponAdmin`、`WeaponStore`<br>新建：`MobAdmin`（web 層唯一認得的怪物介面）、`MobStore`（資料夾版、記憶體版）、可以重新載入的資料（指令和網頁按鈕共用） |
 | 新功能放哪、用什麼形狀 | 新怪物：`config/mobarmory/mobs/` 加一個 JSON，或在網頁新增，重開遊戲<br>改既有怪物：改 JSON 後 `/mobarmory reload`，或在網頁改<br>新行為：`core/mob` 一個 record、`forge` 一個 binder、`BehaviorGoals` 一行、`MobJson` 對照表一行、網頁一個控制項 |
@@ -191,7 +192,7 @@ config/mobarmory/
 | `MobEntityFactory` 註冊時把一份定義包進建構子，之後網頁改了也到不了怪物身上 | D、S | 怪物用 id 向 `MobLibrary` 拿**現在的**定義，和武器向 `EquipmentLibrary` 拿一樣 |
 | 把怪物的清單、存檔、路由塞進 `WeaponAdmin`／`WeaponApi` | I、S | `WeaponAdmin` 的使用者（重新載入指令、網頁生命週期、測試用的實作）會被迫認得怪物。改成新建 `MobAdmin`、`MobApi` |
 | 兩個 admin 各抄一份「切到伺服器執行緒、等 10 秒、還原例外」 | S（容易錯的程式重複） | **這次抽**：`forge/ServerThread`，`ServerWeaponAdmin` 只改呼叫，既有遊戲內測試守住行為 |
-| 原子寫檔要再抄一份 | S | **這次抽**：`data/AtomicFiles`，`WeaponStore` 的契約測試守住行為 |
+| 原子寫檔要再抄一份 | S | 原本寫「這次抽成 `data/AtomicFiles`」。實際沒有另外抽，沿用 main 上已經抽好的 `data/JsonFolder`，`WeaponStore` 的契約測試守住行為 |
 | `/mobarmory reload` 只認得武器，每多一種資料就要改一次指令 | O | **這次抽**：指令和網頁按鈕都走一串「可以重新載入的資料」，加一種資料只在接線加一項 |
 | 行為的 JSON 讀寫寫成一個大 switch | O | 行為種類 → 讀寫方式的對照表，和 `BehaviorGoals` 的 binder 對照表同一種做法 |
 | 中立、衝刺寫成 `AttackPlayersBehavior` 裡的 `if` 旗標 | O、S | 各自一個 `Behavior` record 和 `GoalBinder`；`AttackPlayersGoalBinder` 一行都不改 |
@@ -211,7 +212,7 @@ L（里氏替換）由契約測試保證：
 
 | 選項 | 形狀 | 優點 | 缺點 |
 |---|---|---|---|
-| **A（建議）** | 和武器同一套形狀，平行一組怪物類別：快照式 `MobLibrary`、`MobAdmin`＋`ServerMobAdmin`（Adapter）、`MobSyncChannel`。沿用 R4 的 Factory（生物種類）和 Strategy（行為）。只抽三個純搬移的共用零件：`ServerThread`、`AtomicFiles`、可以重新載入的資料 | 武器的程式幾乎不動，已通過的測試當保險；看過武器那套的人一看就懂；約 1～1.5 天 | `MobLibrary` 和 `EquipmentLibrary` 有一段形狀相同的程式（約 100 行） |
+| **A（建議）** | 和武器同一套形狀，平行一組怪物類別：快照式 `MobLibrary`、`MobAdmin`＋`ServerMobAdmin`（Adapter）、`MobSyncChannel`。沿用 R4 的 Factory（生物種類）和 Strategy（行為）。只抽三個純搬移的共用零件：`ServerThread`、原子寫檔（實際沿用 `JsonFolder`）、可以重新載入的資料 | 武器的程式幾乎不動，已通過的測試當保險；看過武器那套的人一看就懂；約 1～1.5 天 | `MobLibrary` 和 `EquipmentLibrary` 有一段形狀相同的程式（約 100 行） |
 | B | 泛型化：`DefinitionLibrary<I, D>`、`DefinitionStore`、`DefinitionAdmin`，武器和怪物都是它的實作，一個 API 處理兩種 | 重複最少；第三種資料最省 | 要改 R2b 的核心類別和全部武器測試，和架構師今晚的修改衝突；多約 1 天，風險高 |
 | C | 直接寫進武器的類別：`WeaponAdmin` 加怪物的方法，`WeaponFolder` 也讀 `mobs/` | 今天最快 | 每個認得武器的地方都被迫認得怪物（I、S）；之後要拆很痛 |
 
@@ -220,7 +221,7 @@ L（里氏替換）由契約測試保證：
 每一步做完都跑一次測試，才進下一步。
 
 1. 把 main（含架構師的段落 A）合進 `feature/r4b-mob-admin`，跑全部測試。
-2. 抽共用零件：`ServerThread`、`AtomicFiles`、可以重新載入的資料。只搬移，跑既有測試確認沒壞。
+2. 抽共用零件：`ServerThread`、可以重新載入的資料；原子寫檔沿用 main 上的 `JsonFolder`，沒有另外抽 `AtomicFiles`。只搬移，跑既有測試確認沒壞。
 3. `core/mob`：`MobDefinition` 加 `name` 和行為組合的檢查；`NeutralBehavior`、`LeapBehavior`；`MobLibrary`。附單元測試。
 4. `data/`：`MobJson`、`MobStore`／`MobFolder`、`MobLoader`、`MobEditor`、`DefaultMobs`；兩個預設檔的內容和 R4 的狂戰士、遊擊兵**數字完全一樣**。附契約測試。
 5. `forge/`：`MobStartup` 在建構時讀檔；`MobEntityFactory`、`ArmoryMob` 改用 `MobLibrary`；刪掉 `ModMobs`、兩行語系、兩個生怪蛋外觀檔。**R4 的測試只改怎麼拿到狂戰士，全部照舊通過。**

@@ -209,7 +209,7 @@ LivingDamageEvent ─▶ D1：HitReport（含 combo 名稱）─▶ action bar�
 | O | 沒有 | 新 combo 是一個 JSON 檔，Java 不用改。新效果種類是一個類別加 `ComboEffectTypes` 一行，讀檔、監聽、顯示都不改。D1 只多一個欄位和一個預設方法，舊的呼叫不變。R2b 的類別只為了共用而改，行為不變，既有測試全過 |
 | L | 沒有 | `ComboEffectContractTest`：每一種效果、每個內附檔的效果跑同一組檢查。`WeaponFolder` 改用 `JsonFolder` 後，`WeaponStoreContractTest` 照樣通過。`CombatObserver.NONE` 和 `HitFeedbackListener` 都能交給 `ComboListener` |
 | I | 沒有，有一點要說明 | `ComboEffect`、`ComboEffectTypes.Reader` 都只有一個方法。`CombatObserver` 從兩個方法變三個，但三個都有什麼都不做的預設，實作者只覆寫自己要的，這是 17 第 3 節（Q3 A）定的做法。如果之後觀察者的種類變多，可以把 combo 通知拆成自己的介面 |
-| D | 沒有 | `core/combo` 不知道 JSON、檔案和 Minecraft（`CoreBoundaryTest`）。`ComboTracker` 每一下拿到的是 `ComboCatalog`，不知道它從哪裡來。`ComboListener` 依賴 `ComboLibrary`、`InputClassifier`、`CombatObserver`，都由 `MobArmoryMod` 注入 |
+| D | 沒有 | `core/combo` 不知道 JSON、檔案和 Minecraft（`CoreBoundaryTest`）。`ComboTracker` 每一下拿到的是 `ComboCatalog`，不知道它從哪裡來。`ComboListener` 依賴 `ComboLibrary`、`InputClassifier`、`CombatObserver`，都由 `MobArmoryMod` 注入。它也依賴具體類別 `StatAttributeBridge`（用來讀玩家的移動速度），和 R1 的 `CombatEffectListener` 一樣。兩個都在 `forge/` 層，都由 `MobArmoryMod` 注入同一個 `STATS`。這裡沒有抽介面，因為 `forge/` 本來就是接 Minecraft 的那一層（2026-11-07 依 review-04 S6 補上） |
 
 | Pattern | 用在哪裡 | 理由 |
 |---|---|---|
