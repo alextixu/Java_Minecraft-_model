@@ -69,7 +69,9 @@
 | S3 網頁經過 HTTP 改怪物 | `ba6c83f` | 新測試 `web_admin_saves_a_mob_through_the_game`：回 200 之後，狂戰士的基礎攻擊是 8、最大生命 50，`brute.json` 也寫進去了；連跑兩次都過，遊戲內 78/78 |
 | S6 文件（21、20 號） | `2cbc833` | 21 號剩下的 `AtomicFiles` 都寫成「原本計畫…，實際沿用 `JsonFolder`」 |
 
-最後在 `2cbc833` 跑 `gradlew clean build runGameTestServer`：**單元 505/505**，**遊戲內 78/78**（77 個我們的加原版 `always_pass`），0 失敗。
+最後在 `2cbc833` 跑 `gradlew clean build runGameTestServer`：遊戲內 **78/78**（77 個我們的加原版 `always_pass`）。
+
+> **更正（2026-11-08，第 12 輪）**：這裡原本寫「單元 505/505，0 失敗」，是錯的。那次 `:test` 是 FROM-CACHE，Gradle 拿了 S2 之前快取的結果，沒有真的重跑。S2（`27765a1`）讓 4 個單元測試類別讀 goblin.json 時失敗。用 `--rerun` 實際跑，`7c4eff0` 是 **489 個，12 個失敗**。`7c4eff0` 的 commit 訊息也寫了 505，commit 訊息不能改，以這裡為準。修正見 [round-12-test-fixes.md](round-12-test-fixes.md)。
 
 ### SOLID／Pattern 檢查（這一輪）
 

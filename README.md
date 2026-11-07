@@ -350,7 +350,8 @@ combo 是「依順序打兩下」。每一下是走路揮擊或奔跑揮擊：�
 - `build`：跑單元測試，不用開遊戲。結果在 `build/test-results/test/`。
 - `runGameTestServer`：開一個沒有畫面的遊戲伺服器跑系統測試。結果在 `run-gametest/gametest-report.xml`，有測試失敗時指令會失敗。
 - 遊戲內測試在獨立的 `run-gametest/` 資料夾跑，每次先清空，所以不受 `run/config/` 裡改過的設定影響。
-- 2026-11-07 combo（R3）和怪物 JSON（R4b）都合進來，加上收尾的測試之後：單元 505/505，遊戲內 78/78。遊戲內的 78 個是我們的 77 個，加上 Minecraft 自帶的 `always_pass`。
+- 2026-11-08（第 12 輪之後）：單元 528/528，遊戲內 78/78。遊戲內的 78 個是我們的 77 個，加上 Minecraft 自帶的 `always_pass`。要確定單元測試真的重跑、不是拿快取的結果，加 `--rerun`（`./gradlew test --rerun`）。
+- **更正**：這裡原本寫「2026-11-07 … 單元 505/505」，是錯的。那次 Gradle 拿了快取的舊結果，沒有真的重跑。實際上從 `27765a1` 起有 12 個單元測試失敗（`7c4eff0` 跑了 489 個，12 個失敗），第 12 輪已修好。
 - 遊戲內測試開始前，`src/gametest/config/` 會被複製進 `run-gametest/config/`。裡面放的是玩家可能會寫的檔案，用來測試「只靠 JSON 就能加」：兩個數值檔（`gametest_luck`、`gametest_jump`），以及一隻只有 JSON 的怪物 `goblin`（T2）。
 
 ## 文件索引

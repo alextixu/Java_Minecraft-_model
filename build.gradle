@@ -89,6 +89,13 @@ tasks.named('test', Test) {
     testLogging {
         events 'passed', 'skipped', 'failed'
     }
+    // Some unit tests read these folders straight from disk (the test-only goblin and stats, the game test instances,
+    // the boundary check over the sources, the shipped assets). Declared as inputs, a change there makes Gradle run the
+    // tests again instead of reusing a cached result, which hid twelve failures in round 10 (round 12).
+    inputs.dir(layout.projectDirectory.dir('src/gametest/config')).withPropertyName('gametestConfig').withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.dir(layout.projectDirectory.dir('src/gametest/resources/data')).withPropertyName('gametestData').withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.dir(layout.projectDirectory.dir('src/main/java')).withPropertyName('mainSources').withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.dir(layout.projectDirectory.dir('src/main/resources')).withPropertyName('mainResources').withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 // ForgeGradle makes one set of run tasks per source set. The game tests need the gametest source set's run

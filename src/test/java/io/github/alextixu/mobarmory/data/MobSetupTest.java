@@ -36,9 +36,10 @@ class MobSetupTest {
         MobLibrary first = MobSetup.read(folder, ModStats.CATALOG, WEAPONS);
         assertEquals(List.of(DefaultMobs.BRUTE, DefaultMobs.SKIRMISHER), first.registered());
 
-        Files.copy(Path.of("src/gametest/config/mobarmory/mobs/goblin.json"), folder.mobsFolder().resolve("goblin.json"));
+        // The goblin uses gametest_luck, a stat the player added as a file; the game reads mobs with every stat (round 12).
+        Files.copy(GameTestConfig.GOBLIN, folder.mobsFolder().resolve("goblin.json"));
         DefaultMobs.installIfMissing(folder);
-        MobLibrary second = MobSetup.read(folder, ModStats.CATALOG, WEAPONS);
+        MobLibrary second = MobSetup.read(folder, GameTestConfig.stats(), WEAPONS);
         assertEquals(List.of(DefaultMobs.BRUTE, MobId.of("goblin"), DefaultMobs.SKIRMISHER), second.registered());
     }
 

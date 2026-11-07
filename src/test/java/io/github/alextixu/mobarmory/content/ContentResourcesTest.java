@@ -38,7 +38,7 @@ class ContentResourcesTest {
     }
 
     static Stream<MobDefinition> allMobs() {
-        return MobTestCatalog.everyMobFile();
+        return MobTestCatalog.everyMobFile().map(MobTestCatalog.MobFile::mob);
     }
 
     static Stream<StatDefinition> customStats() {

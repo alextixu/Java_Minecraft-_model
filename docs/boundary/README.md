@@ -137,7 +137,9 @@ R4b 由怪物小弟在 `feature/r4b-mob-admin` 分支做。2026-11-07 夜間，�
 
 R5 多人同步：還沒用兩台客戶端實測，之後跑同樣的流程。
 
-目前 main，2026-11-07 夜間段落 F 收尾之後（[prompts/round-10-final-touches.md](prompts/round-10-final-touches.md)）：`gradlew clean build runGameTestServer` 單元 **505/505**、遊戲內 **78/78**（77 個我們的加原版 1 個）。
+目前 main，2026-11-08 第 12 輪之後（[prompts/round-12-test-fixes.md](prompts/round-12-test-fixes.md)）：`gradlew test --rerun` 單元 **528/528**，`runGameTestServer` 遊戲內 **78/78**（77 個我們的加原版 1 個）。第 11 輪修了網頁控制台（[prompts/round-11-web-fixes.md](prompts/round-11-web-fixes.md)）。
+
+**更正**：這裡原本寫「2026-11-07 夜間段落 F 收尾之後（[round-10](prompts/round-10-final-touches.md)）… 單元 505/505」，是錯的。那次 `:test` 拿了快取的舊結果；`7c4eff0` 實際是 489 個裡 12 個失敗（`27765a1` 造成）。第 9 輪、R4b 合併、28 號寫的 505/505 是對的，已在 `3d0f20c` 用 `--rerun` 重新驗證。
 
 ## 怎麼跑測試
 
