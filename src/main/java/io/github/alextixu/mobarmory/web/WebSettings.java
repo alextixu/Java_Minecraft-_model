@@ -37,6 +37,18 @@ public record WebSettings(boolean enabled, String host, int port, String token) 
         }
     }
 
+    /**
+     * True when the host is {@code 0.0.0.0} or {@code ::}: the server listens on every address of this computer (web
+     * fixes B2-1). Only an IP address literal counts; a name is never looked up here.
+     */
+    public boolean listensOnAll() {
+        try {
+            return InetAddress.ofLiteral(host).isAnyLocalAddress();
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
     /** @throws IllegalStateException if the address is reachable from other computers and there is no token */
     public void checkSafe() {
         if (!isLocalOnly() && token.isEmpty()) {

@@ -15,7 +15,16 @@ const state = { stats: [], looks: { items: [], textures: [] }, weapons: [], mobs
 const token = readToken();
 
 function readToken() {
-  const fromUrl = new URLSearchParams(location.search).get('token');
+  const params = new URLSearchParams(location.search);
+  const fromUrl = params.get('token');
+  if (fromUrl !== null) {
+    // Keep the token out of the address bar and the history (web fixes B1-3); it stays in sessionStorage below.
+    params.delete('token');
+    const query = params.toString();
+    try {
+      history.replaceState(history.state, '', location.pathname + (query ? '?' + query : '') + location.hash);
+    } catch (e) { /* the address bar keeps it; the page still works */ }
+  }
   try {
     if (fromUrl) sessionStorage.setItem('mobarmory-token', fromUrl);
     return fromUrl || sessionStorage.getItem('mobarmory-token') || '';
@@ -72,7 +81,7 @@ function notice(kind, message, items = []) {
 
 function describeError(error) {
   if (error.status === 403) return '伺服器拒絕了這個請求（只接受從這個網頁送出的修改）。';
-  if (error.status === 401) return '需要 token：請用遊戲聊天欄裡的連結開啟這個網頁。';
+  if (error.status === 401) return '需要 token：請用遊戲聊天欄裡的連結開啟這個網頁（OP 進入世界時會收到），或在網址後面加上 ?token=…（token 寫在伺服器的 config/mobarmory/web.json）。';
   if (error.status === undefined) return '連不到遊戲。請確認世界還開著（離開世界時網頁後台會關閉）。';
   return error.message;
 }

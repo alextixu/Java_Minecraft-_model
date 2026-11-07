@@ -6,14 +6,16 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,7 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Who may change things (decision Q6 A, B13):
  * <ul>
  *   <li>by default it listens on 127.0.0.1 only, so other computers cannot connect;</li>
- *   <li>the {@code Host} header must name this server, which stops other websites reaching it through DNS tricks;</li>
+ *   <li>the {@code Host} header must name this server, which stops other websites reaching it through DNS tricks
+ *       ({@link AllowedHosts}; with host 0.0.0.0 that includes every IP address of this computer);</li>
  *   <li>changes must come from this page ({@code Origin}) and as JSON or PNG, which a browser will not send from
  *       another website without asking first; this server never says yes (no CORS headers);</li>
  *   <li>with a token in web.json, every API call must carry it ({@code Authorization: Bearer ...}).</li>
@@ -51,36 +54,48 @@ public final class AdminHttpServer implements AutoCloseable {
     private final WeaponApi api;
     private final MobApi mobApi;
     private final WebSettings settings;
-    private final Set<String> allowedHosts;
+    private final AllowedHosts allowedHosts;
+    /** The host in {@link #uri()}: an address people can click (web fixes B2-3). */
+    private final String shownHost;
 
-    private AdminHttpServer(HttpServer server, ExecutorService executor, WeaponApi api, MobApi mobApi, WebSettings settings) {
+    private AdminHttpServer(HttpServer server, ExecutorService executor, WeaponApi api, MobApi mobApi, WebSettings settings,
+                            List<InetAddress> local) {
         this.server = server;
         this.executor = executor;
         this.api = api;
         this.mobApi = mobApi;
         this.settings = settings;
-        int port = server.getAddress().getPort();
-        Set<String> hosts = new LinkedHashSet<>(List.of("127.0.0.1:" + port, "localhost:" + port, "[::1]:" + port));
-        hosts.add(settings.host().toLowerCase() + ":" + port);
-        this.allowedHosts = Set.copyOf(hosts);
+        this.allowedHosts = AllowedHosts.of(settings, server.getAddress().getPort(), local);
+        this.shownHost = shownHost(settings, local);
     }
 
     /**
-     * Starts listening. Port 0 picks a free port (tests).
+     * Starts listening. Port 0 picks a free port (tests). With host {@code 0.0.0.0} or {@code ::}, this computer's
+     * addresses are read once now; a network change afterwards needs the world (server) to start again.
      *
      * @throws IllegalStateException if the address is open to other computers without a token
      * @throws IOException           if the port is taken (B14)
      */
     public static AdminHttpServer start(WeaponAdmin admin, MobAdmin mobs, WebSettings settings) throws IOException {
+        return start(admin, mobs, settings, LocalAddresses.system(), new InetSocketAddress(settings.host(), settings.port()));
+    }
+
+    /**
+     * The same, with this computer's addresses and the address to listen on given. Tests use it to act as a server
+     * listening on every address while really listening on 127.0.0.1, so they neither depend on the network nor open
+     * a port to it.
+     */
+    static AdminHttpServer start(WeaponAdmin admin, MobAdmin mobs, WebSettings settings, LocalAddresses local,
+                                 InetSocketAddress listenOn) throws IOException {
         settings.checkSafe();
-        HttpServer server = HttpServer.create(new InetSocketAddress(settings.host(), settings.port()), 0);
+        HttpServer server = HttpServer.create(listenOn, 0);
         AtomicInteger threads = new AtomicInteger();
         ExecutorService executor = Executors.newFixedThreadPool(2, runnable -> {
             Thread thread = new Thread(runnable, "mobarmory-web-" + threads.incrementAndGet());
             thread.setDaemon(true);
             return thread;
         });
-        AdminHttpServer instance = new AdminHttpServer(server, executor, new WeaponApi(admin), new MobApi(mobs), settings);
+        AdminHttpServer instance = new AdminHttpServer(server, executor, new WeaponApi(admin), new MobApi(mobs), settings, local.all());
         server.createContext("/", instance::handle);
         server.setExecutor(executor);
         server.start();
@@ -91,10 +106,38 @@ public final class AdminHttpServer implements AutoCloseable {
         return server.getAddress().getPort();
     }
 
-    /** The address to open in a browser. */
+    /** The address to open in a browser. Never carries the token, so it is safe to log (web fixes B1-3). */
     public URI uri() {
-        String host = settings.isLocalOnly() ? "127.0.0.1" : settings.host();
-        return URI.create("http://" + host + ":" + port() + "/");
+        return URI.create("http://" + shownHost + ":" + port() + "/");
+    }
+
+    /**
+     * The link game masters click in chat: {@link #uri()}, plus {@code ?token=...} (URL encoded) when web.json sets a
+     * token, so the page works at once (web fixes B1-1, B1-2). Never log it.
+     */
+    public URI linkWithToken() {
+        if (settings.token().isEmpty()) {
+            return uri();
+        }
+        return URI.create(uri() + "?token=" + URLEncoder.encode(settings.token(), StandardCharsets.UTF_8));
+    }
+
+    /**
+     * The host people can click (web fixes B2-3): 127.0.0.1 for a local-only server; for one listening on every
+     * address, a private (site-local) IPv4 address of this computer, else its first address that is not loopback,
+     * else 127.0.0.1; otherwise the host in web.json, as before.
+     */
+    static String shownHost(WebSettings settings, List<InetAddress> local) {
+        if (settings.isLocalOnly()) {
+            return "127.0.0.1";
+        }
+        if (!settings.listensOnAll()) {
+            return settings.host();
+        }
+        return local.stream().filter(address -> address instanceof Inet4Address && address.isSiteLocalAddress()).findFirst()
+            .or(() -> local.stream().filter(address -> !address.isLoopbackAddress() && !address.isAnyLocalAddress()).findFirst())
+            .map(address -> address instanceof Inet6Address ? "[" + AllowedHosts.text(address) + "]" : AllowedHosts.text(address))
+            .orElse("127.0.0.1");
     }
 
     @Override
@@ -113,8 +156,7 @@ public final class AdminHttpServer implements AutoCloseable {
             response.set("Referrer-Policy", "no-referrer");
             response.set("Cache-Control", "no-store");
 
-            String host = request.getFirst("Host");
-            if (host == null || !allowedHosts.contains(host.toLowerCase())) {
+            if (!allowedHosts.allows(request.getFirst("Host"))) {
                 send(exchange, WeaponApi.Response.error(403, "forbidden_host", "This server only answers requests addressed to it"));
                 return;
             }
@@ -129,7 +171,7 @@ public final class AdminHttpServer implements AutoCloseable {
             boolean changes = !method.equals("GET") && !method.equals("HEAD");
             if (changes) {
                 String origin = request.getFirst("Origin");
-                if (origin != null && !allowedHosts.contains(stripScheme(origin))) {
+                if (origin != null && !allowedHosts.allows(stripScheme(origin))) {
                     send(exchange, WeaponApi.Response.error(403, "forbidden_origin", "Changes are only accepted from this page"));
                     return;
                 }

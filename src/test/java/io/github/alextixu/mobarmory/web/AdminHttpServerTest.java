@@ -8,8 +8,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -56,11 +59,24 @@ class AdminHttpServerTest {
         return HttpRequest.newBuilder(uri(path)).header("Content-Type", contentType).PUT(HttpRequest.BodyPublishers.ofString(body));
     }
 
+    /**
+     * A server that acts as if web.json said 0.0.0.0 on a computer whose LAN address is 192.168.1.52, while it really
+     * listens on 127.0.0.1 only (web fixes B2): no test depends on the network or opens a port to it.
+     */
+    private AdminHttpServer startOnAllAddresses(String token) throws IOException {
+        server = AdminHttpServer.start(admin, mobs, new WebSettings(true, "0.0.0.0", 0, token),
+            LocalAddresses.of(InetAddress.ofLiteral("127.0.0.1"), InetAddress.ofLiteral("192.168.1.52")),
+            new InetSocketAddress("127.0.0.1", 0));
+        return server;
+    }
+
     /** A raw request, to send a Host header that HttpClient would not let us forge. */
-    private String rawStatusLine(String host) throws IOException {
+    private String rawStatusLine(String host, String... headers) throws IOException {
         try (Socket socket = new Socket("127.0.0.1", server.port())) {
             OutputStream out = socket.getOutputStream();
-            out.write(("GET /api/v1/weapons HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\n\r\n").getBytes(StandardCharsets.US_ASCII));
+            String extra = String.join("", java.util.Arrays.stream(headers).map(header -> header + "\r\n").toList());
+            out.write(("GET /api/v1/weapons HTTP/1.1\r\nHost: " + host + "\r\n" + extra + "Connection: close\r\n\r\n")
+                .getBytes(StandardCharsets.US_ASCII));
             out.flush();
             InputStream in = socket.getInputStream();
             return new String(in.readAllBytes(), StandardCharsets.UTF_8).lines().findFirst().orElse("");
@@ -145,6 +161,76 @@ class AdminHttpServerTest {
         start("");
         assertTrue(rawStatusLine("evil.example:" + server.port()).contains(" 403 "));
         assertTrue(rawStatusLine("localhost:" + server.port()).contains(" 200 "));
+    }
+
+    @Test
+    @DisplayName("B2-1 Given host 0.0.0.0、有 token When 區網用 192.168.1.52 連 Then Host 檢查通過，帶 token 讀得到，從這個網址存檔也行")
+    void lanAddressWorksWhenListeningOnAll() throws Exception {
+        startOnAllAddresses("s3cret-token");
+        String lan = "192.168.1.52:" + server.port();
+
+        assertTrue(rawStatusLine(lan, "Authorization: Bearer s3cret-token").contains(" 200 "));
+        assertTrue(rawStatusLine(lan).contains(" 401 "), "the Host passes; the token is still required");
+        HttpResponse<String> saved = send(put("/api/v1/weapons/heavy_sword", "application/json", SWORD)
+            .header("Authorization", "Bearer s3cret-token").header("Origin", "http://" + lan));
+        assertEquals(200, saved.statusCode(), "Origin is checked against the same list: " + saved.body());
+    }
+
+    @Test
+    @DisplayName("B2-2 Given host 0.0.0.0 When Host 或 Origin 是別的名稱 Then 一樣 403")
+    void otherNamesStillRejectedWhenListeningOnAll() throws Exception {
+        startOnAllAddresses("s3cret-token");
+        String status = rawStatusLine("evil.example:" + server.port(), "Authorization: Bearer s3cret-token");
+        assertTrue(status.contains(" 403 "), status);
+        assertTrue(rawStatusLine("10.9.9.9:" + server.port(), "Authorization: Bearer s3cret-token").contains(" 403 "),
+            "an IP address that is not this computer's");
+        HttpResponse<String> otherSite = send(put("/api/v1/weapons/heavy_sword", "application/json", SWORD)
+            .header("Authorization", "Bearer s3cret-token").header("Origin", "http://evil.example"));
+        assertEquals(403, otherSite.statusCode());
+    }
+
+    @Test
+    @DisplayName("B2-3 Given host 0.0.0.0 Then uri()（log 和聊天欄用的）顯示這台電腦的區網 IP，不是 0.0.0.0")
+    void shownAddressWhenListeningOnAll() throws Exception {
+        startOnAllAddresses("s3cret-token");
+        assertEquals(URI.create("http://192.168.1.52:" + server.port() + "/"), server.uri());
+    }
+
+    @Test
+    @DisplayName("B1-1 B1-3 Given 設了 token Then 聊天欄的連結帶 URL 編碼的 token、點了就能用；uri()（log 用的）不帶 token")
+    void linkCarriesTheToken() throws Exception {
+        String token = "s3cret/+&=token";
+        start(token);
+        URI link = server.linkWithToken();
+
+        assertEquals(URI.create(server.uri() + "?token=s3cret%2F%2B%26%3Dtoken"), link);
+        String fromLink = URLDecoder.decode(link.getRawQuery().substring("token=".length()), StandardCharsets.UTF_8);
+        assertEquals(token, fromLink, "the page reads back exactly the token");
+        assertEquals(200, send(HttpRequest.newBuilder(uri("/api/v1/weapons")).header("Authorization", "Bearer " + fromLink)).statusCode(),
+            "no 401 with the token from the link");
+        assertFalse(server.uri().toString().contains("token"), "the address that is logged never carries the token");
+    }
+
+    @Test
+    @DisplayName("B1-2 Given 沒設 token Then 連結和以前一樣，沒有 ?token=")
+    void linkWithoutToken() throws Exception {
+        start("");
+        assertEquals(server.uri(), server.linkWithToken());
+        assertEquals(URI.create("http://127.0.0.1:" + server.port() + "/"), server.linkWithToken());
+    }
+
+    @Test
+    @DisplayName("B1-3 B1-4 網頁：讀到網址上的 token 後從網址列拿掉（照樣存 sessionStorage）；401 的提示寫出兩種方法")
+    void pageHandlesTheToken() throws Exception {
+        start("");
+        String script = send(HttpRequest.newBuilder(uri("/app.js"))).body();
+
+        assertTrue(script.contains("history.replaceState("), "the token leaves the address bar");
+        assertTrue(script.contains("params.delete('token')"), "only the token parameter is removed");
+        assertTrue(script.contains("sessionStorage.setItem('mobarmory-token', fromUrl)"), "a reload still has the token");
+        String hint = script.lines().filter(line -> line.contains("error.status === 401")).findFirst().orElse("");
+        assertTrue(hint.contains("聊天欄") && hint.contains("OP"), "way 1: the link in chat: " + hint);
+        assertTrue(hint.contains("?token=") && hint.contains("config/mobarmory/web.json"), "way 2: add ?token= from web.json: " + hint);
     }
 
     @Test

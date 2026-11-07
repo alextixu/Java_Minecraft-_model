@@ -1,6 +1,7 @@
 package io.github.alextixu.mobarmory.forge;
 
 import com.mojang.logging.LogUtils;
+import io.github.alextixu.mobarmory.web.AdminGreeting;
 import io.github.alextixu.mobarmory.web.AdminHttpServer;
 import io.github.alextixu.mobarmory.web.MobAdmin;
 import io.github.alextixu.mobarmory.web.WeaponAdmin;
@@ -61,7 +62,7 @@ public final class WebAdminLifecycle {
                 return;
             }
             running = AdminHttpServer.start(admin, mobs, settings);
-            LOGGER.info("Mob Armory: web admin at {}", running.uri());
+            LOGGER.info("Mob Armory: web admin at {}", running.uri()); // uri() never carries the token (web fixes B1-3)
         } catch (IOException | IllegalStateException e) {
             problem = e.getMessage();
             LOGGER.warn("Mob Armory: web admin did not start ({}); the game carries on without it", problem);
@@ -77,18 +78,20 @@ public final class WebAdminLifecycle {
         }
     }
 
+    /** Who sees what is decided by {@link AdminGreeting}; this only turns it into a chat line. */
     private void greet(ServerPlayer player) {
-        if (!Commands.hasPermission(Commands.LEVEL_GAMEMASTERS).test(player.createCommandSourceStack())) {
-            return;
-        }
-        AdminHttpServer server = running;
-        if (server != null) {
-            String url = server.uri().toString();
-            Component link = Component.literal(url).withStyle(style -> style
-                .withColor(ChatFormatting.AQUA).withUnderlined(true).withClickEvent(new ClickEvent.OpenUrl(server.uri())));
-            player.sendSystemMessage(Component.translatable("mobarmory.web.ready", link));
-        } else if (problem != null) {
-            player.sendSystemMessage(Component.translatable("mobarmory.web.failed", problem).withStyle(ChatFormatting.YELLOW));
+        boolean gameMaster = Commands.hasPermission(Commands.LEVEL_GAMEMASTERS).test(player.createCommandSourceStack());
+        switch (AdminGreeting.forPlayer(gameMaster, running, problem)) {
+            case AdminGreeting.Link link -> {
+                // The text shows the address without the token; clicking opens it with the token (web fixes B1-1, B1-3).
+                Component text = Component.literal(link.shown().toString()).withStyle(style -> style
+                    .withColor(ChatFormatting.AQUA).withUnderlined(true).withClickEvent(new ClickEvent.OpenUrl(link.open())));
+                player.sendSystemMessage(Component.translatable("mobarmory.web.ready", text));
+            }
+            case AdminGreeting.Failed failed ->
+                player.sendSystemMessage(Component.translatable("mobarmory.web.failed", failed.problem()).withStyle(ChatFormatting.YELLOW));
+            case AdminGreeting.Silent _ -> {
+            }
         }
     }
 }
