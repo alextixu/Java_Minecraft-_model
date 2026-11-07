@@ -4,7 +4,7 @@
 > **合併到 main**：依 review-04 X1，再合了 main `56423bd`（合併 commit `130240d`）。合併後單元 450/450、遊戲內 68/68（含原版 1 個），由架構師快轉 main，見[第 8 節](#8-合併到-main2026-11-07-夜間review-04-x1)。下面第 1～7 節是合併前的數字和內容。
 > 結果：**單元測試 396/396**（基準 322 ＋ 新增 74）、**遊戲內系統測試 64/64**（基準 57 ＋ 新增 7；伺服器報告「All 65 required tests passed」，多的一個是原版的 `always_pass`）。
 > 指令：`gradlew clean build runGameTestServer`，遊戲內報告在 `run-gametest/gametest-report.xml`（65 個 testcase、0 個 failure）。
-> **決策狀態**：使用者沒有回答 [19](19-r3-combo-open-questions.md) 的問題。主 session 依使用者夜間授權**採用建議值**；同一晚又依使用者主軸把 Q2 改成 JSON 檔。全部**待使用者確認**，見 19 的決定紀錄。
+> **決策狀態**：使用者沒有回答 [19](19-r3-combo-open-questions.md) 的問題。主 session 依使用者夜間授權**採用建議值**；同一晚又依使用者主軸把 Q2 改成 JSON 檔。使用者 2026-11-08 確認：全部照建議（原話：「全部照建議」），包括第 2 節的 C1～C11，見 19 的決定紀錄。
 > 每一步的 prompt 和 SOLID／Pattern 檢查：[prompts/r3-combo-round-02-implementation.md](prompts/r3-combo-round-02-implementation.md)。
 
 ## 1. 邊界說明（採用的版本）
@@ -46,7 +46,7 @@
 
 `ComboListener`、`ComboTracker`、`ComboLoader` 和 D1 的顯示程式，都不會因為新增 combo 或新增效果種類而修改。
 
-## 2. 商業決策（採用建議值，待使用者確認）
+## 2. 商業決策（採用建議值，使用者 2026-11-08 確認：全部照建議）
 
 | # | 決定 | 內容 |
 |---|---|---|

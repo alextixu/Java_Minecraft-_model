@@ -1,7 +1,7 @@
 # 行為報告：段落 E，數值改成 JSON 定義
 
 > boundary-first 第 6 步的產出。邊界在 [24](24-stat-files-boundary-note.md)，行為在 [25](25-stat-files-given-when-then.md)，決定在 [26](26-stat-files-open-questions.md)，prompt 和每一步的 SOLID／Pattern／變更邊界在 [prompts/round-08-stat-files.md](prompts/round-08-stat-files.md)。
-> **決定的狀態**：主 session 依夜間授權採用建議值（Q1～Q11 都是 A，O1～O5 照建議），**待使用者確認**。
+> **決定的狀態**：主 session 依夜間授權採用建議值（Q1～Q11 都是 A，O1～O5 照建議），**使用者 2026-11-08 確認：全部照建議**（原話：「全部照建議」）。
 
 ## 1. 結果一覽
 

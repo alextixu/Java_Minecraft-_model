@@ -1,7 +1,7 @@
 # 行為報告：R4b 怪物改成資料檔，網頁可以設定和新增怪物（A6、A7，T2）
 
 > boundary-first 第 6 步的產出。邊界在 [21](21-r4b-mob-admin-boundary-note.md)，行為在 [22](22-r4b-mob-admin-given-when-then.md)，決定在 [23](23-r4b-mob-admin-open-questions.md)，prompt 和每一步的 SOLID／Pattern 檢查在 [prompts/round-r4b-01-boundary.md](prompts/round-r4b-01-boundary.md)、[prompts/round-r4b-02-implementation.md](prompts/round-r4b-02-implementation.md)。
-> **決定的狀態**：主 session 依使用者夜間授權採用建議值（Q1～Q8 都是 A，O1～O21 照建議），**待使用者確認**。
+> **決定的狀態**：主 session 依使用者夜間授權採用建議值（Q1～Q8 都是 A，O1～O21 照建議），**使用者 2026-11-08 確認：全部照建議**（原話：「全部照建議」）。
 > 方向：使用者 11/07 的主軸「主軸在我們這個系統可以未來讓玩家新增東西而不是我們自己要開發出很厲害的怪物與武器」。
 > **合併到 main**：依 review-05 F1，把 combo（`3c4eb42`）合進來，merge commit `23246ed`。合併後單元 505/505、遊戲內 77/77（含原版 1 個），之後由架構師快轉 main，見[第 9 節](#9-合併到-main2026-11-07-夜間review-05-f1)。第 1～8 節是合併前的數字和內容。
 

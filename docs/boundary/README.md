@@ -49,13 +49,13 @@ D1 由另一個 session 在 `feature/damage-hud` 分支做，2026-11-07 合進 m
 
 ## R3：combo（出招順序不同就是不同 combo）
 
-R3 由連招小弟在 `feature/r3-combo` 分支做。2026-11-07 夜間依使用者主軸把 combo 定義改成 `config/mobarmory/combos/<id>.json`，玩家放一個檔、打 `/mobarmory reload`，就多一種 combo。分支先合了 main `56423bd`（合併 commit `130240d`），再由架構師把 main 快轉過去。主 session 依夜間授權採用建議值，**待使用者確認**。
+R3 由連招小弟在 `feature/r3-combo` 分支做。2026-11-07 夜間依使用者主軸把 combo 定義改成 `config/mobarmory/combos/<id>.json`，玩家放一個檔、打 `/mobarmory reload`，就多一種 combo。分支先合了 main `56423bd`（合併 commit `130240d`），再由架構師把 main 快轉過去。主 session 依夜間授權採用建議值，**使用者 2026-11-08 確認：全部照建議**（原話：「全部照建議」）。
 
 | 檔案 | 內容 | 狀態 |
 |---|---|---|
-| [17-r3-combo-boundary-note.md](17-r3-combo-boundary-note.md) | 需求翻譯、平台查證（疾跑打中後會停止）、各裝備的移動速度、變更邊界（第 0 節是 JSON 版）、SOLID、Pattern、測試計畫 | 依夜間授權採用建議值 |
+| [17-r3-combo-boundary-note.md](17-r3-combo-boundary-note.md) | 需求翻譯、平台查證（疾跑打中後會停止）、各裝備的移動速度、變更邊界（第 0 節是 JSON 版）、SOLID、Pattern、測試計畫 | 使用者 2026-11-08 確認 |
 | [18-r3-combo-given-when-then.md](18-r3-combo-given-when-then.md) | 成功條件，H1～H7、B1～B20、J1～J9（combo 檔） | 同上 |
-| [19-r3-combo-open-questions.md](19-r3-combo-open-questions.md) | Q1～Q7、O1～O12，以及決定紀錄（採用建議值、Q2 改成 JSON） | 待使用者確認 |
+| [19-r3-combo-open-questions.md](19-r3-combo-open-questions.md) | Q1～Q7、O1～O12，以及決定紀錄（採用建議值、Q2 改成 JSON） | 使用者 2026-11-08 確認：全部照建議 |
 | [20-r3-combo-behavior-report.md](20-r3-combo-behavior-report.md) | 行為報告：實作時的假設 C1～C11、結構摘要、各層測試數量、Given / When / Then 對照、SOLID／Pattern 檢查（第 5 節）、之後（第 7 節）、合併到 main（第 8 節） | 已產出（合併 main 後：單元 450/450、遊戲內 68/68，含原版 1 個） |
 | [prompts/r3-combo-round-01～03](prompts/) | 邊界草案、實作（每一步的 SOLID／Pattern）、合併 main | 2026-11-07 |
 
@@ -65,13 +65,13 @@ R4b 由怪物小弟在 `feature/r4b-mob-admin` 分支做。2026-11-07 夜間，�
 - 玩家放一個檔、重開遊戲，就多一種怪物。
 - 網頁可以改怪物的名稱、數值、大小、行為、裝備，也可以新增怪物。
 
-分支先合了 main `3c4eb42`（含 combo，合併 commit `23246ed`），再由架構師把 main 快轉到 `ce7beaa`，README 照 review-05 F2 改寫。主 session 依夜間授權採用建議值，**待使用者確認**。
+分支先合了 main `3c4eb42`（含 combo，合併 commit `23246ed`），再由架構師把 main 快轉到 `ce7beaa`，README 照 review-05 F2 改寫。主 session 依夜間授權採用建議值，**使用者 2026-11-08 確認：全部照建議**（原話：「全部照建議」）。
 
 | 檔案 | 內容 | 狀態 |
 |---|---|---|
-| [21-r4b-mob-admin-boundary-note.md](21-r4b-mob-admin-boundary-note.md) | 需求翻譯、平台限制、怪物檔格式、變更邊界、SOLID、Pattern | 依夜間授權採用建議值 |
+| [21-r4b-mob-admin-boundary-note.md](21-r4b-mob-admin-boundary-note.md) | 需求翻譯、平台限制、怪物檔格式、變更邊界、SOLID、Pattern | 使用者 2026-11-08 確認 |
 | [22-r4b-mob-admin-given-when-then.md](22-r4b-mob-admin-given-when-then.md) | 成功條件，以及逐一破壞後的 Given / When / Then | 同上 |
-| [23-r4b-mob-admin-open-questions.md](23-r4b-mob-admin-open-questions.md) | Q1～Q8、O1～O21，以及合併時的調整 | 待使用者確認 |
+| [23-r4b-mob-admin-open-questions.md](23-r4b-mob-admin-open-questions.md) | Q1～Q8、O1～O21，以及合併時的調整 | 使用者 2026-11-08 確認：全部照建議 |
 | [28-r4b-mob-admin-behavior-report.md](28-r4b-mob-admin-behavior-report.md) | 行為報告：改了什麼、結構、Given / When / Then 對照、SOLID／Pattern 檢查（第 5 節）、加一種行為實測（第 6 節）、沒有覆蓋的範圍、合併到 main（第 9 節） | 已產出（合併到 main 後：單元 505/505、遊戲內 77/77，含原版 1 個） |
 | [prompts/round-r4b-01～03](prompts/) | 邊界、實作、合併 main | 2026-11-07 |
 | [prompts/round-09-r4b-main.md](prompts/round-09-r4b-main.md) | 架構師：快轉 main 的 SOLID／Pattern 檢查、README（F2）、網頁重新載入按鈕（F3）、完整測試 | 2026-11-07 |
@@ -109,13 +109,13 @@ R4b 由怪物小弟在 `feature/r4b-mob-admin` 分支做。2026-11-07 夜間，�
 
 ## 段落 E：數值改成 JSON 定義（2026-11-07 夜間）
 
-使用者定下主軸：「主軸在我們這個系統可以未來讓玩家新增東西而不是我們自己要開發出很厲害的怪物與武器」。數值從 Java 的 `content/ModStats` 改成 `config/mobarmory/stats/<id>.json`，玩家加一個檔、重開遊戲，就多一個數值。主 session 依夜間授權採用建議值，**待使用者確認**。
+使用者定下主軸：「主軸在我們這個系統可以未來讓玩家新增東西而不是我們自己要開發出很厲害的怪物與武器」。數值從 Java 的 `content/ModStats` 改成 `config/mobarmory/stats/<id>.json`，玩家加一個檔、重開遊戲，就多一個數值。主 session 依夜間授權採用建議值，**使用者 2026-11-08 確認：全部照建議**（原話：「全部照建議」）。
 
 | 檔案 | 內容 | 狀態 |
 |---|---|---|
-| [24-stat-files-boundary-note.md](24-stat-files-boundary-note.md) | 需求翻譯、平台限制、檔案格式、變更邊界、給其他分支的介面、SOLID（含為什麼要動 `ModStats`） | 依夜間授權採用建議值 |
+| [24-stat-files-boundary-note.md](24-stat-files-boundary-note.md) | 需求翻譯、平台限制、檔案格式、變更邊界、給其他分支的介面、SOLID（含為什麼要動 `ModStats`） | 使用者 2026-11-08 確認 |
 | [25-stat-files-given-when-then.md](25-stat-files-given-when-then.md) | 成功條件，H1～H7、B1～B12 | 同上 |
-| [26-stat-files-open-questions.md](26-stat-files-open-questions.md) | Q1～Q11、O1～O5，每題第一個選項是建議值 | 待使用者確認 |
+| [26-stat-files-open-questions.md](26-stat-files-open-questions.md) | Q1～Q11、O1～O5，每題第一個選項是建議值 | 使用者 2026-11-08 確認：全部照建議 |
 | [27-stat-files-behavior-report.md](27-stat-files-behavior-report.md) | 行為報告：改了什麼、給其他分支的介面、為什麼執行中不能改、Given / When / Then 對照、手動步驟、SOLID／Pattern 檢查 | 已產出（單元 375/375、遊戲內 61/61） |
 | [prompts/round-08-stat-files.md](prompts/round-08-stat-files.md) | 指令和每一步的 SOLID、Pattern、變更邊界 | 2026-11-07 |
 

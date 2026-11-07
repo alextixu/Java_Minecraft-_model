@@ -1,6 +1,6 @@
 # 邊界行為：Given / When / Then（段落 E，數值改成 JSON 定義）
 
-> 狀態：**依夜間授權採用建議值，待使用者確認**（見 [26](26-stat-files-open-questions.md)）。每一列都會變成一個測試，或寫明為什麼只能手動驗證；對應的測試列在 [27](27-stat-files-behavior-report.md)。
+> 狀態：**使用者 2026-11-08 確認：全部照建議**（原話：「全部照建議」），見 [26](26-stat-files-open-questions.md)。2026-11-07 依夜間授權先採用建議值。每一列都會變成一個測試，或寫明為什麼只能手動驗證；對應的測試列在 [27](27-stat-files-behavior-report.md)。
 > 邊界說明在 [24](24-stat-files-boundary-note.md)。
 
 ## 成功條件（一個從 JSON 來的數值正常運作，要同時成立的事）

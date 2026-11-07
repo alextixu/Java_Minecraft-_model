@@ -1,6 +1,6 @@
 # 邊界說明：段落 E，數值改成 JSON 定義
 
-> 狀態：**依夜間授權採用建議值，待使用者確認**。問題和決定在 [26](26-stat-files-open-questions.md)，Given / When / Then 在 [25](25-stat-files-given-when-then.md)，行為報告是 [27](27-stat-files-behavior-report.md)。
+> 狀態：**使用者 2026-11-08 確認：全部照建議**（原話：「全部照建議」）。2026-11-07 依夜間授權先採用建議值。問題和決定在 [26](26-stat-files-open-questions.md)，Given / When / Then 在 [25](25-stat-files-given-when-then.md)，行為報告是 [27](27-stat-files-behavior-report.md)。
 > 流程：boundary-first 第 1、2 步。
 > 前提：
 > - 沿用 R1 的數值系統：`core/stat` 的 `StatDefinition`、`StatCatalog`、`StackingRules`，公開介面和規則都不改。
