@@ -102,13 +102,17 @@
 - 設定在 `config/mobarmory/web.json`：
 
   ```json
-  { "enabled": true, "host": "127.0.0.1", "port": 8765, "token": "" }
+  { "enabled": true, "host": "127.0.0.1", "port": 8765, "token": "", "allowNetworkWithoutToken": false }
   ```
 
-  `host` 改成其他電腦也連得到的位址時，一定要設定 `token`（一組很長的亂數密碼），否則網頁不會啟動。
+  `host` 改成其他電腦也連得到的位址時，要設定 `token`（一組很長的亂數密碼），否則網頁不會啟動。例外是 `allowNetworkWithoutToken`，見下面。
 
   - `host` 寫 `0.0.0.0`（或 `::`）時，區網裡的電腦可以用這台電腦的任一個 IP 連進來，例如 `http://192.168.1.52:8765/`。log 和聊天欄顯示的網址，會是這台電腦的區網 IP。用其他名稱連進來一律擋下。網卡的 IP 在世界啟動時讀一次，換了網路要重開世界。
   - 不是從聊天欄的連結打開時，在網址後面加上 `?token=<web.json 裡的 token>`。網頁讀到 token 後會把它從網址列拿掉，重新整理仍然可以用。
+  - `allowNetworkWithoutToken` 改成 `true`、`token` 留空時，區網的電腦用 IP 就能直接打開網頁，不用 token。預設是 `false`。
+    - **風險**：連得到這個位址和埠的人，都能改武器和怪物的數值、上傳貼圖，也能新增武器和怪物。只在信任的區網裡打開，不要讓網路外面連得到這個埠。
+    - 打開時，每次世界（伺服器）啟動都會在 log 寫一行警告。
+    - 別的網站偷送請求的保護（`Host`、`Origin` 檢查）照樣有效。設了 `token` 的話，一律照 token 的規則。
 
 ## 加一把武器（不用寫 Java）
 

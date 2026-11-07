@@ -64,7 +64,11 @@ class AdminHttpServerTest {
      * listens on 127.0.0.1 only (web fixes B2): no test depends on the network or opens a port to it.
      */
     private AdminHttpServer startOnAllAddresses(String token) throws IOException {
-        server = AdminHttpServer.start(admin, mobs, new WebSettings(true, "0.0.0.0", 0, token),
+        return startOnAllAddresses(token, false);
+    }
+
+    private AdminHttpServer startOnAllAddresses(String token, boolean allowNetworkWithoutToken) throws IOException {
+        server = AdminHttpServer.start(admin, mobs, new WebSettings(true, "0.0.0.0", 0, token, allowNetworkWithoutToken),
             LocalAddresses.of(InetAddress.ofLiteral("127.0.0.1"), InetAddress.ofLiteral("192.168.1.52")),
             new InetSocketAddress("127.0.0.1", 0));
         return server;
@@ -231,6 +235,66 @@ class AdminHttpServerTest {
         String hint = script.lines().filter(line -> line.contains("error.status === 401")).findFirst().orElse("");
         assertTrue(hint.contains("聊天欄") && hint.contains("OP"), "way 1: the link in chat: " + hint);
         assertTrue(hint.contains("?token=") && hint.contains("config/mobarmory/web.json"), "way 2: add ?token= from web.json: " + hint);
+    }
+
+    @Test
+    @DisplayName("B3-1 Given host 0.0.0.0、沒有 token、allowNetworkWithoutToken 打開 When 區網用 IP 開 Then 照常啟動，不用 token 就能讀、能存")
+    void lanWithoutTokenWhenAllowed() throws Exception {
+        startOnAllAddresses("", true);
+        String lan = "192.168.1.52:" + server.port();
+
+        assertTrue(rawStatusLine(lan).contains(" 200 "), "no Authorization header at all");
+        HttpResponse<String> saved = send(put("/api/v1/weapons/heavy_sword", "application/json", SWORD).header("Origin", "http://" + lan));
+        assertEquals(200, saved.statusCode(), saved.body());
+        assertEquals(server.uri(), server.linkWithToken(), "no token, so the chat link has none either");
+    }
+
+    @Test
+    @DisplayName("B3-2 Given 開關沒打開（預設） When host 對外、沒有 token Then 和以前一樣不啟動")
+    void switchOffStillRefusesToStart() {
+        assertThrows(IllegalStateException.class, () -> startOnAllAddresses("", false));
+        assertThrows(IllegalStateException.class, () -> new WebSettings(true, "192.168.1.52", 8765, "").checkSafe());
+        assertFalse(WebSettings.DEFAULT.allowNetworkWithoutToken());
+    }
+
+    @Test
+    @DisplayName("B3-3 Given 開關打開、沒有 token、host 對外 Then 有一行警告（每次啟動寫進 log）；其他情況沒有")
+    void warningOnlyWhenOpenWithoutToken() {
+        String warning = new WebSettings(true, "0.0.0.0", 8765, "", true).securityWarning().orElseThrow();
+        assertTrue(warning.contains("allowNetworkWithoutToken") && warning.contains("0.0.0.0:8765"), warning);
+        assertTrue(new WebSettings(true, "192.168.1.52", 8765, "", true).securityWarning().isPresent());
+        assertTrue(new WebSettings(true, "0.0.0.0", 8765, "s3cret", true).securityWarning().isEmpty(), "a token is set");
+        assertTrue(new WebSettings(true, "127.0.0.1", 8765, "", true).securityWarning().isEmpty(), "only this computer");
+        assertTrue(new WebSettings(true, "0.0.0.0", 8765, "", false).securityWarning().isEmpty(), "switch off: it does not start");
+    }
+
+    @Test
+    @DisplayName("B3-4 Given 開關打開、沒有 token When Host 或 Origin 是別的名稱 Then 一樣 403")
+    void hostAndOriginStillCheckedWithoutToken() throws Exception {
+        startOnAllAddresses("", true);
+        assertTrue(rawStatusLine("evil.example:" + server.port()).contains(" 403 "));
+        HttpResponse<String> otherSite = send(put("/api/v1/weapons/heavy_sword", "application/json", SWORD)
+            .header("Origin", "http://evil.example"));
+        assertEquals(403, otherSite.statusCode());
+    }
+
+    @Test
+    @DisplayName("B3-5 Given 開關打開、也有 token Then 照 token 的規則：沒帶 401，帶對 200")
+    void tokenStillWinsWhenSet() throws Exception {
+        startOnAllAddresses("s3cret-token", true);
+        String lan = "192.168.1.52:" + server.port();
+        assertTrue(rawStatusLine(lan).contains(" 401 "));
+        assertTrue(rawStatusLine(lan, "Authorization: Bearer s3cret-token").contains(" 200 "));
+    }
+
+    @Test
+    @DisplayName("B3-1 B3-2 web.json：沒寫開關就是關；寫 true 才打開；預設的檔案會寫出這個開關（false）")
+    void switchInTheFile(@TempDir Path folder) throws Exception {
+        Path file = folder.resolve("web.json");
+        WebSettings.load(file);
+        assertTrue(java.nio.file.Files.readString(file).contains("\"allowNetworkWithoutToken\": false"));
+        assertFalse(WebSettings.load(writeSettings(file, "{\"host\": \"0.0.0.0\"}")).allowNetworkWithoutToken());
+        assertTrue(WebSettings.load(writeSettings(file, "{\"host\": \"0.0.0.0\", \"allowNetworkWithoutToken\": true}")).allowNetworkWithoutToken());
     }
 
     @Test

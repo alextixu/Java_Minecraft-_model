@@ -25,6 +25,7 @@
 | Q4 | **A** | `config/mobarmory/weapons/`，一把一個檔；`/mobarmory reload` 和網頁按鈕；新武器重開生效 |
 | Q5 | **最終版** | 外觀三種：原版物品、7 張內建貼圖（在 jar 裡）、上傳的 PNG（存在 `config/mobarmory/textures/`）。7 張內建貼圖選「放在 jar」，因為已經 commit 並附作者標註，改動最少 |
 | Q6 | **A** | 只綁 `127.0.0.1`，不用密碼，檢查 `Host`／`Origin`、只收 JSON（上傳只收 PNG）；對外開放時強制 token |
+| Q6（2026-11-08 改） | **A 加開關** | 使用者決定「先以ip就可以登入 因為日後可能有其他管理方式 所以目前先以ip就可以訪問就好」：web.json 寫 `"allowNetworkWithoutToken": true` 時，對外開放也可以不設 token；預設關閉，打開又沒 token 時每次啟動在 log 寫警告；`Host`／`Origin` 檢查照舊；有 token 就照 token 的規則（[prompts/round-11-web-fixes.md](prompts/round-11-web-fixes.md)） |
 | Q7 | **最終版** | 網頁「新增武器」表單：id、名稱、欄位、數值、外觀（原版物品、內建貼圖、或上傳一張 PNG）；存成 `weapons/<id>.json` 和 `textures/<名稱>.png`，清單標「待重開」，重開後生效。既有武器換外觀時也可以用上傳的 PNG |
 | O1～O16 | **同意**，三項例外 | **O10**：後存的蓋掉先存的，不做版本號和 409。**O11**：原版物品、內建貼圖馬上換；換成剛上傳的貼圖時，客戶端自動重新載入資源。**O15**：7 張 hanhanpx 貼圖 commit 進 repo，旁邊放作者標註；上傳的 PNG 只在遊戲資料夾，不進 repo |
 

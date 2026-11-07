@@ -144,3 +144,46 @@
 
 - 只改了指令表列的檔案，加上這份 prompt 紀錄（長期規則 2 要求的文件）。
 - 沒有加依賴，沒有改版本號，沒有動 `core/`、`content/`、`data/`、其他 `forge/` 類別，封包、同步、武器和怪物的行為都沒變。
+- 問題 1、2 的 commit：`e021a9a`。
+
+## 追加：問題 3，區網可以不用 token
+
+指令表在 04:15 追加了這一節（我讀指令表是在那之前，做完問題 1、2 並 commit 後才看到），同一輪接著做。
+
+- **使用者的決定**：總管說明這會推翻 Q6 A，使用者回「先以ip就可以登入 因為日後可能有其他管理方式 所以目前先以ip就可以訪問就好」。所以這不是我自己改 Q6，是使用者改的；10 號的 Q6 補一行。
+
+| 編號 | Given | When | Then |
+|---|---|---|---|
+| B3-1 | host 不是本機、token 是空的、`"allowNetworkWithoutToken": true` | 網頁啟動、從區網用 IP 開 | 照常啟動，不用 token |
+| B3-2 | 開關沒寫或是 false | host 不是本機、沒有 token | 和現在一樣：不啟動 |
+| B3-3 | 開關打開、沒有 token、host 不是本機 | 每次網頁啟動 | log 寫一行警告 |
+| B3-4 | 開關打開 | Host 或 Origin 是別的名稱 | 一樣 403 |
+| B3-5 | 開關打開、有 token | 沒帶 token | 一樣 401：照 token 的規則 |
+
+### 第 5 步：開關（問題 3）
+
+- **做法**：
+  - `WebSettings` 多一個欄位 `allowNetworkWithoutToken`，web.json 沒寫就是 false。保留原本 4 個參數的建構子（等於開關關閉），所以既有的呼叫和遊戲內測試都不用改。
+  - `checkSafe()`：對外開放、沒有 token、開關也沒打開，才拒絕啟動。
+  - `WebSettings.securityWarning()`：開關打開、沒有 token、host 不是本機時，回一句警告；`WebAdminLifecycle.start` 每次啟動把它寫進 log。
+  - 預設的 web.json 多寫一行 `"allowNetworkWithoutToken": false`，讓人看得到這個開關。
+  - Host、Origin 的檢查和 token 的檢查都不動：token 是空的就不檢查 token（原本的邏輯），有 token 就照舊要 token。
+- **SOLID**：
+  - S：「這個設定能不能對外開」本來就在 `WebSettings.checkSafe()`，開關和警告也放在這裡，規則只有一個地方；`WebAdminLifecycle` 只負責把警告寫進 log。
+  - O：多一個欄位，原本的 4 參數建構子保留，呼叫的地方不用改。
+  - L、I、D：不適用；`forge` 依賴 `web` 的方向不變。
+- **Pattern**：值物件（`WebSettings` record，不可變）；明確打開的開關（預設關）。
+- **變更邊界**：`web/WebSettings.java`、`web/AdminHttpServer.java`（只改說明）、`forge/WebAdminLifecycle.java`、README、10 號的 Q6 一行、測試。
+
+### 問題 3 的結果
+
+| 編號 | 測試（`AdminHttpServerTest`） | 結果 |
+|---|---|---|
+| B3-1 | `lanWithoutTokenWhenAllowed`（不帶 token 讀和存都 200）、`switchInTheFile` | 通過 |
+| B3-2 | `switchOffStillRefusesToStart`、`switchInTheFile`（沒寫就是關）；原有的 `openAddressNeedsAToken` 照過 | 通過 |
+| B3-3 | `warningOnlyWhenOpenWithoutToken` | 通過 |
+| B3-4 | `hostAndOriginStillCheckedWithoutToken` | 通過 |
+| B3-5 | `tokenStillWinsWhenSet` | 通過 |
+
+- **SOLID／Pattern 檢查（實際的程式）**：開關和警告都在 `WebSettings`，`checkSafe()` 和 `securityWarning()` 用同一組條件；`WebAdminLifecycle` 只多一行把警告寫進 log；`AllowedHosts`、`AdminGreeting`、token 的檢查都沒動。4 個參數的建構子保留，既有呼叫（含遊戲內測試）不用改。沒有違反。
+- 測試數字見 commit 訊息和回報。

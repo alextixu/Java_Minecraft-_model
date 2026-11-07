@@ -31,7 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *       ({@link AllowedHosts}; with host 0.0.0.0 that includes every IP address of this computer);</li>
  *   <li>changes must come from this page ({@code Origin}) and as JSON or PNG, which a browser will not send from
  *       another website without asking first; this server never says yes (no CORS headers);</li>
- *   <li>with a token in web.json, every API call must carry it ({@code Authorization: Bearer ...}).</li>
+ *   <li>with a token in web.json, every API call must carry it ({@code Authorization: Bearer ...}); an address open
+ *       to other computers needs a token unless web.json says {@code allowNetworkWithoutToken} (web fixes B3, see
+ *       {@link WebSettings#checkSafe()}).</li>
  * </ul>
  */
 public final class AdminHttpServer implements AutoCloseable {

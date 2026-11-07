@@ -63,6 +63,7 @@ public final class WebAdminLifecycle {
             }
             running = AdminHttpServer.start(admin, mobs, settings);
             LOGGER.info("Mob Armory: web admin at {}", running.uri()); // uri() never carries the token (web fixes B1-3)
+            settings.securityWarning().ifPresent(warning -> LOGGER.warn("Mob Armory: {}", warning)); // every start (B3-3)
         } catch (IOException | IllegalStateException e) {
             problem = e.getMessage();
             LOGGER.warn("Mob Armory: web admin did not start ({}); the game carries on without it", problem);
